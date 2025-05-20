@@ -1,0 +1,92 @@
+{
+    "ai_detection": {
+        "enable": false,
+        "image_height": 320,
+        "image_width": 512,
+        "min_confidence": 0.3
+    },
+    "camera": {
+        "autofocus": {
+            "enable": true,
+            "lens_position": 7.2,
+            "mode": "Continuous",
+            "range": "Full",
+            "speed": "Fast"
+        },
+        "exposure_gain": {
+            "analog_gain": 1.0,
+            "exposure_mode": "Normal",
+            "exposure_time": 10000,
+            "exposure_value": 0.0,
+            "flicker_mode": "Off",
+            "flicker_period": 10000,
+            "mode": "Manual"
+        },
+        "image_adjustments": {
+            "brightness": 0.0,
+            "contrast": 1.0,
+            "saturation": 1.0,
+            "sharpness": 1.0
+        },
+        "image_height": 2592,
+        "image_width": 4608,
+        "model": "v3",
+        "sensor": {
+            "crop_limits": [
+                0,
+                0,
+                4608,
+                2592
+            ],
+            "mode": 2
+        },
+        "white_balance": {
+            "enable": true,
+            "mode": "Auto"
+        }
+    },
+    "files": {
+        "jpeg_quality": 95
+    },
+    "gnss": {
+        "enable": true,
+        "last_update": "",
+        "last_update_dop": 99.9,
+        "last_update_num_satellites": 0,
+        "latitude": "0.0",
+        "longitude": "0.0",
+        "mode": "auto"
+    },
+    "images_capture": {
+        "enable": false,
+        "time_step": 5
+    },
+    "laser": {
+        "enable": false
+    },
+    "leds": {
+        "intensity_deported": 0,
+        "intensity_front": 0,
+        "intensity_rear": 0,
+        "intensity_uv": 0,
+        "mode": 3
+    },
+    "monitor_environment": {
+        "enable": true,
+        "time_step": 300
+    },
+    "schedule": {
+        "enable": false,
+        "off_duration": 1,
+        "on_duration": 5,
+        "sleep": "18:00",
+        "wakeup": "07:00"
+    },
+    "site": {
+        "id": "XXX"
+    },
+    "sounds_capture": {
+        "duration": 60,
+        "enable": false
+    }
+}

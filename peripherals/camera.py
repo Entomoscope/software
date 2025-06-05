@@ -145,10 +145,14 @@ class Camera():
                 controls.AfSpeed = af_speed
             controls.ScalerCrop = configuration.camera['sensor']['crop_limits']
             controls.AeEnable = configuration.camera['exposure_gain']['mode'] == 'Auto'
-            controls.AeExposureMode = ae_exposure_mode
-            controls.AnalogueGain = configuration.camera['exposure_gain']['analog_gain']
-            controls.ExposureTime = configuration.camera['exposure_gain']['exposure_time']
-            controls.ExposureValue = configuration.camera['exposure_gain']['exposure_value']
+            if controls.AeEnable:
+                controls.AeExposureMode = ae_exposure_mode
+                # https://forums.kinograph.cc/t/picamera2-autoexposure-question/2599/10
+                controls.ExposureTime = 0
+            else:
+                controls.AnalogueGain = configuration.camera['exposure_gain']['analog_gain']
+                controls.ExposureTime = configuration.camera['exposure_gain']['exposure_time']
+                controls.ExposureValue = configuration.camera['exposure_gain']['exposure_value']
 
             controls = controls.make_dict()
 

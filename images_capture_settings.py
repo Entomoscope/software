@@ -1395,6 +1395,8 @@ class TkInterface(tk.Tk):
         self.configuration.read()
 
         self.update_configuration_display()
+        
+        self.camera.configure(self.configuration)
 
         self.status_text.set(f"New configuration saved: exposure/gain mode set to {self.configuration.camera['exposure_gain']['mode']}")
 

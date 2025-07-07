@@ -933,8 +933,8 @@ class TkInterface(tk.Tk):
         self.auto_exposure_gain_save_button.pack(side=tk.RIGHT, padx=(0,5), pady=(5,0))
 
         # Fan
-        fan_frame = tk.Frame(notebook)
-        fan_frame.pack(side=tk.TOP, fill=tk.X, padx=(5,5), pady=(5,5))
+        # fan_frame = tk.Frame(notebook)
+        # fan_frame.pack(side=tk.TOP, fill=tk.X, padx=(5,5), pady=(5,5))
         
         # notebook.add(fan_frame, text ='Fan')
         

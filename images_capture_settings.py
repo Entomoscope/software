@@ -7,6 +7,8 @@ from datetime import datetime
 from threading import Thread
 from queue import Queue
 
+from time import sleep
+
 import logging
 
 import tkinter as tk
@@ -32,7 +34,7 @@ from peripherals.rpi import Rpi
 
 this_script = os.path.basename(__file__)[:-3]
 
-AI_ENABLE = True
+AI_ENABLE = False
 
 rpi = Rpi()
 if rpi.os_version == '64-bit' and AI_ENABLE:
@@ -75,6 +77,9 @@ SHOW_PERF = False
 DISPLAY_MAIN_FRAME = False
 
 CPU_TEMP_INTERVAL = 5
+
+DELAY_LEDS_ON_OFF_MANUAL_EXPOSURE_IN_S = 0.5
+DELAY_LEDS_ON_OFF_AUTO_EXPOSURE_IN_S = 1
 
 global image_tk_3 # Workaround
 
@@ -161,6 +166,7 @@ class TkInterface(tk.Tk):
                 self.camera.available = False
 
         self.take_photo = False
+        self.take_photo_flash = False
 
         self.last_time = time.time()
 
@@ -196,14 +202,49 @@ class TkInterface(tk.Tk):
         global image_tk_3 # Workaround
 
         while True:
+            
+            sleep(0.05)
 
             if self.camera.available and not self.image_lock:
 
                 if SHOW_PERF:
                     start_time = time.perf_counter_ns()
+                    
+                if self.take_photo:
+                    print('Capture')
+               
+                if self.take_photo_flash:
+                    print('Capture + Flash')
+                     
+                if self.take_photo_flash:
+                    
+                    if self.configuration.leds['mode'] == 1:
+                        self.leds_rear.set_intensity(self.configuration.leds['intensity_rear'])
+                        self.leds_rear.turn_on()
+                    if self.configuration.leds['mode'] == 1 or configuration.leds['mode'] == 2:
+                        self.leds_front.set_intensity(self.configuration.leds['intensity_front'])
+                        self.leds_front.turn_on()
+                    if self.configuration.leds['mode'] == 3:
+                        self.leds_deported.set_intensity(self.configuration.leds['intensity_deported'])
+                        self.leds_deported.turn_on()
+                        
+                    if self.configuration.leds['delay_on']:                
+                        sleep(self.configuration.leds['delay_on'])
 
                 self.camera.capture(get_metadata=True, flush=False)
 
+                if self.take_photo_flash:
+                    
+                    if self.configuration.leds['delay_off']:                
+                        sleep(self.configuration.leds['delay_off'])
+                    
+                    if self.configuration.leds['mode'] == 1:
+                        self.leds_rear.turn_off()
+                    if self.configuration.leds['mode'] == 1 or configuration.leds['mode'] == 2:
+                        self.leds_front.turn_off()
+                    if self.configuration.leds['mode'] == 3:
+                        self.leds_deported.turn_off()
+                    
                 if SHOW_PERF:
                     print(f'Capture {(time.perf_counter_ns() - start_time)/1E9}')
                     start_time = time.perf_counter_ns()
@@ -312,7 +353,7 @@ class TkInterface(tk.Tk):
 
                 # image = cv2.resize(image, (new_width, new_height))
 
-                if self.take_photo == True:
+                if self.take_photo or self.take_photo_flash:
 
                     extra_metadata = {'SiteID': self.configuration.site['id'], 'Latitude': self.configuration.gnss['latitude'], 'Longitude': self.configuration.gnss['longitude']}
 
@@ -324,8 +365,11 @@ class TkInterface(tk.Tk):
                     jpeg_data = cv2.imencode('.jpg', self.camera.frame_data_main, [int(cv2.IMWRITE_JPEG_QUALITY), self.configuration.files['jpeg_quality']])[1].tobytes()
 
                     now_str = datetime.now().strftime('%Y%m%d%H%M%S')
-
-                    jpeg_file_path = os.path.join(IMAGES_CAPTURE_FOLDER, now_str + '_capture.jpg')
+                    
+                    if self.take_photo:
+                        jpeg_file_path = os.path.join(IMAGES_CAPTURE_FOLDER, now_str + '_settings_capture.jpg')
+                    elif self.take_photo_flash:
+                        jpeg_file_path = os.path.join(IMAGES_CAPTURE_FOLDER, now_str + '_settings_capture_flash.jpg')
 
                     with open(jpeg_file_path, 'wb') as f:
                         f.write(jpeg_data)
@@ -340,6 +384,7 @@ class TkInterface(tk.Tk):
                         dump(metadata, f, indent=4, sort_keys=True, separators=(',', ': '))
 
                     self.take_photo = False
+                    self.take_photo_flash = False
 
                     self.status_text.set('Image saved to ' + jpeg_file_path)
 
@@ -501,6 +546,9 @@ class TkInterface(tk.Tk):
         button = tk.Button(crop_limits_subframe_3_2, text='Capture image', takefocus=False, command=self.save_image, font=self.font)
         button.pack(side=tk.LEFT, expand=True)
 
+        button = tk.Button(crop_limits_subframe_3_2, text='Capture image + flash', takefocus=False, command=self.save_image_flash, font=self.font)
+        button.pack(side=tk.LEFT, expand=True)
+        
         # AI Detection
         self.ai_frame = tk.Frame(notebook)
         self.ai_frame.pack(side=tk.TOP, fill=tk.X, padx=(5,5), pady=(5,5), anchor='w')
@@ -641,7 +689,24 @@ class TkInterface(tk.Tk):
             self.leds_uv_scale.pack_forget()
 
             self.set_leds_intensity('deported')
+            
+        self.leds_delay_label = tk.Label(leds_subframe_3, text='Delay before on (s):', font=self.font)
+        self.leds_delay_label.pack(side=tk.LEFT, padx=(5,5))
 
+        self.leds_delay_on_entry = tk.Entry(leds_subframe_3, width=TK_ENTRY_WIDTH, takefocus=False, font=self.font)
+        self.leds_delay_on_entry.insert(0, str(self.configuration.leds['delay_on']))
+        self.leds_delay_on_entry.pack(side=tk.LEFT, padx=(5,5))
+
+        self.leds_delay_label = tk.Label(leds_subframe_3, text='Delay before off (s):', font=self.font)
+        self.leds_delay_label.pack(side=tk.LEFT, padx=(5,5))
+
+        self.leds_delay_off_entry = tk.Entry(leds_subframe_3, width=TK_ENTRY_WIDTH, takefocus=False, font=self.font)
+        self.leds_delay_off_entry.insert(0, str(self.configuration.leds['delay_off']))
+        self.leds_delay_off_entry.pack(side=tk.LEFT, padx=(5,5))
+        
+        self.leds_delay_save_button = tk.Button(leds_subframe_3, text='Save', command=self.save_leds_delay, takefocus=False, font=self.font)
+        self.leds_delay_save_button.pack(side=tk.RIGHT, padx=(0,5), pady=(5,0))
+        
         # Image adjustments
         image_adjustments_frame = tk.Frame(notebook)
         image_adjustments_frame.pack(side=tk.TOP, fill=tk.X, padx=(5,5), pady=(5,5), anchor='w')
@@ -867,6 +932,12 @@ class TkInterface(tk.Tk):
         self.auto_exposure_gain_save_button = tk.Button(exposure_gain_subframe_1, text='Save', takefocus=False, command=self.save_aeg_mode, font=self.font)
         self.auto_exposure_gain_save_button.pack(side=tk.RIGHT, padx=(0,5), pady=(5,0))
 
+        # Fan
+        fan_frame = tk.Frame(notebook)
+        fan_frame.pack(side=tk.TOP, fill=tk.X, padx=(5,5), pady=(5,5))
+        
+        # notebook.add(fan_frame, text ='Fan')
+        
         # Files
         files_frame = tk.Frame(notebook)
         files_frame.pack(side=tk.TOP, fill=tk.X, padx=(5,5), pady=(5,5))
@@ -907,6 +978,10 @@ class TkInterface(tk.Tk):
 
         self.take_photo = True
 
+    def save_image_flash(self):
+
+        self.take_photo_flash = True
+        
     def update_configuration_display(self):
 
         configuration = self.configuration.to_string()
@@ -1759,6 +1834,50 @@ class TkInterface(tk.Tk):
         self.configuration.read()
 
         self.update_configuration_display()
+
+    def save_leds_delay(self):
+        
+        leds_delay_on = self.leds_delay_on_entry.get()
+        leds_delay_off = self.leds_delay_off_entry.get()
+
+        try:
+
+            leds_delay_on = float(leds_delay_on)
+            leds_delay_off = float(leds_delay_off)
+
+            if leds_delay_on >= 0 and leds_delay_off >= 0:
+
+                self.configuration.leds['delay_on'] = leds_delay_on
+                self.configuration.leds['delay_off'] = leds_delay_off
+
+                self.configuration.save()
+
+                self.configuration.read()
+
+                self.update_configuration_display()
+
+                self.status_text.set(f'New configuration saved: LEDs delays set to {leds_delay_on}s (on) and {leds_delay_off}s (off)')
+                logger.info(f'{this_script}: LEDs delays set to {leds_delay_on}s (on) and {leds_delay_off}s (off)')
+
+            else:
+
+                self.leds_delay_on_entry.delete('0', tk.END)
+                self.leds_delay_on_entry.insert(tk.END, self.configuration.leds['delay_on'])
+                self.leds_delay_off_entry.delete('0', tk.END)
+                self.leds_delay_off_entry.insert(tk.END, self.configuration.leds['delay_off'])
+                self.status_text.set('Error: LEDs delays must be >= 0')
+                logger.error(f'{this_script}: LEDs delays must be >= 0')
+
+        except BaseException as e:
+
+            self.leds_delay_on_entry.delete('0', tk.END)
+            self.leds_delay_on_entry.insert(tk.END, self.configuration.leds['delay_on'])
+            self.leds_delay_off_entry.delete('0', tk.END)
+            self.leds_delay_off_entry.insert(tk.END, self.configuration.leds['delay_off'])
+            
+            self.status_text.set('Error: LEDs delays must be >= 0')
+            logger.error(f'{this_script}: LEDs delays must be >= 0')
+            logger.error(f'{this_script}: ' + str(e))
 
     def update_ui(self):
 

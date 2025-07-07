@@ -100,6 +100,8 @@ class Configuration():
                         })
 
         setattr(self, 'leds', {
+                            'delay_off': 0.0,
+                            'delay_on': 0.0,
                             'intensity_deported': 0,
                             'intensity_front': 90,
                             'intensity_rear': 35,

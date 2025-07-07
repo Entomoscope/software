@@ -190,8 +190,14 @@ def main():
                 leds_front.turn_on()
             if configuration.leds['mode'] == 3:
                 leds_deported.turn_on()
+                
+            if configuration.leds['delay_on']:                
+                sleep(configuration.leds['delay_on'])
 
             camera.capture(get_metadata=True)
+            
+            if configuration.leds['delay_off']:                
+                sleep(configuration.leds['delay_off'])
 
             if configuration.leds['mode'] == 1:
                 leds_rear.turn_off()

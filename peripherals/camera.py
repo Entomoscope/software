@@ -215,7 +215,7 @@ class Camera():
                         lores_width = int(lores_width * PREVIEW_HEIGHT_MAX // lores_height)
                         lores_height = PREVIEW_HEIGHT_MAX
 
-                elif image_width < PREVIEW_WIDTH_MAX and image_height < PREVIEW_HEIGHT_MAX:
+                elif image_width <= PREVIEW_WIDTH_MAX and image_height <= PREVIEW_HEIGHT_MAX:
 
                     # print('Zoom')
 

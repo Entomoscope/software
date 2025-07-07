@@ -690,7 +690,7 @@ class TkInterface(tk.Tk):
 
             self.set_leds_intensity('deported')
             
-        self.leds_delay_label = tk.Label(leds_subframe_3, text='Delay before on (s):', font=self.font)
+        self.leds_delay_label = tk.Label(leds_subframe_3, text='Delay after on (s):', font=self.font)
         self.leds_delay_label.pack(side=tk.LEFT, padx=(5,5))
 
         self.leds_delay_on_entry = tk.Entry(leds_subframe_3, width=TK_ENTRY_WIDTH, takefocus=False, font=self.font)

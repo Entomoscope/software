@@ -7,6 +7,7 @@ from datetime import datetime
 from gpiozero import CPUTemperature
 
 from peripherals.fan import Fan
+from peripherals.pinout import FAN_PIN
 
 # This scripts should be run in background using crontab
 # Use "crontab -e" to edit the crontab file
@@ -64,41 +65,37 @@ def main():
                         
     try:
 
-        fan = Fan()
+        fan = Fan(FAN_PIN)
 
         cpu_temperature = CPUTemperature().temperature
 
         if cpu_temperature > CPU_TEMP_LEVEL_4:
 
-                # fan.start()
-                fan.setSpeed(FAN_LEVEL_4)
+                fan.set_speed(FAN_LEVEL_4)
 
                 logger.info(f'{this_script}: CPU temperature: {cpu_temperature:.1f}°C => fan speed {FAN_LEVEL_4}%')
                 
         elif cpu_temperature > CPU_TEMP_LEVEL_3:
 
-                # fan.start()
-                fan.setSpeed(FAN_LEVEL_3)
+                fan.set_speed(FAN_LEVEL_3)
 
                 logger.info(f'{this_script}: CPU temperature: {cpu_temperature:.1f}°C => fan speed {FAN_LEVEL_3}%')
 
         elif cpu_temperature > CPU_TEMP_LEVEL_2:
 
-                # fan.start()
-                fan.setSpeed(FAN_LEVEL_2)
+                fan.set_speed(FAN_LEVEL_2)
 
                 logger.info(f'{this_script}: CPU temperature: {cpu_temperature:.1f}°C => fan speed {FAN_LEVEL_2}%')
 
         elif cpu_temperature > CPU_TEMP_LEVEL_1:
 
-                # fan.start()
-                fan.setSpeed(FAN_LEVEL_1)
+                fan.set_speed(FAN_LEVEL_1)
 
                 logger.info(f'{this_script}: CPU temperature: {cpu_temperature:.1f}°C => fan speed {FAN_LEVEL_1}%')
 
         else:
 
-                fan.setSpeed(0)
+                fan.set_speed(0)
 
                 logger.info(f'{this_script}: CPU temperature: {cpu_temperature:.1f}°C => fan speed 0%')
 

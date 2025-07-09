@@ -4,15 +4,13 @@ from gpiozero import CPUTemperature
 
 from time import sleep
 
-from pinout import FAN_PIN
-
 # https://noctua.at/pub/media/wysiwyg/Noctua_PWM_specifications_white_paper.pdf
 # Target frequency: 25kHz, acceptable range 21kHz to 28kHz
 DEFAULT_FAN_PWM_FREQUENCY = 25000
 
 class Fan:
 
-    def __init__(self, pin=FAN_PIN, frequency=DEFAULT_FAN_PWM_FREQUENCY):
+    def __init__(self, pin, frequency=DEFAULT_FAN_PWM_FREQUENCY):
 
         self.pin = pin
         self.pwm = pigpio.pi()
@@ -44,7 +42,7 @@ class Fan:
 
 def main(args):
 
-    fan = Fan()
+    fan = Fan(18)
 
     if args.low_speed:   
         fan.set_speed(20)

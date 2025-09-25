@@ -1,22 +1,22 @@
 {
     "ai_detection": {
-        "enable": false,
-        "image_height": 192,
-        "image_width": 192,
-        "min_confidence": 0.3
+        "enable": true,
+        "image_height": 320,
+        "image_width": 320,
+        "min_confidence": 0.5
     },
     "camera": {
         "autofocus": {
             "enable": true,
-            "lens_position": 9.0,
-            "mode": "Manual",
-            "range": "Full",
-            "speed": "Fast"
+            "lens_position": 12.4,
+            "mode": "Continuous",
+            "range": "Normal",
+            "speed": "Normal"
         },
         "exposure_gain": {
-            "analog_gain": 1.0,
-            "exposure_mode": "Short",
-            "exposure_time": 33333,
+            "analog_gain": 1.5,
+            "exposure_mode": "Normal",
+            "exposure_time": 2000,
             "exposure_value": 0.0,
             "flicker_mode": "Off",
             "flicker_period": 10000,
@@ -28,15 +28,15 @@
             "saturation": 1.0,
             "sharpness": 1.0
         },
-        "image_height": 1500,
-        "image_width": 1500,
+        "image_height": 1900,
+        "image_width": 1900,
         "model": "v3",
         "sensor": {
             "crop_limits": [
-                1544,
-                296,
-                1500,
-                1500
+                1285,
+                390,
+                1900,
+                1900
             ],
             "mode": 2
         },
@@ -50,26 +50,26 @@
     },
     "gnss": {
         "enable": true,
-        "last_update": "",
-        "last_update_dop": 99.9,
+        "last_update": 0,
+        "last_update_dop": 0.0,
         "last_update_num_satellites": 0,
-        "latitude": "0.0",
-        "longitude": "0.0",
+        "latitude": 0.0,
+        "longitude": 0.0,
         "mode": "auto"
     },
     "images_capture": {
-        "enable": true,
-        "time_step": 5
+        "enable": false,
+        "time_step": "10"
     },
     "laser": {
         "enable": false
     },
     "leds": {
-        "delay_off": 2.0,
-        "delay_on": 2.0,
+        "delay_off": 0.0,
+        "delay_on": 0.0,
         "intensity_deported": 0,
-        "intensity_front": 100,
-        "intensity_rear": 0,
+        "intensity_front": 90,
+        "intensity_rear": 35,
         "intensity_uv": 0,
         "mode": 1
     },
@@ -79,16 +79,16 @@
     },
     "schedule": {
         "enable": false,
-        "off_duration": 1,
-        "on_duration": 5,
+        "off_duration": "5",
+        "on_duration": "1",
         "sleep": "18:00",
-        "wakeup": "07:00"
+        "wakeup": "12:00"
     },
     "site": {
-        "id": "XXX"
+        "id": "XX"
     },
     "sounds_capture": {
-        "duration": 60,
+        "duration": "3",
         "enable": false
     }
 }

@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Entomoscope - Logs</title>
+{% endblock %}
+
+{% block content %}
+<!-- Navigation bar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-primary">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">Entomoscope</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link" href="/">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('data') }}">Data</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('global_settings') }}">Global Settings</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('images_capture_settings') }}">Images Capture Settings</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('sounds_capture_settings') }}">Sounds Capture Settings</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="{{ url_for('logs') }}">Logs</a>
+        </li>
+      </ul>
+        <span class="badge bg-info text-dark" id="cpuTempNavBar">
+            {{ '%.1f' %  rpi.get_temperature() }} &deg;C
+        </span>
+    </div>
+  </div>
+</nav>
+<!-- Page content -->
+<div class="container-fluid">
+    <div class="row align-items-start mt-3">
+        <!-- Logs - Today -->
+        <div class="col-3">
+            <div class="form-button-center">
+                <button type="submit" class="btn btn-primary" id="exportLogsButton" onclick="manageLogs('backup')">Backup</button>
+                <button type="submit" class="btn btn-primary" id="clearLogsButton" onclick="manageLogs('clear')">Clear logs</button>
+            </div>
+            <hr/>
+            <div class="form-group">
+                <div class="d-flex w-100 align-items-center justify-content-between">
+                    <strong class="mb-1"><label class="form-label">General</label></strong>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="fileLog" id="wittyPi.log" onclick="showLog(this.id)"/>
+                    <label class="form-check-label" for="imageConstraintSquare">WittyPi.log</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="d-flex w-100 align-items-center justify-content-between">
+                    <strong class="mb-1"><label class="form-label">Today</label></strong>
+                </div>
+                {% for log, name in zip(logs_files.files, logs_files.names) %}
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="fileLog" id="{{log}}" onclick="showLog(this.id)"/>
+                    <label class="form-check-label" for="othersLog">{{ name }}</label>
+                </div>
+                {% endfor %}
+            </div>
+
+        </div>
+        <!-- Log content -->
+        <div class="col-9 p-2" id="logDiv">
+            <p id="logContent"></p>
+        </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+
+    const exportLogsButton = document.getElementById('exportLogsButton');
+    const clearLogsButton = document.getElementById('clearLogsButton');
+
+    const logContent = document.getElementById('logContent');
+    const logDiv = document.getElementById('logDiv');
+
+    function manageLogs(action) {
+
+        return fetch('/manage_logs', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(action),
+        })
+        .then(response => response.json())
+        .then(data => {
+            //console.log('Settings updated:', data);
+            if (data.success) {
+
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function showLog(logId) {
+
+        const filesLog = document.getElementsByName('fileLog');
+        const fileLog = document.getElementById(logId);
+
+        for (let i = 0; i < filesLog.length; i++) {
+          let item = filesLog[i].checked = false
+        }
+
+        fileLog.checked = true
+
+        return fetch('/get_logs', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(logId),
+        })
+        .then(response => response.json())
+        .then(data => {
+            //console.log('Settings updated:', data);
+            if (data.success) {
+                logContent.innerText = data.text
+                logDiv.style.background = '#EFF6FF'
+            } else {
+
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function getCpuTemperature() {
+
+        const cpuTempNavBar = document.getElementById('cpuTempNavBar')
+
+        return fetch('/get_cpu_temperature', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.temperature >= 80) {
+                    cpuTempNavBar.style.color = 'red'
+                } else if (data.temperature >= 75) {
+                    cpuTempNavBar.style.color = 'orange'
+                } else {
+                    cpuTempNavBar.style.color = 'black'
+                }
+                cpuTempNavBar.innerText = data.temperature + ' °C'
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    var intervalId = setInterval(function() {
+        getCpuTemperature()
+    }, 10000);
+
+
+</script>
+
+{% endblock %}

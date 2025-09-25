@@ -1,0 +1,365 @@
+{% from 'macros.html' import display_configuration_sounds_capture_settings %}
+
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Entomoscope - Sounds Capture Settings</title>
+{% endblock %}
+
+{% block content %}
+<!-- Navigation bar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-primary">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">Entomoscope</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link"href="/">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('data') }}">Data</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('global_settings') }}">Global Settings</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" aria-current="page" href="{{ url_for('images_capture_settings') }}">Images Capture Settings</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" href="{{ url_for('sounds_capture_settings') }}">Sounds Capture Settings</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('logs') }}">Logs</a>
+        </li>
+      </ul>
+        <span class="badge bg-info text-dark" id="cpuTempNavBar">
+            {{ '%.1f' %  rpi.get_temperature() }} &deg;C
+        </span>
+    </div>
+  </div>
+</nav>
+<!-- Page content -->
+<div class="container-fluid">
+    <div class="row align-items-start mt-3">
+        <!-- Sounds Capture Test -->
+        <div class="col-6 text-center">
+            <div class="card">
+              <div class="card-body">
+                {% if microphone_available == 2 %}
+                <h5 class="card-title">Sounds capture test</h5>
+                <div class="form-group">
+                    <div class="d-flex w-100 align-items-center justify-content-between">
+                        <strong class="mb-1"><label for="soundCaptureDurationNumber" class="form-label">Capture duration</label></strong>
+                    </div>
+                    <div class="input-group mb-1">
+                        <input type="number" id="soundsCaptureDurationNumber" class="form-control" min="0" max="60" step="1" value="0"/>
+                        <div class="input-group-text">seconds</div>
+                    </div>
+                    <hr/>
+                    <div class="form-button-center">
+                        <button type="submit" class="btn btn-primary" id="soundsCaptureRunButton" onclick="soundsCaptureTestRun()">Run</button>
+                    </div>
+                    <p id="saveSoundsPath"></p>
+                </div>
+                {% elif microphone_available == 1 %}
+                <h5 class="card-title">Warning</h5>
+                <p class="card-text">Microphone not found.<br/>Check the USB connection and reload this page.</p>
+                {% elif microphone_available == 0 %}
+                <h5 class="card-title">Warning</h5>
+                <p class="card-text">Sounds capture script is running.<br/>Go to the home page and press the stop button to enable the microphone here.</p>
+                {% endif  %}
+              </div>
+            </div>
+        </div>
+        <!-- Sounds Capture Settings -->
+        <div class="col-3">
+            <div class="accordion" id="accordion">
+                <!-- Microphone Settings-->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                        Microphone settings
+                      </button>
+                    </h2>
+                    <div id="collapseOne" class="accordion-collapse collapse">
+                      <div class="accordion-body">
+                        <!-- Microphone - Sample rate -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">Sample rate</label></strong>
+                            </div>
+                            <!-- Microphone - Sample rate - 8000 Hz -->
+                            <div class="form-check">
+                                {% if configuration['microphone']['sample_rate'] == 8000 %}
+                                <input class="form-check-input" type="checkbox" id="sampleRate8000" value="8000" onclick="applySampleRate(8000)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" id="sampleRate8000" value="8000" onclick="applySampleRate(8000)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="sampleRate8000">8000 Hz</label>
+                            </div>
+                            <!-- Microphone - Sample rate - 16000 Hz -->
+                            <div class="form-check">
+                                {% if configuration['microphone']['sample_rate'] == 16000 %}
+                                <input class="form-check-input" type="checkbox" id="sampleRate16000" value="16000" onclick="applySampleRate(16000)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" id="sampleRate16000" value="16000" onclick="applySampleRate(16000)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="sampleRate16000">16000 Hz</label>
+                            </div>
+                            <!-- Microphone - Sample rate - 32000 Hz -->
+                            <div class="form-check">
+                                {% if configuration['microphone']['sample_rate'] == 32000 %}
+                                <input class="form-check-input" type="checkbox" id="sampleRate32000" value="32000" onclick="applySampleRate(32000)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" id="sampleRate32000" value="32000" onclick="applySampleRate(32000)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="sampleRate32000">32000 Hz</label>
+                            </div>
+                            <!-- Microphone - Sample rate - 48000 Hz -->
+                            <div class="form-check">
+                                {% if configuration['microphone']['sample_rate'] == 48000 %}
+                                <input class="form-check-input" type="checkbox" id="sampleRate48000" value="48000" onclick="applySampleRate(48000)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" id="sampleRate48000" value="48000" onclick="applySampleRate(48000)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="sampleRate48000">48000 Hz</label>
+                            </div>
+                            <!-- Microphone - Sample rate - 96000 Hz -->
+                            <div class="form-check">
+                                {% if configuration['microphone']['sample_rate'] == 96000 %}
+                                <input class="form-check-input" type="checkbox" id="sampleRate96000" value="96000" onclick="applySampleRate(96000)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" id="sampleRate96000" value="96000" onclick="applySampleRate(96000)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="sampleRate96000">96000 Hz</label>
+                            </div>
+                            <!-- Microphone - Sample rate - 192000 Hz -->
+                            <div class="form-check">
+                                {% if configuration['microphone']['sample_rate'] == 192000 %}
+                                <input class="form-check-input" type="checkbox" id="sampleRate192000" value="192000" onclick="applySampleRate(192000)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" id="sampleRate192000" value="192000" onclick="applySampleRate(192000)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="sampleRate192000">192000 Hz</label>
+                            </div>
+                            <!-- Microphone - Sample rate - 250000 Hz -->
+                            <div class="form-check">
+                                {% if configuration['microphone']['sample_rate'] == 250000 %}
+                                <input class="form-check-input" type="checkbox" id="sampleRate250000" value="250000" onclick="applySampleRate(250000)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" id="sampleRate250000" value="250000" onclick="applySampleRate(250000)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="sampleRate250000">250000 Hz</label>
+                            </div>
+                            <!-- Microphone - Sample rate - 384000 Hz -->
+                            <div class="form-check">
+                                {% if configuration['microphone']['sample_rate'] == 384000 %}
+                                <input class="form-check-input" type="checkbox" id="sampleRate384000" value="384000" onclick="applySampleRate(384000)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" id="sampleRate384000" value="384000" onclick="applySampleRate(384000)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="sampleRate384000">384000 Hz</label>
+                            </div>
+                        </div>
+                        <hr/>
+                        <div class="form-button-center">
+                            <button type="submit" class="btn btn-primary" id="sampleRateSaveButton" onclick="saveSampleRate()" disabled>Save</button>
+                        </div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Configuration -->
+        <div class="col-3" style="background-color: #FFFFFF">
+          {{ display_configuration_sounds_capture_settings(configuration) }}
+        </div>
+    </div>
+    <div class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" id="soundsCaptureModalDialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Sounds capture in progress</h5>
+                </div>
+                <div class="modal-body">
+                    <p>Wait...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+
+    const soundsCaptureDurationNumber = document.getElementById('soundsCaptureDurationNumber');
+    const saveSoundsPath = document.getElementById('saveSoundsPath');
+
+    const sampleRate8000 = document.getElementById('sampleRate8000');
+    const sampleRate16000 = document.getElementById('sampleRate16000');
+    const sampleRate32000 = document.getElementById('sampleRate32000');
+    const sampleRate48000 = document.getElementById('sampleRate48000');
+    const sampleRate96000 = document.getElementById('sampleRate96000');
+    const sampleRate192000 = document.getElementById('sampleRate192000');
+    const sampleRate250000 = document.getElementById('sampleRate250000');
+    const sampleRate384000 = document.getElementById('sampleRate384000');
+
+    const sampleRateSaveButton = document.getElementById('sampleRateSaveButton');
+
+    const sampleRateText = document.getElementById('sampleRateText');
+
+    const soundsCaptureModalDialog = document.getElementById('soundsCaptureModalDialog');
+
+    function soundsCaptureTestRun() {
+
+        var myModal = new bootstrap.Modal(soundsCaptureModalDialog)
+
+        test_duration = soundsCaptureDurationNumber.value
+
+        console.log(test_duration)
+
+        if (test_duration > 0) {
+
+            myModal.show()
+
+            return fetch('/sounds_capture_test', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(test_duration),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Settings updated:', data);
+                if (data.success) {
+                    saveSoundsPath.innerText = 'Sounds saved to ' + data.data
+                } else {
+
+                }
+                myModal.hide()
+            })
+            .catch(error => {
+            console.error('Error updating settings:', error);
+            throw error;  // Re-throw the error for the next catch
+            });
+
+        }
+
+    }
+
+    function applySampleRate(value) {
+
+        sampleRate8000.checked = false
+        sampleRate16000.checked = false
+        sampleRate32000.checked = false
+        sampleRate48000.checked = false
+        sampleRate96000.checked = false
+        sampleRate192000.checked = false
+        sampleRate250000.checked = false
+        sampleRate384000.checked = false
+
+        if (value == 8000) {
+            sampleRate8000.checked = true
+        } else if (value == 16000) {
+            sampleRate16000.checked = true
+        } else if (value == 32000) {
+            sampleRate32000.checked = true
+        } else if (value == 48000) {
+            sampleRate48000.checked = true
+        } else if (value == 96000) {
+            sampleRate96000.checked = true
+        } else if (value == 192000) {
+            sampleRate192000.checked = true
+        } else if (value == 250000) {
+            sampleRate250000.checked = true
+        } else if (value == 384000) {
+            sampleRate384000.checked = true
+        }
+
+        sampleRateSaveButton.disabled = false
+
+    }
+
+    function saveSampleRate() {
+
+        if (sampleRate8000.checked) {
+            data = 8000
+        } else if (sampleRate16000.checked) {
+            data = 16000
+        } else if (sampleRate32000.checked) {
+            data = 32000
+        } else if (sampleRate48000.checked) {
+            data = 48000
+        } else if (sampleRate96000.checked) {
+            data = 96000
+        } else if (sampleRate192000.checked) {
+            data = 192000
+        } else if (sampleRate250000.checked) {
+            data = 250000
+        } else if (sampleRate384000.checked) {
+            data = 384000
+        }
+
+        return fetch('/save_sample_rate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Settings updated:', data);
+            if (data.success) {
+                sampleRateText.innerText = 'Sample rate: ' + data.data  + ' Hz'
+            } else {
+
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+    }
+
+    function getCpuTemperature() {
+
+        const cpuTempNavBar = document.getElementById('cpuTempNavBar')
+
+        return fetch('/get_cpu_temperature', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.temperature >= 80) {
+                    cpuTempNavBar.style.color = 'red'
+                } else if (data.temperature >= 75) {
+                    cpuTempNavBar.style.color = 'orange'
+                } else {
+                    cpuTempNavBar.style.color = 'black'
+                }
+                cpuTempNavBar.innerText = data.temperature + ' °C'
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    var intervalId = setInterval(function() {
+        getCpuTemperature()
+    }, 10000);
+
+
+</script>
+{% endblock %}

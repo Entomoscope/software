@@ -1,0 +1,667 @@
+{% from 'macros.html' import display_configuration_global_settings %}
+
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Entomoscope - Global Settings</title>
+{% endblock %}
+
+{% block content %}
+<!-- Navigation bar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-primary">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">Entomoscope</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link" href="/">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('data') }}">Data</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="{{ url_for('global_settings') }}">Global Settings</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('images_capture_settings') }}">Images Capture Settings</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('sounds_capture_settings') }}">Sounds Capture Settings</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('logs') }}">Logs</a>
+        </li>
+      </ul>
+        <span class="badge bg-info text-dark" id="cpuTempNavBar">
+            {{ '%.1f' %  rpi.get_temperature() }} &deg;C
+        </span>
+    </div>
+  </div>
+</nav>
+<!-- Page content -->
+<div class="container-fluid">
+  <div class="row align-items-start mt-3">
+    <!-- Global Settings -->
+    <div class="col-5">
+        <div class="accordion" id="accordion">
+            <!-- Site -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                    Site
+                  </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse">
+                  <div class="accordion-body">
+                    <!-- Site - ID -->
+                    <div class="form-group">
+                        <div class="d-flex w-100 align-items-center justify-content-between">
+                            <strong class="mb-1"><label for="brightness" class="form-label">ID</label></strong>
+                        </div>
+                        <input type="text" id="siteIdText" class="form-control" value="{{ configuration['site']['id'] }}" onchange="updateSaveButton('site', false)"/>
+                    </div>
+                    <hr/>
+                    <div class="form-button-center">
+                        <button type="submit" class="btn btn-primary" id="siteSaveButton" onclick="updateSettings('site')" disabled>Save</button>
+                    </div>
+                  </div>
+                </div>
+            </div>
+            <!-- Scheduler -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                    Scheduler
+                    </button>
+                </h2>
+                <div id="collapseFour" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+                    <div class="accordion-body">
+                    <!-- Scheduler - Enable -->
+                    <div class="form-group">
+                        <div class="d-flex w-100 align-items-center justify-content-between">
+                            <strong class="mb-1"><label for="brightness" class="form-label">Enable</label></strong>
+                        </div>
+                        <div class="form-check form-switch">
+                            {% if configuration['schedule']['enable'] %}
+                            <input class="form-check-input" type="checkbox" role="switch" id="scheduleEnable" data-bs-toggle="collapse" href="#schedule_settings" onchange="updateSaveButton('schedule', false)" checked />
+                            {% else  %}
+                            <input class="form-check-input" type="checkbox" role="switch" id="scheduleEnable" data-bs-toggle="collapse" href="#schedule_settings" onchange="updateSaveButton('schedule', false)"/>
+                            {% endif  %}
+                            <label class="form-check-label" for="imageCaptureEnable">Disabled/Enabled</label>
+                        </div>
+                    </div>
+                    {% if configuration['schedule']['enable'] %}
+                    <div class="collapse show p-2" id="schedule_settings">
+                    {% else %}
+                    <div class="collapse p-2" id="schedule_settings">
+                    {% endif %}
+                        <!-- Scheduler - Next Startup -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">Next startup</label></strong>
+                            </div>
+                            <div class="input-group mb-1">
+                                <input type="date" id="scheduleStartupDateNumber" class="form-control" value="{{ startup[0] }}" min="{{ today }}" onchange="updateSaveButton('schedule', false)"/>
+                                <input type="time" id="scheduleStartupTimeNumber" class="form-control" value="{{ startup[1] }}" min="{{ today }}" onchange="updateSaveButton('schedule', false)"/>
+                                <div class="input-group-text">{{ tzone }}</div>
+                            </div>
+                        </div>
+                        <!-- Scheduler - Next Shutdown -->
+                        <div class="form-group mt-2">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">Next shutdown</label></strong>
+                            </div>
+                            <div class="input-group mb-1">
+                                <input type="date" id="scheduleShutdownDateNumber" class="form-control" value="{{ shutdown[0] }}" min="{{ today }}" onchange="updateSaveButton('schedule', false)"/>
+                                <input type="time" id="scheduleShutdownTimeNumber" class="form-control" value="{{ shutdown[1] }}" min="{{ today }}" onchange="updateSaveButton('schedule', false)"/>
+                                <div class="input-group-text">{{ tzone }}</div>
+                            </div>
+                        </div>
+                        <!-- Scheduler - On Duration -->
+                        <div class="form-group mb-1">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">On duration</label></strong>
+                            </div>
+                            <div class="input-group mb-1">
+                                {% if configuration['images_capture']['mode'] == 'lepinoc' %}
+                                <input type="number" id="scheduleOnDurationNumber" class="form-control" min="0" value="{{ configuration['schedule']['on_duration'] }}" onchange="updateSaveButton('schedule', false)" disabled />
+                                {% else %}
+                                <input type="number" id="scheduleOnDurationNumber" class="form-control" min="0" value="{{ configuration['schedule']['on_duration'] }}" onchange="updateSaveButton('schedule', false)"/>
+                                {% endif %}
+                                <div class="input-group-text">minutes</div>
+                            </div>
+                        </div>
+                        <!-- Scheduler - Off Duration -->
+                        <div class="form-group mb-1">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">Off duration</label></strong>
+                            </div>
+                            <div class="input-group mb-1">
+                                {% if configuration['images_capture']['mode'] == 'lepinoc' %}
+                                <input type="number" id="scheduleOffDurationNumber" class="form-control" min="0" value="{{ configuration['schedule']['off_duration'] }}" onchange="updateSaveButton('schedule', false)" disabled />
+                                {% else %}
+                                <input type="number" id="scheduleOffDurationNumber" class="form-control" min="0" value="{{ configuration['schedule']['off_duration'] }}" onchange="updateSaveButton('schedule', false)"/>
+                                {% endif %}
+                                <div class="input-group-text">minutes</div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr/>
+                    <!-- Scheduler - Save -->
+                    <div class="form-button-center">
+                        <button type="submit" class="btn btn-primary" id="scheduleSaveButton" onclick="updateSettings('schedule')" disabled>Save</button>
+                    </div>
+                  </div>
+                </div>
+            </div>
+            <!-- Images capture -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="panelsStayOpen-collapseOne">
+                    Images capture
+                  </button>
+                </h2>
+                <div id="collapseTwo" class="accordion-collapse collapse">
+                  <div class="accordion-body">
+                    <!-- Images capture - Enable -->
+                    <div class="form-group">
+                        <div class="d-flex w-100 align-items-center justify-content-between">
+                            <strong class="mb-1"><label for="brightness" class="form-label">Enable</label></strong>
+                        </div>
+                        <div class="form-check form-switch">
+                            {% if configuration['images_capture']['enable'] %}
+                            <input class="form-check-input" type="checkbox" role="switch" id="imagesCaptureEnable" data-bs-toggle="collapse" href="#image_capture_settings" onchange="updateSaveButton('images_capture', false)" checked />
+                            {% else  %}
+                            <input class="form-check-input" type="checkbox" role="switch" id="imagesCaptureEnable" data-bs-toggle="collapse" href="#image_capture_settings" onchange="updateSaveButton('images_capture', false)"/>
+                            {% endif  %}
+                            <label class="form-check-label" for="imageCaptureEnable">Disabled/Enabled</label>
+                        </div>
+                    </div>
+                    {% if configuration['images_capture']['enable'] %}
+                    <div class="collapse show p-2" id="image_capture_settings">
+                    {% else %}
+                    <div class="collapse p-2" id="image_capture_settings">
+                    {% endif %}
+                        <!-- Images capture - Mode -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">Mode</label></strong>
+                            </div>
+                            <!-- Images capture - Mode - Trap -->
+                            <div class="form-check form-check-inline">
+                                {% if configuration['images_capture']['mode'] == 'trap' %}
+                                <input class="form-check-input" type="checkbox" id="imagesCaptureTrapMode" value="trap" onchange="updateSaveButton('images_capture', false)" onclick="applyImagesCaptureMode(this.value)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" id="imagesCaptureTrapMode" value="trap" onchange="updateSaveButton('images_capture', false)" onclick="applyImagesCaptureMode(this.value)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="imagesCaptureTrapMode">Trap</label>
+                            </div>
+                            <!-- Images capture - Mode - Moth -->
+                            <div class="form-check form-check-inline">
+                                {% if configuration['images_capture']['mode'] == 'moth' %}
+                                <input class="form-check-input" type="checkbox" id="imagesCaptureMothMode" value="moth" onchange="updateSaveButton('images_capture', false)" onclick="applyImagesCaptureMode(this.value)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" id="imagesCaptureMothMode" value="moth" onchange="updateSaveButton('images_capture', false)" onclick="applyImagesCaptureMode(this.value)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="imagesCaptureMothMode">Moth</label>
+                            </div>
+                            <!-- Images capture - Mode - Lepinoc -->
+                            <div class="form-check form-check-inline">
+                                {% if configuration['images_capture']['mode'] == 'lepinoc' %}
+                                <input class="form-check-input" type="checkbox" id="imagesCaptureLepinocMode" value="lepinoc" onchange="updateSaveButton('images_capture', false)" onclick="applyImagesCaptureMode(this.value)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" id="imagesCaptureLepinocMode" value="lepinoc" onchange="updateSaveButton('images_capture', false)" onclick="applyImagesCaptureMode(this.value)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="imagesCaptureLepinocMode">Lepinoc</label>
+                            </div>
+                            <!-- Images capture - Mode - Deported -->
+                            <div class="form-check form-check-inline">
+                                {% if configuration['images_capture']['mode'] == 'deported' %}
+                                <input class="form-check-input" type="checkbox" id="imagesCaptureDeportedMode" value="deported" onchange="updateSaveButton('images_capture', false)" onclick="applyImagesCaptureMode(this.value)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" id="imagesCaptureDeportedMode" value="deported" onchange="updateSaveButton('images_capture', false)" onclick="applyImagesCaptureMode(this.value)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="imagesCaptureDeportedMode">Deported</label>
+                            </div>
+                        </div>
+                        <!-- Images capture - Time Step -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">Time step between images</label></strong>
+                            </div>
+                            <div class="input-group mb-1">
+                                {% if configuration['images_capture']['mode'] == 'lepinoc' %}
+                                <input type="number" id="imagesCaptureTimeStepNumber" class="form-control" min="0" value="{{ configuration['images_capture']['time_step'] }}" onchange="updateSaveButton('images_capture', false)" disabled />
+                                {% else %}
+                                <input type="number" id="imagesCaptureTimeStepNumber" class="form-control" min="0" value="{{ configuration['images_capture']['time_step'] }}" onchange="updateSaveButton('images_capture', false)"/>
+                                {% endif %}
+                                <div class="input-group-text">seconds</div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr/>
+                    <!-- Images capture - Save -->
+                    <div class="form-button-center">
+                        <button type="submit" class="btn btn-primary" id="imagesCaptureSaveButton" onclick="updateSettings('images_capture')" disabled>Save</button>
+                    </div>
+                  </div>
+                </div>
+            </div>
+            <!-- Sounds capture -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="panelsStayOpen-collapseOne">
+                    Sounds capture
+                  </button>
+                </h2>
+                <div id="collapseThree" class="accordion-collapse collapse">
+                  <div class="accordion-body">
+                    <!-- Sounds capture - Enable -->
+                    <div class="form-group">
+                        <div class="d-flex w-100 align-items-center justify-content-between">
+                            <strong class="mb-1"><label for="brightness" class="form-label">Enable</label></strong>
+                        </div>
+                        <div class="form-check form-switch">
+                            {% if configuration['sounds_capture']['enable'] %}
+                            <input class="form-check-input" type="checkbox" role="switch" id="soundsCaptureEnable" data-bs-toggle="collapse" href="#sound_capture_settings" onchange="updateSaveButton('sounds_capture', false)" checked />
+                            {% else  %}
+                            <input class="form-check-input" type="checkbox" role="switch" id="soundsCaptureEnable" data-bs-toggle="collapse" href="#sound_capture_settings" onchange="updateSaveButton('sounds_capture', false)"/>
+                            {% endif  %}
+                            <label class="form-check-label" for="soundsCaptureEnable">Disabled/Enabled</label>
+                        </div>
+                    </div>
+                    {% if configuration['sounds_capture']['enable'] %}
+                    <div class="collapse show p-2" id="sound_capture_settings">
+                    {% else %}
+                    <div class="collapse p-2" id="sound_capture_settings">
+                    {% endif %}
+                        <!-- Sounds capture - Duration -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">Capture duration</label></strong>
+                            </div>
+                            <div class="input-group mb-1">
+                                <input type="number" id="soundsCaptureDurationNumber" class="form-control" min="0" value="{{ configuration['sounds_capture']['duration'] }}" onchange="updateSaveButton('sounds_capture', false)"/>
+                                <div class="input-group-text">seconds</div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr/>
+                    <!-- Sounds capture - Save -->
+                    <div class="form-button-center">
+                        <button type="submit" class="btn btn-primary" id="soundsCaptureSaveButton" onclick="updateSettings('sounds_capture')" disabled>Save</button>
+                    </div>
+                  </div>
+                </div>
+            </div>
+            <!-- Cooling system -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCoolingSystem" aria-expanded="false" aria-controls="collapseCoolingSystem">
+                    Cooling system
+                  </button>
+                </h2>
+                <div id="collapseCoolingSystem" class="accordion-collapse collapse">
+                  <div class="accordion-body">
+                    <!-- Cooling system - Enable -->
+                    <div class="form-group">
+                        <div class="d-flex w-100 align-items-center justify-content-between">
+                            <strong class="mb-1"><label for="brightness" class="form-label">Enable</label></strong>
+                        </div>
+                        <div class="form-check form-switch">
+                            {% if configuration['cooling_system']['enable'] %}
+                            <input class="form-check-input" type="checkbox" role="switch" id="coolingSystemEnable" data-bs-toggle="collapse" href="#cooling_system_settings" onchange="updateSaveButton('cooling_system', false)" checked />
+                            {% else  %}
+                            <input class="form-check-input" type="checkbox" role="switch" id="coolingSystemEnable" data-bs-toggle="collapse" href="#cooling_system_settings" onchange="updateSaveButton('cooling_system', false)"/>
+                            {% endif  %}
+                            <label class="form-check-label" for="coolingSystemEnable">Disabled/Enabled</label>
+                        </div>
+                    </div>
+                    {% if configuration['cooling_system']['enable'] %}
+                    <div class="collapse show p-2" id="cooling_system_settings">
+                    {% else %}
+                    <div class="collapse p-2" id="cooling_system_settings">
+                    {% endif %}
+                        <!-- Cooling system - CPU temperature vs fan speed -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">CPU temperature vs fan speed</label></strong>
+                            </div>
+                            {% for i, temperature, speed in zip([0,1,2,3], configuration['cooling_system']['cpu_temperature_levels'], configuration['cooling_system']['fan_speed_levels']) %}
+                                <div class="input-group mt-2">
+                                    <span class="input-group-text">CPU temperature {{ i+1 }}</span>
+                                    <input type="number" id="cpuTemp{{i}}Number" class="form-control" min="0" max="80" value="{{ configuration['cooling_system']['cpu_temperature_levels'][i] }}" onchange="updateSaveButton('cooling_system', false)"/>
+                                    <div class="input-group-text">&deg;C</div>
+                                    <div class="input-group-text" style="border-top: 0; border-bottom: 0; margin: 0 5 0 5; background-color: white; font-weight:bold">&rarr;</div>
+                                    <span class="input-group-text"
+                                        style="border-left: 1; border-right: 0;">
+                                        Fan speed {{ i+1 }}
+                                    </span>
+                                    <input type="number" id="fanSpeed{{i}}Number" class="form-control" min="0" max="100" value="{{ configuration['cooling_system']['fan_speed_levels'][i] }}" onchange="updateSaveButton('cooling_system', false)"/>
+                                    <div class="input-group-text">%</div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <!-- Cooling system - CPU temperature check interval -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">CPU temperature check interval</label></strong>
+                            </div>
+                            <div class="input-group mb-1">
+                                <input type="number" id="cpuTempCheckIntervalNumber" class="form-control" min="0" max="15" value="{{ configuration['cooling_system']['cpu_temperature_check_interval'] }}" onchange="updateSaveButton('cooling_system', false)"/>
+                                <div class="input-group-text">minutes</div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr/>
+                    <!-- Cooling system  - Save -->
+                    <div class="form-button-center">
+                        <button type="submit" class="btn btn-primary" id="coolingSystemSaveButton" onclick="updateSettings('cooling_system')" disabled>Save</button>
+                    </div>
+                  </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Configuration -->
+    <div class="col-3" style="background-color: #FFFFFF">
+      {{ display_configuration_global_settings(configuration, tzone) }}
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+
+    const siteIdText = document.getElementById('siteIdText');
+    const siteIdConfigurationText = document.getElementById('siteIdConfigurationText');
+    const siteSaveButton = document.getElementById('siteSaveButton');
+
+    const imagesCaptureEnable = document.getElementById('imagesCaptureEnable');
+    const imagesCaptureTimeStepNumber = document.getElementById('imagesCaptureTimeStepNumber');
+    const imagesCaptureSaveButton = document.getElementById('imagesCaptureSaveButton');
+
+    const soundsCaptureEnable = document.getElementById('soundsCaptureEnable');
+    const soundsCaptureDurationNumber = document.getElementById('soundsCaptureDurationNumber');
+    const soundsCaptureSaveButton = document.getElementById('soundsCaptureSaveButton');
+
+    const scheduleEnable = document.getElementById('scheduleEnable');
+    const scheduleOnDurationNumber = document.getElementById('scheduleOnDurationNumber');
+    const scheduleOffDurationNumber = document.getElementById('scheduleOffDurationNumber');
+    const scheduleStartupDateNumber = document.getElementById('scheduleStartupDateNumber');
+    const scheduleStartupTimeNumber = document.getElementById('scheduleStartupTimeNumber');
+    const scheduleShutdownDateNumber = document.getElementById('scheduleShutdownDateNumber');
+    const scheduleShutdownTimeNumber = document.getElementById('scheduleShutdownTimeNumber');
+    const scheduleStartupConfigurationText = document.getElementById('scheduleStartupConfigurationText');
+    const scheduleShutdownConfigurationText = document.getElementById('scheduleShutdownConfigurationText');
+    const scheduleSaveButton = document.getElementById('scheduleSaveButton');
+
+    const imagesCaptureTrapMode = document.getElementById('imagesCaptureTrapMode')
+    const imagesCaptureLepinocMode = document.getElementById('imagesCaptureLepinocMode')
+    const imagesCaptureDeportedMode = document.getElementById('imagesCaptureDeportedMode')
+    const imagesCaptureMothMode = document.getElementById('imagesCaptureMothMode')
+
+    const imagesCaptureModeConfigurationText = document.getElementById('imagesCaptureModeConfigurationText')
+
+    const coolingSystemSaveButton = document.getElementById('coolingSystemSaveButton');
+
+    const coolingSystemEnable = document.getElementById('coolingSystemEnable');
+
+    const fanSpeed0Number = document.getElementById('fanSpeed0Number');
+    const fanSpeed1Number = document.getElementById('fanSpeed1Number');
+    const fanSpeed2Number = document.getElementById('fanSpeed2Number');
+    const fanSpeed3Number = document.getElementById('fanSpeed3Number');
+
+    const cpuTempCheckIntervalNumber = document.getElementById('cpuTempCheckIntervalNumber');
+
+    const coolingSystemEnableConfigurationText = document.getElementById('coolingSystemEnableConfigurationText');
+    const coolingSystemCpuTemperatureLevelsConfigurationText = document.getElementById('coolingSystemCpuTemperatureLevelsConfigurationText');
+    const coolingSystemFanSpeedLevelsConfigurationText = document.getElementById('coolingSystemFanSpeedLevelsConfigurationText');
+    const coolingSystemCpuTemperatureCheckIntervalConfigurationText = document.getElementById('coolingSystemCpuTemperatureCheckIntervalConfigurationText');
+
+    function updateSaveButton(settingId, state) {
+
+        if (settingId == 'site') {
+            siteSaveButton.disabled = state
+        }
+        else if (settingId == 'images_capture') {
+            imagesCaptureSaveButton.disabled = state
+        }
+        else if (settingId == 'sounds_capture') {
+            soundsCaptureSaveButton.disabled = state
+        }
+        else if (settingId == 'schedule') {
+            scheduleSaveButton.disabled = state
+        }
+        else if (settingId == 'cooling_system') {
+            coolingSystemSaveButton.disabled = state
+        }
+
+    }
+
+    function updateSettings(settingId) {
+
+        updateSaveButton(settingId, true)
+
+        if (settingId == 'site') {
+            data = [settingId, {'id': siteIdText.value}]
+        } else if (settingId == 'images_capture') {
+            if (imagesCaptureLepinocMode.checked) {
+                updateSettings('schedule')
+            }
+            data = [settingId, {'enable': imagesCaptureEnable.checked, 'time_step': imagesCaptureTimeStepNumber.value}]
+        } else if (settingId == 'sounds_capture') {
+            data = [settingId, {'enable': soundsCaptureEnable.checked, 'duration': soundsCaptureDurationNumber.value}]
+        } else if (settingId == 'schedule') {
+
+            data = [settingId, {'enable': scheduleEnable.checked,
+                'on_duration': scheduleOnDurationNumber.value,
+                'off_duration': scheduleOffDurationNumber.value,
+                'startup_date': scheduleStartupDateNumber.value,
+                'startup_time': scheduleStartupTimeNumber.value,
+                'shutdown_date': scheduleShutdownDateNumber.value,
+                'shutdown_time': scheduleShutdownTimeNumber.value}]
+
+        } else if (settingId == 'cooling_system') {
+
+            cpu_temps = [cpuTemp0Number.value, cpuTemp1Number.value, cpuTemp2Number.value, cpuTemp3Number.value]
+
+            fan_speeds = [fanSpeed0Number.value, fanSpeed1Number.value, fanSpeed2Number.value, fanSpeed3Number.value]
+
+            cpu_temp_check_interval = cpuTempCheckIntervalNumber.value
+
+            data = [settingId, {'enable': coolingSystemEnable.checked, 'cpu_temps': cpu_temps, 'fan_speeds': fan_speeds, 'cpu_temp_check_interval': cpu_temp_check_interval}]
+
+        }
+
+        return fetch('/update_settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(data => {
+            //console.log('Settings updated:', data);
+            if (data.success) {
+                if (settingId == 'site') {
+                    siteIdConfigurationText.innerText = 'Id: ' + siteIdText.value
+                } else if (settingId == 'images_capture') {
+                        imagesCaptureEnableConfigurationText.innerText = 'Enable: ' + String(imagesCaptureEnable.checked).charAt(0).toUpperCase() + String(imagesCaptureEnable.checked).slice(1)
+                    if (imagesCaptureTrapMode.checked) {
+                        imagesCaptureModeConfigurationText.innerText = 'Mode: trap'
+                    } else if (imagesCaptureLepinocMode.checked) {
+                        imagesCaptureModeConfigurationText.innerText = 'Mode: lepinoc'
+                    } else if (imagesCaptureDeportedMode.checked) {
+                        imagesCaptureModeConfigurationText.innerText = 'Mode: deported'
+                    } else if (imagesCaptureMothMode.checked) {
+                        imagesCaptureModeConfigurationText.innerText = 'Mode: moth'
+                    }
+                    imagesCaptureTimeStepConfigurationText.innerText = 'Time step: ' + imagesCaptureTimeStepNumber.value + ' seconds'
+                } else if (settingId == 'sounds_capture') {
+                    soundsCaptureEnableConfigurationText.innerText = 'Enable: ' + String(soundsCaptureEnable.checked).charAt(0).toUpperCase() + String(soundsCaptureEnable.checked).slice(1)
+                    soundsCaptureDurationConfigurationText.innerText = 'Duration: ' + soundsCaptureDurationNumber.value + ' seconds'
+                } else if (settingId == 'schedule') {
+                    scheduleEnableConfigurationText.innerText = 'Enable: ' + String(scheduleEnable.checked).charAt(0).toUpperCase() + String(scheduleEnable.checked).slice(1)
+                    scheduleOnDurationConfigurationText.innerText = 'On duration: ' + scheduleOnDurationNumber.value + ' minutes'
+                    scheduleOffDurationConfigurationText.innerText = 'Off duration: ' + scheduleOffDurationNumber.value + ' minutes'
+                    scheduleStartupConfigurationText.innerText = 'Next startup: ' + scheduleStartupDateNumber.value + ' ' + scheduleStartupTimeNumber.value + ' ' + data.tzone
+                    scheduleShutdownConfigurationText.innerText = 'Next shutdown: ' + scheduleShutdownDateNumber.value + ' ' + scheduleShutdownTimeNumber.value + ' ' + data.tzone
+                } else if (settingId == 'cooling_system') {
+                    coolingSystemEnableConfigurationText.innerText = 'Enable: ' + String(coolingSystemEnable.checked).charAt(0).toUpperCase() + String(coolingSystemEnable.checked).slice(1)
+                    coolingSystemCpuTemperatureCheckIntervalConfigurationText.innerText = 'Cpu temperature check interval: ' + cpu_temp_check_interval + ' minutes'
+                    coolingSystemCpuTemperatureLevelsConfigurationText.innerText = 'Cpu temperature levels: [' + cpu_temps + '] °C'
+                    coolingSystemFanSpeedLevelsConfigurationText.innerText = 'Fan speed levels: [' + fan_speeds + '] %'
+                }
+
+            } else {
+
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function getLepinocEphemeris() {
+
+        return fetch('/get_lepinoc_ephemeris', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                scheduleStartupDateNumber.value = data.next_startup[0]
+                scheduleStartupTimeNumber.value = data.next_startup[1]
+
+                scheduleShutdownDateNumber.value = data.next_shutdown[0]
+                scheduleShutdownTimeNumber.value = data.next_shutdown[1]
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function applyImagesCaptureMode(value) {
+
+        imagesCaptureTrapMode.checked = false
+        imagesCaptureLepinocMode.checked = false
+        imagesCaptureDeportedMode.checked = false
+        imagesCaptureMothMode.checked = false
+        imagesCaptureTimeStepNumber.disabled = false
+        scheduleOnDurationNumber.disabled = false
+        scheduleOffDurationNumber.disabled = false
+
+        imagesCaptureTimeStepNumber.value = imagesCaptureTimeStepConfigurationText.innerText.match(/\d+/g)
+        scheduleOnDurationNumber.value = scheduleOnDurationConfigurationText.innerText.match(/\d+/g)
+        scheduleOffDurationNumber.value = scheduleOffDurationConfigurationText.innerText.match(/\d+/g)
+
+        nextStartup = scheduleStartupConfigurationText.innerText.match(/\d+/g)
+        nextShutdown = scheduleShutdownConfigurationText.innerText.match(/\d+/g)
+
+        scheduleStartupDateNumber.value = nextStartup[0] + '-' + nextStartup[1] + '-' + nextStartup[2]
+        scheduleStartupTimeNumber.value = nextStartup[3] + ':' + nextStartup[4]
+
+        scheduleShutdownDateNumber.value = nextShutdown[0] + '-' + nextShutdown[1] + '-' + nextShutdown[2]
+        scheduleShutdownTimeNumber.value = nextShutdown[3] + ':' + nextShutdown[4]
+
+        if (value == 'trap') {
+            imagesCaptureTrapMode.checked = true
+        } else if (value == 'lepinoc') {
+            imagesCaptureLepinocMode.checked = true
+            imagesCaptureTimeStepNumber.disabled = true
+            imagesCaptureTimeStepNumber.value = 90
+            scheduleOnDurationNumber.value = 1
+            scheduleOnDurationNumber.disabled = true
+            scheduleOffDurationNumber.value = 14
+            scheduleOffDurationNumber.disabled = true
+            getLepinocEphemeris()
+        } else if (value == 'deported') {
+            imagesCaptureDeportedMode.checked = true
+        } else if (value == 'moth') {
+            imagesCaptureMothMode.checked = true
+        }
+
+        return fetch('/set_images_capture_mode', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(value),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Settings updated:', data);
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function setStartingDay(value) {
+
+        startingDayToday.checked = false
+        startingDayTomorrow.checked = false
+
+        if (value == 'today') {
+            startingDayToday.checked = true
+        } else if (value == 'tommorrow') {
+            startingDayTomorrow.checked = true
+        }
+
+        updateSaveButton('schedule', false)
+
+    }
+
+    function getCpuTemperature() {
+
+        const cpuTempNavBar = document.getElementById('cpuTempNavBar')
+
+        return fetch('/get_cpu_temperature', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.temperature >= 80) {
+                    cpuTempNavBar.style.color = 'red'
+                } else if (data.temperature >= 75) {
+                    cpuTempNavBar.style.color = 'orange'
+                } else {
+                    cpuTempNavBar.style.color = 'black'
+                }
+                cpuTempNavBar.innerText = data.temperature + ' °C'
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    var intervalId = setInterval(function() {
+        getCpuTemperature()
+    }, 10000);
+
+</script>
+
+{% endblock %}

@@ -81,6 +81,11 @@ def main():
         previous_on_time = time()
         previous_off_time = time()
 
+        now_str = datetime.now().strftime('%Y%m%d%H%M%S')
+        file_path = os.path.join(SOUNDS_CAPTURE_FOLDER, 'configuration_' + now_str + '.json')
+        configuration.copy_to(file_path)
+        logger.info(f'{this_script}: configuration file saved to {file_path}')
+
         while True:
 
             try:
@@ -119,12 +124,12 @@ def main():
 
                         if isSignalToStandByReceived():
                             standby_signal_received = True
-                            logger.info(f'{this_script}: standby signal received. Sounds recording stopped')
+                            logger.info(f'{this_script}: standby signal received. Sounds capture paused')
                             break
 
                         if isSignalToShutdownReceived():
                             shutdown_signal_received = True
-                            logger.info(f'{this_script}: shutdown signal received. Sounds recording stopped')
+                            logger.info(f'{this_script}: shutdown signal received. Sounds capture stopped')
                             break
 
                     microphone.save_recording(file_path, data)
@@ -139,6 +144,10 @@ def main():
                     if not isSignalToStandByReceived():
                         logger.info(f'{this_script}: resume signal received')
                         configuration.read()
+                        now_str = datetime.now().strftime('%Y%m%d%H%M%S')
+                        file_path = os.path.join(SOUNDS_CAPTURE_FOLDER, 'configuration_' + now_str + '.json')
+                        configuration.copy_to(file_path)
+                        logger.info(f'{this_script}: configuration file saved to {file_path}')
 
                 if isSignalToShutdownReceived() or shutdown_signal_received:
                     logger.info(f'{this_script}: shutdown signal received')

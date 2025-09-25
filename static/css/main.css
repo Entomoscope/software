@@ -1,0 +1,47 @@
+/* haut | droit | bas | gauche */
+p.config_level_1 {
+    margin: 5px 0px 0px 0px;
+    font-weight: bold;
+}
+
+p.config_level_2 {
+    margin: 0px 0px 0px 10px;
+}
+
+p.config_level_3 {
+    margin: 0px 0px 0px 20px;
+}
+
+.form-button-center {
+    text-align: center;
+}
+
+li.data_levelup {
+    list-style-image: url("/static/images/folder.png");
+}
+
+li.data_folder {
+    list-style-image: url("/static/images/folder.png");
+}
+
+li.data_file {
+    list-style-image: url("/static/images/file.png");
+}
+
+a.data_folder {
+    text-decoration: none;
+}
+
+a.data_file {
+    text-decoration: none;
+}
+
+/*
+li.sd_card {
+    list-style-image: url("/static/images/sd_card.png");
+}
+
+li.external_disk {
+    list-style-image: url("/static/images/ssd.png");
+}
+*/

@@ -1,0 +1,525 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Entomoscope - Home</title>
+{% endblock %}
+
+{% block content %}
+<!-- Navigation bar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-primary">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">Entomoscope</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="/">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('data') }}">Data</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('global_settings') }}">Global Settings</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('images_capture_settings') }}">Images Capture Settings</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('sounds_capture_settings') }}">Sounds Capture Settings</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('logs') }}">Logs</a>
+        </li>
+      </ul>
+      <span class="badge bg-info text-dark" id="cpuTempNavBar">
+        {{ '%.1f' %  rpi.get_temperature() }} &deg;C
+      </span>
+    </div>
+  </div>
+</nav>
+<!-- Page content -->
+<div class="container-fluid">
+    <div class="row align-items-start">
+        <!-- Capture States -->
+        <div class="col-4">
+            <div class="card mt-3">
+              <div class="card-body">
+                <h5 class="card-title">Capture States</h5>
+                {% if images_capture_state == 'running' %}
+                <p class="card-text" id="imagesCaptureStateText">Images capture running (click on Pause to pause or Stop to stop)</p>
+                <div class="form-button-center">
+                    <button type="submit" class="btn btn-primary" id="suspendImagesCaptureButton" onclick="manageImagesCapture('suspend')">Pause</button>
+                    <button type="submit" class="btn btn-primary" id="resumeImagesCaptureButton" onclick="manageImagesCapture('resume')" disabled>Resume</button>
+                    <button type="submit" class="btn btn-primary" id="stopImagesCaptureButton" onclick="manageImagesCapture('stop')">Stop</button>
+                </div>
+                {% elif images_capture_state == 'paused' %}
+                <p class="card-text" id="imagesCaptureStateText">Images capture paused (click on Resume to resume or Stop to stop)</p>
+                <div class="form-button-center">
+                    <button type="submit" class="btn btn-primary" id="suspendImagesCaptureButton" onclick="manageImagesCapture('suspend')" disabled>Pause</button>
+                    <button type="submit" class="btn btn-primary" id="resumeImagesCaptureButton" onclick="manageImagesCapture('resume')">Resume</button>
+                    <button type="submit" class="btn btn-primary" id="stopImagesCaptureButton" onclick="manageImagesCapture('stop')">Stop</button>
+                </div>
+                {% else %}
+                <p class="card-text" id="imagesCaptureStateText">Images capture stopped (reboot the system to restart)</p>
+                <div class="form-button-center">
+                    <button type="submit" class="btn btn-primary" id="suspendImagesCaptureButton" onclick="manageImagesCapture('suspend')" disabled>Pause</button>
+                    <button type="submit" class="btn btn-primary" id="resumeImagesCaptureButton" onclick="manageImagesCapture('resume')" disabled>Resume</button>
+                    <button type="submit" class="btn btn-primary" id="stopImagesCaptureButton" onclick="manageImagesCapture('stop')" disabled>Stop</button>
+                </div>
+                {% endif %}
+                <hr>
+                {% if sounds_capture_state == 'running' %}
+                <p class="card-text" id="soundsCaptureStateText">Sounds capture running (click on Pause to pause or Stop to stop)</p>
+                <div class="form-button-center">
+                    <button type="submit" class="btn btn-primary" id="suspendSoundsCaptureButton" onclick="manageSoundsCapture('suspend')">Pause</button>
+                    <button type="submit" class="btn btn-primary" id="resumeSoundsCaptureButton" onclick="manageSoundsCapture('resume')" disabled>Resume</button>
+                    <button type="submit" class="btn btn-primary" id="stopSoundsCaptureButton" onclick="manageSoundsCapture('stop')">Stop</button>
+                </div>
+                {% elif sounds_capture_state == 'paused' %}
+                <p class="card-text" id="soundsCaptureStateText">Sounds capture paused (click on Resume to resume or Stop to stop)</p>
+                <div class="form-button-center">
+                    <button type="submit" class="btn btn-primary" id="suspendSoundsCaptureButton" onclick="manageSoundsCapture('suspend')" disabled>Pause</button>
+                    <button type="submit" class="btn btn-primary" id="resumeSoundsCaptureButton" onclick="manageSoundsCapture('resume')">Resume</button>
+                    <button type="submit" class="btn btn-primary" id="stopSoundsCaptureButton" onclick="manageSoundsCapture('stop')">Stop</button>
+                </div>
+                {% else %}
+                <p class="card-text" id="soundsCaptureStateText">Sounds capture stopped (reboot the system to restart)</p>
+                <div class="form-button-center">
+                    <button type="submit" class="btn btn-primary" id="suspendSoundsCaptureButton" onclick="manageSoundsCapture('suspend')" disabled>Pause</button>
+                    <button type="submit" class="btn btn-primary" id="resumeSoundsCaptureButton" onclick="manageSoundsCapture('resume')" disabled>Resume</button>
+                    <button type="submit" class="btn btn-primary" id="stopSoundsCaptureButton" onclick="manageSoundsCapture('stop')" disabled>Stop</button>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+        </div>
+        <!-- Scheduler -->
+        <div class="col-4">
+            <div class="card mt-3">
+              <div class="card-body">
+                <h5 class="card-title">Scheduler</h5>
+                {% if configuration.schedule['enable'] %}
+                <ul>
+                    <li>Next startup: {{ configuration.schedule['next_startup'] }} {{ tzone }}</li>
+                    <li>Next shutdown: {{ configuration.schedule['next_shutdown'] }} {{ tzone }}</li>
+                </ul>
+                <ul>
+                    <li>On duration: {{ configuration.schedule['on_duration'] }} minutes</li>
+                    <li>Off duration: {{ configuration.schedule['off_duration'] }} minutes</li>
+                </ul>
+                {% else %}
+                <p class="card-text">Scheduler disabled</p>
+                {% endif %}
+              </div>
+            </div>
+        </div>
+        <!-- Storage -->
+        <div class="col-4">
+            <div class="card mt-3">
+              <div class="card-body">
+                <h5 class="card-title">Storage</h5>
+                    <ul>
+                    <li class="sd_card">{{ sd_card.name }}</li>
+                    <ul>
+                      <li>Total: {{ sd_card.total }}</li>
+                      <li>Used: {{ sd_card.used }} ({{ sd_card.used_percent }})</li>
+                      <li>Available: {{ sd_card.available }}</li>
+                    </ul>
+                    {% if external_disk.path %}
+                        <li class="external_disk">{{ external_disk.name }}</li>
+                        <ul>
+                          <li>Total: {{ external_disk.total }}</li>
+                          <li>Used: {{ external_disk.used }} ({{ external_disk.used_percent }})</li>
+                          <li>Available: {{ external_disk.available }}</li>
+                        </ul>
+                    {% else %}
+                    <li class="external_disk">{{ external_disk.name }} not found. Check the USB connection and reload this page.</li>
+                    {% endif %}
+                    </ul>
+              </div>
+            </div>
+        </div>
+        <!-- WiFi -->
+        <div class="col-4">
+            <div class="card mt-3">
+              <div class="card-body">
+                <h5 class="card-title">WiFi</h5>
+                <ul>
+                <li>SSID: {{ rpi.wifi_ssid }}</li>
+                <li>IP address: {{ rpi.ip_address }}</li>
+                <li>Hostname: {{ rpi.hostname }}</li>
+                {% if rpi.wifi_power_save %}
+                <li>Power save mode: yes</li>
+                {% else %}
+                <li>Power save mode: no</li>
+                {% endif %}
+                </ul>
+              </div>
+            </div>
+        </div>
+        <!-- Raspberry Pi -->
+        <div class="col-4">
+            <div class="card mt-3">
+              <div class="card-body">
+                <h5 class="card-title">Raspberry Pi</h5>
+                <ul>
+                <li>Model: {{ rpi.model }}</li>
+<!--
+                <li>Revision: {{ rpi.revision }}</li>
+                <li>Serial: {{ rpi.serial }}</li>
+-->
+                <li>OS: {{ rpi.os_version }} - {{ rpi.arch_version }}</li>
+                </ul>
+                <ul>
+                <li id="datetimeLocalText">{{ dateTime.date_time_info[0] }}</li>
+                <li id="datetimeTimeZoneText">{{ dateTime.date_time_info[1] }}</li>
+                </ul>
+              </div>
+            </div>
+        </div>
+        <!-- GNSS -->
+        <div class="col-4">
+            <div class="card mt-3">
+              <div class="card-body">
+                <h5 class="card-title">GNSS</h5>
+                <ul>
+                {% if gnss.available %}
+                <li id="gnssLastUpdate">Last update: {{ configuration.gnss['last_update'] }}</li>
+                <li id="gnssDate">Date: n/a</li>
+                <li id="gnssLatitude">Latitude: {{ configuration.gnss['latitude'] }}</li>
+                <li id="gnssLongitude">Longitude: {{ configuration.gnss['longitude'] }}</li>
+                <li id="gnssAltitude">Altitude: {{ configuration.gnss['altitude'] }} meters</li>
+<!--
+                <hr/>
+-->
+
+                <li class="d-none" id="gnssPositionIndication">Position indication: n/a</li>
+                <li id="gnssSatellitesUsed">Satellites used: {{ configuration.gnss['satellites_used'] }}</p>
+                <li class="d-none" id="gnssHorizontalPrecision">Horizontal Precision: n/a</li>
+                <ul>
+                <hr/>
+                <div class="form-button-center">
+                    <button type="submit" class="btn btn-primary" id="gnssUpdateButton" onclick="gnssUpdateData()">Update</button>
+                    <button type="submit" class="btn btn-primary" id="gnssSyncTimeButton" onclick="gnssSyncTime()" disabled>Sync Time</button>
+                    <button type="submit" class="btn btn-primary" id="gnssSavePositionButton" onclick="gnssSavePosition()" disabled>Save Position</button>
+                </div>
+                {% else %}
+                <p class="card-text">GNSS not found. Check the USB connection and reload this page.</p>
+                {% endif %}
+              </div>
+            </div>
+        </div>
+        <!-- Battery Level -->
+        <div class="col-4">
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Battery level</h5>
+                    <p class="card-text">{{ battery_level }} V</p>
+                </div>
+            </div>
+        </div>
+        <!-- Configuration File -->
+        <div class="col-4">
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Configuration file</h5>
+                    <form action = "/" method = "post" enctype="multipart/form-data">
+                        <input type="file" name="file" id="configFileInput" accept=".json"/>
+                        <input type="submit" value="Send to Entomoscope">
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- Ephemeris File -->
+        <div class="col-4">
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Ephemeris file</h5>
+                    <form action = "/" method = "post" enctype="multipart/form-data">
+                        <input type="file" name="file" id="ephemerisFileInput" accept=".csv"/>
+                        <input type="submit" value="Send to Entomoscope">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" id="modalDialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Stopping images and sounds captures...</h5>
+                </div>
+                <div class="modal-body">
+                    <p>Wait 5 seconds...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+
+    const suspendImagesCaptureButton = document.getElementById('suspendImagesCaptureButton');
+    const resumeImagesCaptureButton = document.getElementById('resumeImagesCaptureButton');
+    const stopImagesCaptureButton = document.getElementById('stopImagesCaptureButton');
+    const imagesCaptureStateText = document.getElementById('imagesCaptureStateText');
+
+    const suspendSoundsCaptureButton = document.getElementById('suspendSoundsCaptureButton');
+    const resumeSoundsCaptureButton = document.getElementById('resumeSoundsCaptureButton');
+    const stopSoundsCaptureButton = document.getElementById('stopSoundsCaptureButton');
+    const soundsCaptureStateText = document.getElementById('soundsCaptureStateText');
+
+    const gnssDate = document.getElementById('gnssDate');
+    const gnssLatitude = document.getElementById('gnssLatitude')
+    const gnssLongitude = document.getElementById('gnssLongitude')
+    const gnssPositionIndication = document.getElementById('gnssPositionIndication')
+    const gnssSatellitesUsed = document.getElementById('gnssSatellitesUsed')
+    const gnssHorizontalPrecision = document.getElementById('gnssHorizontalPrecision')
+    const gnssAltitude = document.getElementById('gnssAltitude')
+    const gnssLastUpdate = document.getElementById('gnssLastUpdate')
+
+    const gnssSyncTimeButton = document.getElementById('gnssSyncTimeButton')
+    const gnssSavePositionButton = document.getElementById('gnssSavePositionButton')
+
+    const datetimeLocalText = document.getElementById('datetimeLocalText')
+    const datetimeTimeZoneText = document.getElementById('datetimeTimeZoneText')
+
+    const configFileInput = document.getElementById('configFileInput')
+
+    const modalDialog = document.getElementById('modalDialog');
+
+    //document.addEventListener("DOMContentLoaded", function() {
+
+        //console.log('Laoded')
+        //configFileInput.setAttribute('lang', 'en'); // Set the language attribute to French
+        //configFileInput.setAttribute('title', 'Choose a file...'); // Set a French title attribute
+
+        //configFileInput.innerHTML = 'Choose a file...'
+
+    //})
+
+    function manageImagesCapture(action) {
+
+        var myModal = new bootstrap.Modal(modalDialog)
+
+        if (action == 'stop') {
+            myModal.show()
+        }
+
+        return fetch('/manage_images_capture', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(action),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Settings updated:', data);
+                if (action == 'suspend') {
+                    suspendImagesCaptureButton.disabled = true
+                    resumeImagesCaptureButton.disabled = false
+                    imagesCaptureStateText.innerText  = 'Images capture paused (click on Resume to resume or Stop to stop)'
+                } else if  (action == 'resume') {
+                    suspendImagesCaptureButton.disabled = false
+                    resumeImagesCaptureButton.disabled = true
+                    imagesCaptureStateText.innerText  = 'Images capture running (click on Pause to pause or Stop to stop)'
+                } else {
+                    suspendImagesCaptureButton.disabled = true
+                    resumeImagesCaptureButton.disabled = true
+                    stopImagesCaptureButton.disabled = true
+                    imagesCaptureStateText.innerText  = 'Images capture stopped (reboot the system to restart)'
+
+                    suspendSoundsCaptureButton.disabled = true
+                    resumeSoundsCaptureButton.disabled = true
+                    stopSoundsCaptureButton.disabled = true
+                    soundsCaptureStateText.innerText  = 'Images capture stopped (reboot the system to restart)'
+                }
+            }
+            if (action == 'stop') {
+                myModal.hide()
+            }
+
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+    }
+
+    function manageSoundsCapture(action) {
+
+        var myModal = new bootstrap.Modal(modalDialog)
+
+        if (action == 'stop') {
+            myModal.show()
+        }
+
+        return fetch('/manage_sounds_capture', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(action),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Settings updated:', data);
+                if (action == 'suspend') {
+                    suspendSoundsCaptureButton.disabled = true
+                    resumeSoundsCaptureButton.disabled = false
+                    soundsCaptureStateText.innerText  = 'Sounds capture paused (click on Resume to resume or Stop to stop)'
+                } else if  (action == 'resume') {
+                    suspendSoundsCaptureButton.disabled = false
+                    resumeSoundsCaptureButton.disabled = true
+                    soundsCaptureStateText.innerText  = 'Sounds capture running (click on Pause to pause or Stop to stop)'
+                } else {
+                    suspendSoundsCaptureButton.disabled = true
+                    resumeSoundsCaptureButton.disabled = true
+                    stopSoundsCaptureButton.disabled = true
+                    soundsCaptureStateText.innerText  = 'Sounds capture stopped (reboot the system to restart)'
+
+                    suspendImagesCaptureButton.disabled = true
+                    resumeImagesCaptureButton.disabled = true
+                    stopImagesCaptureButton.disabled = true
+                    imagesCaptureStateText.innerText  = 'Images capture stopped (reboot the system to restart)'
+                }
+            }
+            if (action == 'stop') {
+                myModal.hide()
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function gnssSavePosition() {
+
+        return fetch('/save_gnss_position', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log(data.data)
+                gnssSavePositionButton.disabled = true
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function gnssUpdateData() {
+
+        return fetch('/get_gnss_data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+
+                console.log(data)
+                gnssDate.innerText = 'Date: ' + (2000 + data.data.date[0]).toString() + '-' + data.data.date[1].toString().padStart(2, '0')  + '-' + data.data.date[2].toString().padStart(2, '0') + ' ' + data.data.time[0].toString().padStart(2, '0') + ':' + data.data.time[1].toString().padStart(2, '0') + ':' + data.data.time[2].toString().padStart(2, '0') + ' UTC'
+                gnssLatitude.innerText = 'Latitude: ' + data.data['latitude'].toFixed(6) + ' ' + data.data['ns']
+                gnssLongitude.innerText = 'Longitude: ' + data.data['longitude'].toFixed(6)  + ' ' + data.data['ew']
+                gnssPositionIndication.innerText = 'Position indication: ' + data.data['position_indication']
+                gnssSatellitesUsed.innerText = 'Satellites used: ' + data.data['satellites_used']
+                gnssHorizontalPrecision.innerText = 'Horizontal Precision: ' + data.data['hdop']
+                gnssAltitude.innerText = 'Altitude: ' + data.data['altitude'] + ' meters'
+                gnssLastUpdate.innerText = 'Last update: ' + data.data['last_update']
+
+                gnssSyncTimeButton.disabled = false
+
+                if (data.data['satellites_used'] > 3) {
+                    gnssSavePositionButton.disabled = false
+                }
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function gnssSyncTime() {
+
+        return fetch('/gnss_sync_time', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+
+                console.log(data)
+                datetimeLocalText.innerText = data.date_time_info[0]
+                datetimeTimeZoneText.innerText = data.date_time_info[1]
+                gnssSyncTimeButton.disabled = true
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function getCpuTemperature() {
+
+        const cpuTempNavBar = document.getElementById('cpuTempNavBar');
+
+        return fetch('/get_cpu_temperature', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.temperature >= 80) {
+                    cpuTempNavBar.style.color = 'red'
+                } else if (data.temperature >= 75) {
+                    cpuTempNavBar.style.color = 'orange'
+                } else {
+                    cpuTempNavBar.style.color = 'black'
+                }
+                cpuTempNavBar.innerText = data.temperature + ' °C'
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    var intervalId = setInterval(function() {
+        getCpuTemperature()
+    }, 10000);
+
+</script>
+{% endblock %}

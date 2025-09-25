@@ -1,0 +1,1508 @@
+{% from 'macros.html' import display_configuration_images_capture_settings %}
+
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Entomoscope - Images Capture Settings</title>
+{% endblock %}
+
+{% block content %}
+<!-- Navigation bar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-primary">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">Entomoscope</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link" href="/">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('data') }}">Data</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('global_settings') }}">Global Settings</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="{{ url_for('images_capture_settings') }}">Images Capture Settings</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('sounds_capture_settings') }}">Sounds Capture Settings</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('logs') }}">Logs</a>
+        </li>
+      </ul>
+        <span class="badge bg-info text-dark" id="cpuTempNavBar">
+            {{ '%.1f' %  rpi.get_temperature() }} &deg;C
+        </span>
+    </div>
+  </div>
+</nav>
+<!-- Page content -->
+<div class="container-fluid">
+  <div class="row align-items-start mt-3">
+    <div class="col-6 text-center">
+        {% if camera_available %}
+<!--
+        <div class="row align-items-start mt-3">
+            <div class="form-button-center">
+                <button type="submit" class="btn btn-primary" id="captureImageButton" onclick="captureImage()">Capture image</button>
+            </div>
+        </div>
+-->
+        <div class="row align-items-start mt-3">
+            <!-- Camera Image Preview -->
+            <img class="img-fluid mx-auto" id="camera_preview" style="max-width: {{configuration.server['preview_size']['max_width']}}px;width: 100%;height: auto;">
+        </div>
+        {% else %}
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Warning</h5>
+            <p class="card-text">Images capture script is running.<br/>Go to the home page and press the stop button to enable the camera here.</p>
+          </div>
+        </div>
+        {% endif  %}
+    </div>
+    <!-- Image Capture Settings -->
+    <div class="col-3">
+        <div class="accordion" id="accordionImageCaptureSettings">
+            <!-- AI Detection -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#aiDEtectionCollapse" aria-expanded="false" aria-controls="collapseFour">
+                    AI detection
+                    </button>
+                </h2>
+                <div id="aiDEtectionCollapse" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+                    <div class="accordion-body">
+                        <!-- AI Detection - Enable -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="aiDetectionEnable" class="form-label">Enable</label></strong>
+                            </div>
+                            <div class="form-check form-switch">
+                                {% if configuration['ai_detection']['enable'] %}
+                                <input class="form-check-input" type="checkbox" role="switch" id="aiDetectionEnable" data-bs-toggle="collapse" href="#ai_settings" onchange="setDetectionEnable(this.checked)" checked />
+                                {% else  %}
+                                <input class="form-check-input" type="checkbox" role="switch" id="aiDetectionEnable" data-bs-toggle="collapse" href="#ai_settings" onchange="setDetectionEnable(this.checked)"/>
+                                {% endif  %}
+                                <label class="form-check-label" for="aiDetectionEnable">Disabled/Enabled</label>
+                            </div>
+                        </div>
+                        {% if configuration['ai_detection']['enable'] %}
+                        <div class="collapse show p-2" id="ai_settings">
+                        {% else %}
+                        <div class="collapse p-2" id="ai_settings">
+                        {% endif %}
+                            <!-- AI Detection - Image detection scale (%) -->
+                            <div class="form-group">
+                                <div class="d-flex w-100 align-items-center justify-content-between">
+                                    <strong class="mb-1"><label for="brightness" class="form-label">Detection image scale</label></strong>
+                                </div>
+                                <div class="input-group mb-1">
+                                    <input type="number" id="aiDetectionImageScaleNumber" class="form-control" min="0" max="100" step="1" value="{{ configuration['ai_detection']['image_scale'] }}" onchange="setDetectionScale()"/>
+                                    <div class="input-group-text">%</div>
+                                </div>
+                                <label class="form-check-label" id="aiDetectionSizeLabel" for="aiDetectionImageSize">Detection image size: {{ configuration['ai_detection']['image_height'] }} x {{ configuration['ai_detection']['image_width'] }}</label>
+                            </div>
+                            <!-- AI Detection - Min. Confidence -->
+                            <div class="form-group">
+                                <div class="d-flex w-100 align-items-center justify-content-between">
+                                    <strong class="mb-1"><label for="brightness" class="form-label">Min. confidence</label></strong>
+                                </div>
+                                <input type="number" id="aiDetectionMinConfidenceNumber" class="form-control" min="0.0" max="1.0" step="0.05" value="{{ configuration['ai_detection']['min_confidence'] }}" onchange="setDetectionMinConfidence(this.value)"/>
+                            </div>
+                        </div>
+                        <hr/>
+                        <!-- AI Detection - Save -->
+                        <div class="form-button-center">
+                            <button type="submit" class="btn btn-primary" id="aiDetectionSaveButton" onclick="saveConfiguration('ai_detection')" disabled>Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% if camera_available %}
+            <!-- Camera - Image Position and Size-->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#imagePositionCollapse" aria-expanded="false" aria-controls="collapseFour">
+                    Camera - Image position and size
+                    </button>
+                </h2>
+                <div id="imagePositionCollapse" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+                    <div class="accordion-body">
+                        <!-- Camera - Image Position - Constraints -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">Constraints</label></strong>
+                            </div>
+                            <!-- Camera - Image Position - Constraints - Square -->
+                            <div class="form-check form-check-inline form-switch">
+                                {% if configuration['server']['image_constraints']['square'] %}
+                                <input class="form-check-input" type="checkbox" name="AfMode" id="imageConstraintSquare" data-bs-toggle="collapse" href="#image_square_settings" value="square" onclick="applyImageConstraint('keep_square', this.checked)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" name="AfMode" id="imageConstraintSquare" data-bs-toggle="collapse" href="#image_square_settings" value="square" onclick="applyImageConstraint('keep_square', this.checked)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="imageConstraintSquare">Keep square</label>
+                            </div>
+                            <!-- Camera - Image Position - Constraints - Centered -->
+                            <div class="form-check form-check-inline  form-switch">
+                                {% if configuration['server']['image_constraints']['centered'] %}
+                                <input class="form-check-input" type="checkbox" name="AfMode" id="imageConstraintCentered" data-bs-toggle="collapse" href="#image_centered_settings" value="centered" onclick="applyImageConstraint('keep_center', this.checked)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" name="AfMode" id="imageConstraintCentered" data-bs-toggle="collapse" href="#image_centered_settings" value="centered" onclick="applyImageConstraint('keep_center', this.checked)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="imageConstraintCentered">Keep centered</label>
+                            </div>
+                        </div>
+                        <hr/>
+                        <!-- Camera - Image Position - Image Width -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">Width</label></strong>
+                            </div>
+                            <div class="input-group mb-1">
+                                <input type="number" id="cropLimitsWidthNumber" class="form-control" min="0" max="{{ configuration['camera']['sensor']['width_max'] }}" value="{{ configuration['camera']['sensor']['crop_limits'][2] }}" onchange="updateCameraPosition('width')"/>
+                                <div class="input-group-text">pixels</div>
+                            </div>
+                        </div>
+                        {% if configuration['server']['image_constraints']['square'] %}
+                        <div class="collapse p-2" id="image_square_settings">
+                        {% else %}
+                        <div class="collapse show p-2" id="image_square_settings">
+                        {% endif %}
+                            <!-- Camera - Image Position - Image Height -->
+                            <div class="form-group">
+                                <div class="d-flex w-100 align-items-center justify-content-between">
+                                    <strong class="mb-1"><label for="brightness" class="form-label">Height</label></strong>
+                                </div>
+                                <div class="input-group mb-1">
+                                    <input type="number" id="cropLimitsHeightNumber" class="form-control" min="0" max="{{ configuration['camera']['sensor']['height_max'] }}" value="{{ configuration['camera']['sensor']['crop_limits'][3] }}" onchange="updateCameraPosition('height')"/>
+                                    <div class="input-group-text">pixels</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% if configuration['server']['image_constraints']['centered'] %}
+                        <div class="collapse p-2" id="image_centered_settings">
+                        {% else %}
+                        <div class="collapse show p-2" id="image_centered_settings">
+                        {% endif %}
+                            <!-- Camera - Image Position - X -->
+                            <div class="form-group">
+                                <div class="d-flex w-100 align-items-center justify-content-between">
+                                    <strong class="mb-1"><label for="brightness" class="form-label">Top left corner X</label></strong>
+                                </div>
+                                <div class="input-group mb-1">
+                                    <input type="number" id="cropLimitsXNumber" class="form-control" min="0" value="{{ configuration['camera']['sensor']['crop_limits'][0] }}" onchange="updateCameraPosition('x')"/>
+                                    <div class="input-group-text">pixels</div>
+                                </div>
+                            </div>
+                            <!-- Camera - Image Position - Y -->
+                            <div class="form-group">
+                                <div class="d-flex w-100 align-items-center justify-content-between">
+                                    <strong class="mb-1"><label for="brightness" class="form-label">Top left corner Y</label></strong>
+                                </div>
+                                <div class="input-group mb-1">
+                                    <input type="number" id="cropLimitsYNumber" class="form-control" min="0" value="{{ configuration['camera']['sensor']['crop_limits'][1] }}" onchange="updateCameraPosition('y')"/>
+                                    <div class="input-group-text">pixels</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% if configuration['server']['image_constraints']['centered'] %}
+                        <div class="collapse p-2" id="image_centered_settings">
+                        {% else %}
+                        <div class="collapse show p-2" id="image_centered_settings">
+                        {% endif %}
+                            <hr/>
+                            <!-- Camera - Image Position - Move -->
+                            <div class="form-group">
+                                <div class="d-flex w-100 align-items-center justify-content-between">
+                                    <strong class="mb-1"><label for="brightness" class="form-label">Move</label></strong>
+                                </div>
+                                <div class="input-group mb-1">
+                                    <input type="number" id="cropLimitsMoveNumber" class="form-control" min="0" value="100" onchange="updateSaveButton('crop_limits', false)"/>
+                                    <div class="input-group-text">pixels</div>
+                                </div>
+                                <!-- Camera - Image Position - Move - Up/Down/Left/Right-->
+                                <div class="form-button-center">
+                                    <div class="btn-group mt-2" role="group" aria-label="Standard Button Group">
+                                        <button type="button" class="btn btn-primary" onclick="moveImage('up')">Up</button>
+                                        <button type="button" class="btn btn-primary" onclick="moveImage('down')">Down</button>
+                                        <button type="button" class="btn btn-primary" onclick="moveImage('left')">Left</button>
+                                        <button type="button" class="btn btn-primary" onclick="moveImage('right')">Right</button>
+                                    </div>
+                                </div>
+                                <!-- Camera - Image Position - Move - Center-->
+                                <div class="form-button-center mt-2">
+                                    <button type="submit" class="btn btn-primary" id="cropLimitsCenterButton" onclick="centerCameraPosition()">Center</button>
+                                </div>
+                            </div>
+                        </div>
+                        <hr/>
+                        <!-- Camera - Image Position - Full Scale-->
+                        <div class="form-button-center mt-2">
+                            <button type="submit" class="btn btn-primary" id="cropLimitsFullScaleButton" onclick="fullScaleCameraPosition()">FullScale</button>
+                        </div>
+                        <hr/>
+                        <!-- Camera - Image Position - Save -->
+                        <div class="form-button-center">
+                            <button type="submit" class="btn btn-primary" id="cropLimitsSaveButton" onclick="saveConfiguration('image_position')" disabled>Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Camera - Autofocus -->
+            {% if configuration.camera['model'].lower() == 'v3' %}
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cameraAutofocusCollapse" aria-expanded="true" aria-controls="panelsStayOpen-collapseOne">
+                    Camera - Autofocus
+                  </button>
+                </h2>
+                <div id="cameraAutofocusCollapse" class="accordion-collapse collapse">
+                  <!-- Camera - Autofocus - Mode -->
+                  <div class="accordion-body">
+                    <div class="d-flex w-100 align-items-center justify-content-between">
+                    <strong class="mb-1">Mode</strong>
+                    </div>
+                    <!-- Camera - Autofocus - Mode - Manual -->
+                    <div class="form-check form-check-inline">
+                        {% if configuration['camera']['autofocus']['mode'] == 'Manual' %}
+                        <input class="form-check-input AfMode" type="checkbox" name="AfMode" id="AfMode0" value="manual" onclick="adjustCheckboxSetting('AfMode', '0')" checked />
+                        {% else %}
+                        <input class="form-check-input AfMode" type="checkbox" name="AfMode" id="AfMode0" value="manual" onclick="adjustCheckboxSetting('AfMode', '0')"/>
+                        {% endif %}
+                        <label class="form-check-label" for="AfMode0">Manual</label>
+                    </div>
+                    <!-- Camera - Autofocus - Mode - Auto -->
+<!--
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input AfMode" type="checkbox" name="AfMode" id="AfMode1" value="auto" onclick="adjustCheckboxSetting('AfMode', '1')">
+                        <label class="form-check-label" for="AfMode1">Auto</label>
+                    </div>
+-->
+                    <!-- Camera - Autofocus - Mode - Continuous -->
+                    <div class="form-check form-check-inline">
+                        {% if configuration['camera']['autofocus']['mode'] == 'Continuous' %}
+                        <input class="form-check-input AfMode" type="checkbox" name="AfMode" id="AfMode2" value="continuous" onclick="adjustCheckboxSetting('AfMode', '2')" checked />
+                        {% else %}
+                        <input class="form-check-input AfMode" type="checkbox" name="AfMode" id="AfMode2" value="continuous" onclick="adjustCheckboxSetting('AfMode', '2')"/>
+                        {% endif %}
+                        <label class="form-check-label" for="AfMode2">Continuous</label>
+                    </div>
+                    <!-- Camera - Autofocus - Lens Position -->
+                    <div class="d-flex w-100 align-items-center justify-content-between">
+                    <strong class="mb-1">Lens Position</strong>
+                    </div>
+                    <div class="form-check">
+                        {% if configuration['camera']['autofocus']['mode'] == 'Manual' %}
+                        <input type="range" class="form-range" min="0" max="32" step="0.1" id="manualFocusRange" value="{{ configuration.camera['autofocus']['lens_position'] }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
+                        {% else %}
+                        <input type="range" class="form-range" min="0" max="32" step="0.1" id="manualFocusRange" value="{{ configuration.camera['autofocus']['lens_position'] }}" onchange="adjustSliderSetting('LensPosition', this.value)" disabled />
+                        {% endif %}
+                    </div>
+                    <hr/>
+                    <!-- Camera - Autofocus - Save -->
+                    <div class="form-button-center">
+                        <button type="submit" class="btn btn-primary" id="autofocusSaveButton" onclick="saveConfiguration('autofocus')" disabled>Save</button>
+                    </div>
+                  </div>
+                </div>
+            </div>
+            {% endif %}
+            <!-- Camera - Auto Exposure/Gain -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#aeCollapse" aria-expanded="false" aria-controls="collapseFour">
+                    Camera - Auto exposure/gain
+                    </button>
+                </h2>
+                <div id="aeCollapse" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+                    <div class="accordion-body">
+                        <!-- Camera - Auto Exposure/Gain - Eabel/disable auto algorithm -->
+                        <div class="form-check form-switch">
+                            {% if configuration.camera['auto_exposure_gain']['enable'] %}
+                            <input class="form-check-input" type="checkbox" role="switch" id="aeAutoEnable" data-bs-toggle="collapse" href="#ae_auto" onchange="updateSaveButton('auto_exposure_gain', false);setAeAutoAlgorithm(this.checked)" checked />
+                            {% else  %}
+                            <input class="form-check-input" type="checkbox" role="switch" id="aeAutoEnable" data-bs-toggle="collapse" href="#ae_auto" onchange="updateSaveButton('auto_exposure_gain', false);setAeAutoAlgorithm(this.checked)"/>
+                            {% endif  %}
+                            <label class="form-check-label" for="aeAutoEnable">Disabled/Enabled auto algorithm</label>
+                        </div>
+                        {% if configuration.camera['auto_exposure_gain']['enable'] %}
+                        <div class="collapse p-2" id="ae_auto">
+                        {% else %}
+                        <div class="collapse show p-2" id="ae_auto">
+                        {% endif %}
+                            <!-- Camera - Auto Exposure/Gain - Exposure time -->
+                            <div class="form-group">
+                                <div class="d-flex w-100 align-items-center justify-content-between">
+                                    <strong class="mb-1"><label for="exposureTimeNumber" class="form-label" id="currentExposureTime">Exposure time</label></strong>
+                                </div>
+                                <div class="input-group mb-1">
+                                    <input type="number" id="exposureTimeNumber" class="form-control" min="0" value="{{ configuration['camera']['auto_exposure_gain']['exposure_time'] }}" onchange="setExposureTime(this.value)"/>
+                                    <div class="input-group-text">microseconds</div>
+                                </div>
+                            </div>
+                            <!-- Camera - Auto Exposure/Gain - Analogue gain -->
+                            <div class="form-group">
+                                <div class="d-flex w-100 align-items-center justify-content-between">
+                                    <strong class="mb-1"><label for="analogueGain" class="form-label" id="currentAnalogueGain">Analogue gain  ({{ configuration.camera['auto_exposure_gain']['analogue_gain'] }})</label></strong>
+                                </div>
+                                <input type="range" class="form-range" id="analogueGain" min="1" max="6" step="1" value="{{ configuration.camera['auto_exposure_gain']['analogue_gain'] }}" onchange="adjustSliderSetting('AnalogueGain', this.value)"/>
+                            </div>
+                        </div>
+                        <!-- Camera - Auto Exposure/Gain - Exposure value -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="exposureValue" class="form-label" id="currentExposure">Exposure value ({{ configuration.camera['auto_exposure_gain']['exposure_value'] }})</label></strong>
+                            </div>
+                            <input type="range" class="form-range" id="exposureValue" min="-8.0" max="8.0" step="0.1" value="{{ configuration.camera['auto_exposure_gain']['exposure_value'] }}" onchange="adjustSliderSetting('ExposureValue', this.value)"/>
+                        </div>
+                        <hr/>
+                        <!-- Camera - Auto Exposure/Gain - Save -->
+                        <div class="form-button-center">
+                            <button type="submit" class="btn btn-primary" id="autoExposureGainSaveButton" onclick="saveConfiguration('auto_exposure_gain')" disabled>Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Camera - Image Adjustments -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cameraImageAdjustmentCollapse" aria-expanded="false" aria-controls="collapseFour">
+                    Camera - Image Adjustments
+                    </button>
+                </h2>
+                <div id="cameraImageAdjustmentCollapse" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+                    <div class="accordion-body">
+                        <!-- Camera - Image Adjustments - Brightness -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label" id="currentBrightness">Brightness ({{ configuration.camera['image_adjustments']['brightness'] }}):</label></strong>
+                            </div>
+                            <input type="range" class="form-range" id="Brightness" min="-1.0" max="1.0" step="0.1" value="{{ configuration.camera['image_adjustments']['brightness'] }}" onchange="adjustSliderSetting(this.id, this.value)"/>
+                        </div>
+                        <!-- Camera - Image Adjustments - Contrast -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="contrast" class="form-label" id="currentContrast">Contrast ({{ configuration.camera['image_adjustments']['contrast'] }}):</label></strong>
+                            </div>
+                            <input type="range" class="form-range" id="Contrast" min="0.0" max="32.0" step="0.1" value="{{ configuration.camera['image_adjustments']['contrast'] }}" onchange="adjustSliderSetting(this.id, this.value)"/>
+                        </div>
+                        <!-- Camera - Image Adjustments - Saturation -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="saturation" class="form-label" id="currentSaturation">Saturation ({{ configuration.camera['image_adjustments']['saturation'] }}):</label></strong>
+                            </div>
+                            <input type="range" class="form-range" id="Saturation" min="0.0" max="32.0" step="0.1" value="{{ configuration.camera['image_adjustments']['saturation'] }}" onchange="adjustSliderSetting(this.id, this.value)"/>
+                        </div>
+                        <!-- Camera - Image Adjustments - Sharpness -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="sharpness" class="form-label" id="currentSharpness">Sharpness ({{ configuration.camera['image_adjustments']['sharpness'] }}):</label></strong>
+                            </div>
+                            <input type="range" class="form-range" id="Sharpness" min="0.0" max="16.0" step="0.1" value="{{ configuration.camera['image_adjustments']['sharpness'] }}" onchange="adjustSliderSetting(this.id, this.value)"/>
+                        </div>
+                        <hr/>
+                        <!-- Camera - Image Adjustments  - Save -->
+                        <div class="form-button-center">
+                            <button type="submit" class="btn btn-primary" id="imageAdjustmentsSaveButton" onclick="saveConfiguration('image_adjustments')" disabled>Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Auto White Balance -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cameraAutoWhiteBalanceCollapse" aria-expanded="false" aria-controls="collapseThree">
+                        Camera - Auto white balance
+                    </button>
+                </h2>
+                <div id="cameraAutoWhiteBalanceCollapse" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+                    <div class="accordion-body">
+                        <!-- Auto White Balance - Enable -->
+                        <div class="d-flex w-100 align-items-center justify-content-between">
+                            <strong class="mb-1">Enable</strong>
+                        </div>
+                        <div class="form-check form-switch">
+                            {% if configuration['camera']['auto_white_balance']['enable'] %}
+                            <input class="form-check-input" type="checkbox" role="switch" id="awbEnableSwitch" data-bs-toggle="collapse" href="#AwbEnable_setting" onchange="adjustSwitchSetting('AwbEnable', this.checked)" checked />
+                            {% else %}
+                            <input class="form-check-input" type="checkbox" role="switch" id="awbEnableSwitch" data-bs-toggle="collapse" href="#AwbEnable_setting" onchange="adjustSwitchSetting('AwbEnable', this.checked)"/>
+                            {% endif %}
+                            <label class="form-check-label" for="awbEnableSwitch">Disabled/Enabled</label>
+                        </div>
+                        <!-- Auto White Balance - Mode -->
+                        {% if configuration['camera']['auto_white_balance']['enable'] %}
+                        <div class="collapse show p-2" id="AwbEnable_setting">
+                        {% else %}
+                        <div class="collapse p-2" id="AwbEnable_setting">
+                        {% endif %}
+                            <div>
+                                <div class="form-check">
+                                    {% if configuration['camera']['auto_white_balance']['mode'] == 'Auto' %}
+                                    <input class="form-check-input" type="checkbox" name="AwbMode" id="awbMode0Check" onclick="adjustCheckboxSetting('AwbMode', '0')" checked />
+                                    {% else %}
+                                    <input class="form-check-input" type="checkbox" name="AwbMode" id="awbMode0Check" onclick="adjustCheckboxSetting('AwbMode', '0')"/>
+                                    {% endif %}
+                                    <label class="form-check-label" for="awbMode0Check">Auto</label>
+                                </div>
+                                <div class="form-check">
+                                    {% if configuration['camera']['auto_white_balance']['mode'] == 'Tungsten' %}
+                                    <input class="form-check-input" type="checkbox" name="AwbMode" id="awbMode1Check" onclick="adjustCheckboxSetting('AwbMode', '1')" checked />
+                                    {% else %}
+                                    <input class="form-check-input" type="checkbox" name="AwbMode" id="awbMode1Check" onclick="adjustCheckboxSetting('AwbMode', '1')"/>
+                                    {% endif %}
+                                    <label class="form-check-label" for="awbMode1Check">Tungsten</label>
+                                </div>
+                                <div class="form-check">
+                                    {% if configuration['camera']['auto_white_balance']['mode'] == 'Fluorescent' %}
+                                    <input class="form-check-input" type="checkbox" name="AwbMode" id="awbMode2Check" onclick="adjustCheckboxSetting('AwbMode', '2')" checked />
+                                    {% else %}
+                                    <input class="form-check-input" type="checkbox" name="AwbMode" id="awbMode2Check" onclick="adjustCheckboxSetting('AwbMode', '2')"/>
+                                    {% endif %}
+                                    <label class="form-check-label" for="awbMode2Check">Fluorescent</label>
+                                </div>
+                                <div class="form-check">
+                                    {% if configuration['camera']['auto_white_balance']['mode'] == 'Indoor' %}
+                                    <input class="form-check-input" type="checkbox" name="AwbMode" id="awbMode3Check" onclick="adjustCheckboxSetting('AwbMode', '3')" checked />
+                                    {% else %}
+                                    <input class="form-check-input" type="checkbox" name="AwbMode" id="awbMode3Check" onclick="adjustCheckboxSetting('AwbMode', '3')"/>
+                                    {% endif %}
+                                    <label class="form-check-label" for="awbMode3Check">Indoor</label>
+                                </div>
+                                <div class="form-check">
+                                    {% if configuration['camera']['auto_white_balance']['mode'] == 'Daylight' %}
+                                    <input class="form-check-input" type="checkbox" name="AwbMode" id="awbMode4Check" onclick="adjustCheckboxSetting('AwbMode', '4')" checked />
+                                    {% else %}
+                                    <input class="form-check-input" type="checkbox" name="AwbMode" id="awbMode4Check" onclick="adjustCheckboxSetting('AwbMode', '4')"/>
+                                    {% endif %}
+                                    <label class="form-check-label" for="awbMode4Check">Daylight</label>
+                                </div>
+                                <div class="form-check">
+                                    {% if configuration['camera']['auto_white_balance']['mode'] == 'Cloudy' %}
+                                    <input class="form-check-input" type="checkbox" name="AwbMode" id="awbMode5Check" onclick="adjustCheckboxSetting('AwbMode', '5')" checked />
+                                    {% else %}
+                                    <input class="form-check-input" type="checkbox" name="AwbMode" id="awbMode5Check" onclick="adjustCheckboxSetting('AwbMode', '5')"/>
+                                    {% endif %}
+                                    <label class="form-check-label" for="awbMode5Check">Cloudy</label>
+                                </div>
+<!--
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="AwbMode" id="awbMode6Check" onclick="adjustCheckboxSetting('AwbMode', '6')" disabled>
+                            <label class="form-check-label" for="awbMode6Check">Custom</label>
+                        </div>
+-->
+                            </div>
+                        </div>
+                        <hr/>
+                        <!-- Auto White Balance - Save -->
+                        <div class="form-button-center">
+                            <button type="submit" class="btn btn-primary" id="awbModeSaveButton" onclick="saveConfiguration('auto_white_balance')" disabled>Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% if leds_available %}
+            <!-- LEDs -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ledsCollapse" aria-expanded="false" aria-controls="collapseFour">
+                    LEDs
+                    </button>
+                </h2>
+                <div id="ledsCollapse" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+                    <div class="accordion-body">
+                        <!-- LEDs - Intensity Front -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label" id="ledsFrontLabel">LEDs front ({{ configuration['leds']['intensity_front'] }}%)</label></strong>
+                            </div>
+                            <input type="range" class="form-range" min="0" max="100" step="1" id="ledsFrontRange" onchange="adjustSliderSetting('intensity_front', this.value)" value={{ configuration['leds']['intensity_front'] }} />
+                        </div>
+                        <!-- LEDs - Intensity Rear/Deported/UV -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                {% if configuration['images_capture']['mode'] == 'trap' %}
+                                <strong class="mb-1"><label for="contrast" class="form-label" id="ledsRearDeportedUvLabel">LEDs rear ({{ configuration['leds']['intensity_rear_deported_uv'] }}%)</label></strong>
+                                {% elif configuration['images_capture']['mode'] == 'lepinoc' or configuration['images_capture']['mode'] == 'moth' %}
+                                <strong class="mb-1"><label for="contrast" class="form-label" id="ledsRearDeportedUvLabel">LEDs UV ({{ configuration['leds']['intensity_rear_deported_uv'] }}%)</label></strong>
+                                {% elif configuration['images_capture']['mode'] == 'deported' %}
+                                <strong class="mb-1"><label for="contrast" class="form-label" id="ledsRearDeportedUvLabel">LEDs deported ({{ configuration['leds']['intensity_rear_deported_uv'] }}%)</label></strong>
+                                {% endif %}
+                            </div>
+                            <input type="range" class="form-range" min="0" max="100" step="1" id="ledsRearDeportedUvRange" onchange="adjustSliderSetting('intensity_rear_deported_uv', this.value)" value={{ configuration['leds']['intensity_rear_deported_uv'] }} />
+                        </div>
+                        <!-- LEDs - Delay On -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">Delay after LEDS on</label></strong>
+                            </div>
+                            <div class="input-group mb-1">
+                                <input type="number" id="ledsDelayOnNumber" class="form-control" min="0" step="0.5" value="{{ configuration['leds']['delay_on'] }}" onchange="updateSaveButton('leds', false);setLedsDelay('on', this.value)"/>
+                                <div class="input-group-text">seconds</div>
+                            </div>
+                        </div>
+                        <!-- LEDs - Delay Off -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">Delay before LEDs off</label></strong>
+                            </div>
+                            <div class="input-group mb-1">
+                                <input type="number" id="ledsDelayOffNumber" class="form-control" min="0" step="0.5" value="{{ configuration['leds']['delay_off'] }}" onchange="updateSaveButton('leds', false);setLedsDelay('off', this.value)"/>
+                                <div class="input-group-text">seconds</div>
+                            </div>
+                        </div>
+                        <hr/>
+                        <!-- LEDs - Save -->
+                        <div class="form-button-center">
+                            <button type="submit" class="btn btn-primary" id="ledsSaveButton" onclick="saveConfiguration('leds')" disabled>Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            <!-- Files -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#filesCollapse" aria-expanded="false" aria-controls="collapseFour">
+                    Files
+                    </button>
+                </h2>
+                <div id="filesCollapse" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+                    <div class="accordion-body">
+                        <!-- Files - JPEG Quality -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">JPEG quality</label></strong>
+                            </div>
+                            <div class="input-group mb-1">
+                                <input type="number" id="jpegQualityNumber" class="form-control" min="0" max="100" step="1" value="{{ configuration['files']['jpeg_quality'] }}" onchange="updateSaveButton('files', false);setJpegQuality(this.value)"/>
+                                <div class="input-group-text">%</div>
+                            </div>
+                        </div>
+                        <hr/>
+                        <!-- Files - Save -->
+                        <div class="form-button-center">
+                            <button type="submit" class="btn btn-primary" id="filesSaveButton" onclick="saveConfiguration('files')" disabled>Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Configuration -->
+    <div class="col-3" style="background-color: #FFFFFF">
+      {{ display_configuration_images_capture_settings(configuration) }}
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+
+    // AI Detection
+    const aiDetectionImageScaleNumber = document.getElementById('aiDetectionImageScaleNumber');
+    const aiDetectionSizeLabel = document.getElementById('aiDetectionSizeLabel');
+    const aiDetectionMinConfidenceNumber = document.getElementById('aiDetectionMinConfidenceNumber');
+
+    const aiDetectionEnableConfigurationText = document.getElementById('aiDetectionEnableConfigurationText');
+    const aiDetectionImageScaleConfigurationText = document.getElementById('aiDetectionImageScaleConfigurationText');
+    const aiDetectionImageHeightConfigurationText = document.getElementById('aiDetectionImageHeightConfigurationText');
+    const aiDetectionImageWidthConfigurationText = document.getElementById('aiDetectionImageWidthConfigurationText');
+    const aiDetectionMinConfidenceConfigurationText = document.getElementById('aiDetectionMinConfidenceConfigurationText');
+
+    // Camera - Autofocus
+    const afMode0Check = document.getElementById('AfMode0');
+    //const afMode1Check = document.getElementById('AfMode1');
+    const afMode2Check = document.getElementById('AfMode2');
+    const manualFocusRange = document.getElementById('manualFocusRange');
+    const autofocusSaveButton = document.getElementById('autofocusSaveButton');
+
+    // Auto Exposure/Gain
+    const aeAutoEnable = document.getElementById('aeAutoEnable');
+    const exposureValue = document.getElementById('exposureValue');
+    const currentExposureTime = document.getElementById('currentExposureTime');
+    const currentAnalogueGain = document.getElementById('currentAnalogueGain');
+    const analogueGain = document.getElementById('analogueGain');
+    const autoExposureGainSaveButton = document.getElementById('autoExposureGainSaveButton');
+    const cameraAegExposureValueConfigurationText = document.getElementById('cameraAegExposureValueConfigurationText');
+    const cameraAegAnalogueGainConfigurationText = document.getElementById('cameraAegAnalogueGainConfigurationText');
+
+    // Camera - Auto White Balance
+    const awbEnableSwitch = document.getElementById('awbEnableSwitch');
+    const awbMode0Check = document.getElementById('awbMode0Check');
+    const awbMode1Check = document.getElementById('awbMode1Check');
+    const awbMode2Check = document.getElementById('awbMode2Check');
+    const awbMode3Check = document.getElementById('awbMode3Check');
+    const awbMode4Check = document.getElementById('awbMode4Check');
+    const awbMode5Check = document.getElementById('awbMode5Check');
+    //const awbMode6Check = document.getElementById('awbMode6Check');
+    const whiteBalanceEnableConfigurationText = document.getElementById('whiteBalanceEnableConfigurationText');
+    const whiteBalanceModeConfigurationText = document.getElementById('whiteBalanceModeConfigurationText');
+
+    // Camera - Image Adjustments
+    const currentBrightness = document.getElementById('currentBrightness');
+    const currentContrast = document.getElementById('currentContrast');
+    const currentSaturation = document.getElementById('currentSaturation');
+    const currentSharpness = document.getElementById('currentSharpness');
+
+    const imageAdjustmentsSaveButton = document.getElementById('imageAdjustmentsSaveButton');
+
+    // Camera - Image Position
+    const imageConstraintSquare = document.getElementById('imageConstraintSquare');
+    const imageConstraintCentered = document.getElementById('imageConstraintCentered');
+    const cropLimitsWidthNumber = document.getElementById('cropLimitsWidthNumber');
+    const cropLimitsHeightNumber = document.getElementById('cropLimitsHeightNumber');
+    const cropLimitsXNumber = document.getElementById('cropLimitsXNumber');
+    const cropLimitsYNumber = document.getElementById('cropLimitsYNumber');
+    const cropLimitsMoveNumber = document.getElementById('cropLimitsMoveNumber');
+    const cropLimitsSaveButton = document.getElementById('cropLimitsSaveButton');
+    const sensorCropLimitsWidthConfigurationText = document.getElementById('sensorCropLimitsWidthConfigurationText');
+    const sensorCropLimitsHeightConfigurationText = document.getElementById('sensorCropLimitsHeightConfigurationText');
+    const sensorCropLimitsXConfigurationText = document.getElementById('sensorCropLimitsXConfigurationText');
+    const sensorCropLimitsYConfigurationText = document.getElementById('sensorCropLimitsYConfigurationText');
+
+    // Sensor
+    const sensorWidthMaxConfigurationText = document.getElementById('sensorWidthMaxConfigurationText');
+    const sensorHeightMaxConfigurationText = document.getElementById('sensorHeightMaxConfigurationText');
+
+    // LEDs
+    const ledsFrontLabel = document.getElementById('ledsFrontLabel')
+    const ledsRearDeportedUvLabel = document.getElementById('ledsRearDeportedUvLabel')
+    const ledsFrontRange = document.getElementById('ledsFrontRange')
+    const ledsRearDeportedUvRange = document.getElementById('ledsRearDeportedUvRange')
+    const ledsFrontConfigurationText = document.getElementById('ledsFrontConfigurationText');
+    const ledsRearDeportedUvConfigurationText = document.getElementById('ledsRearDeportedUvConfigurationText');
+
+    const ledsDelayOnNumber = document.getElementById('ledsDelayOnNumber');
+    const ledsDelayOffNumber = document.getElementById('ledsDelayOffNumber');
+
+    const ledsDelayOnConfigurationText = document.getElementById('ledsDelayOnConfigurationText');
+    const ledsDelayOffConfigurationText = document.getElementById('ledsDelayOffConfigurationText');
+
+    const ledsSaveButton = document.getElementById('ledsSaveButton');
+
+    // Files
+    const filesSaveButton = document.getElementById('filesSaveButton');
+    const jpegQualityNumber = document.getElementById('jpegQualityNumber');
+    const jpegQualityConfigurationText = document.getElementById('jpegQualityConfigurationText');
+
+{% if camera_available %}
+    document.addEventListener('DOMContentLoaded', function () {
+
+        const camera_preview = document.getElementById('camera_preview');
+
+        camera_preview.src = "{{ url_for('video_feed') }}";
+    });
+{% endif %}
+
+    function updateSaveButton(settingId, state) {
+
+        if (settingId == 'crop_limits') {
+            cropLimitsSaveButton.disabled = state
+        } else if (settingId == 'files') {
+            filesSaveButton.disabled = state
+        } else if (settingId == 'ai_detection') {
+            aiDetectionSaveButton.disabled = state
+        } else if (settingId == 'leds') {
+            ledsSaveButton.disabled = state
+        } else if (settingId == 'image_position') {
+            cropLimitsSaveButton.disabled = state
+        } else if (settingId == 'auto_exposure_gain') {
+            autoExposureGainSaveButton.disabled = state
+        }
+
+    }
+
+    function updateCameraLiveSettings(settingId) {
+
+        if (settingId == 'sensor') {
+
+            var x = cropLimitsXNumber.value
+            var y = cropLimitsYNumber.value
+            var width = cropLimitsWidthNumber.value
+            var height = cropLimitsHeightNumber.value
+
+            data = ['ScalerCrop', [x, y, width, height]]
+        }
+
+        return fetch('/update_camera_live_settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+            } else {
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function adjustSwitchSetting(settingId, settingValue) {
+
+        if (settingId == 'AwbEnable') {
+            awbModeSaveButton.disabled = false
+        }
+
+        data = [settingId, settingValue]
+
+        return fetch('/update_camera_live_settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function adjustCheckboxSetting(settingId, selection) {
+
+        if (settingId == 'AfMode') {
+            if (selection == '0') {
+                afMode0Check.checked = true
+                //afMode1Check.checked = false
+                afMode2Check.checked = false
+                manualFocusRange.disabled = false
+                settingValue = 'Manual'
+            }
+            //else if (selection == '1') {
+                //afMode0Check.checked = false
+                //afMode1Check.checked = true
+                //afMode2Check.checked = false
+                //manualFocusRange.disabled = true
+                //settingValue = 'Auto'
+            //}
+            else if (selection == '2') {
+                afMode0Check.checked = false
+                //afMode1Check.checked = false
+                afMode2Check.checked = true
+                manualFocusRange.disabled = true
+                settingValue = 'Continuous'
+            }
+
+            autofocusSaveButton.disabled = false
+        }
+        else if (settingId == 'AwbMode') {
+
+            awbMode0Check.checked = false
+            awbMode1Check.checked = false
+            awbMode2Check.checked = false
+            awbMode3Check.checked = false
+            awbMode4Check.checked = false
+            awbMode5Check.checked = false
+            //awbMode6Check.checked = false
+
+            if (selection == '0') {
+                awbMode0Check.checked = true
+                settingValue = 'Auto'
+            }
+            else if (selection == '1') {
+                awbMode1Check.checked = true
+                settingValue = 'Tungsten'
+            }
+            else if (selection == '2') {
+                awbMode2Check.checked = true
+                settingValue = 'Fluorescent'
+            }
+            else if (selection == '3') {
+                awbMode3Check.checked = true
+                settingValue = 'Indoor'
+            }
+            else if (selection == '4') {
+                awbMode4Check.checked = true
+                settingValue = 'Daylight'
+            }
+            else if (selection == '5') {
+                awbMode5Check.checked = true
+                settingValue = 'Cloudy'
+            }
+            //else if (selection == '6') {
+                //awbMode6Check.checked = true
+                //settingValue = 'Auto'
+            //}
+
+            awbModeSaveButton.disabled = false
+        }
+
+        data = [settingId, settingValue]
+
+        return fetch('/update_camera_live_settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function adjustSliderSetting(settingId, selection) {
+
+
+        const settingValue = parseFloat(selection);
+
+        console.log(settingId)
+        console.log(selection)
+        console.log(settingValue)
+
+        if (settingId == 'LensPosition') {
+            autofocusSaveButton.disabled = false
+            url = '/update_camera_live_settings'
+        } else if (settingId == 'Brightness' || settingId == 'Contrast' || settingId == 'Saturation' || settingId == 'Sharpness') {
+            imageAdjustmentsSaveButton.disabled = false
+            url = '/update_camera_live_settings'
+        } else if (settingId == 'intensity_front' || settingId == 'intensity_rear_deported_uv') {
+            updateSaveButton('leds', false)
+            url = '/update_leds_live_settings'
+        } else if (settingId == 'ExposureValue' || settingId == 'AnalogueGain') {
+            updateSaveButton('auto_exposure_gain', false)
+            url = '/update_camera_live_settings'
+        }
+
+        data = [settingId, settingValue]
+
+        return fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Settings updated:', data);
+            if (data.success) {
+
+                if (settingId == 'Brightness') {
+                    currentBrightness.innerText = 'Brightness (' + settingValue + ')'
+                } else if (settingId == 'Contrast') {
+                    currentContrast.innerText = 'Contrast (' + settingValue + ')'
+                } else if (settingId == 'Saturation') {
+                    currentSaturation.innerText = 'Saturation (' + settingValue + ')'
+                } else if (settingId == 'Sharpness') {
+                    currentSharpness.innerText = 'Sharpness (' + settingValue + ')'
+                } else if (settingId == 'intensity_front') {
+                    ledsFrontLabel.innerText = 'LEDs front (' + settingValue + '%)'
+                } else if (settingId == 'intensity_rear_deported_uv') {
+                    if (ledsRearDeportedUvLabel.innerText.startsWith('LEDs rear')) {
+                        ledsRearDeportedUvLabel.innerText = 'LEDs rear (' + settingValue + ' %)'
+                    } else if (ledsRearDeportedUvLabel.innerText.startsWith('LEDs UV')) {
+                        ledsRearDeportedUvLabel.innerText = 'LEDs UV (' + settingValue + ' %)'
+                    } else if (ledsRearDeportedUvLabel.innerText.startsWith('LEDs deported')) {
+                        ledsRearDeportedUvLabel.innerText = 'LEDs deported (' + settingValue + ' %)'
+                    }
+                } else if (settingId == 'ExposureValue') {
+                    currentExposure.innerText = 'Exposure value (' + settingValue + '):'
+                } else if (settingId == 'AnalogueGain') {
+                    currentAnalogueGain.innerText = 'Analogue gain (' + settingValue + '):'
+                }
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function saveConfiguration(settingId) {
+
+        if (settingId == 'autofocus') {
+            autofocusSaveButton.disabled = true
+        }
+        else if (settingId == 'auto_white_balance') {
+            awbModeSaveButton.disabled = true
+        } else if (settingId == 'image_adjustments') {
+            imageAdjustmentsSaveButton.disabled = true
+        } else if (settingId == 'leds') {
+            updateSaveButton('leds', true)
+        } else if (settingId == 'files') {
+            updateSaveButton('files', true)
+        } else if (settingId == 'image_position') {
+            saveConfiguration('ai_detection')
+            updateSaveButton('image_position', true)
+        } else if (settingId == 'ai_detection') {
+            updateSaveButton('ai_detection', true)
+        } else if (settingId == 'auto_exposure_gain') {
+            updateSaveButton('auto_exposure_gain', true)
+        }
+
+        return fetch('/save_configuration', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(settingId),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Settings updated:', data);
+            if (data.success) {
+                if (settingId == 'autofocus') {
+                    if (afMode0Check.checked) {
+                    cameraAutofocusModeConfigurationText.innerText = 'Mode: Manual'
+                    } else if (afMode2Check.checked) {
+                        cameraAutofocusModeConfigurationText.innerText = 'Mode: Continuous'
+                    }
+                    cameraAutofocusLensPositionConfigurationText.innerText = 'Lens position: ' + manualFocusRange.value
+                } else if (settingId == 'auto_exposure_gain') {
+                    cameraAegExposureValueConfigurationText.innerText = 'Exposure value: ' + exposureValue.value
+                    cameraAegAnalogueGainConfigurationText.innerText = 'Analogue gain: ' + analogueGain.value
+                    if (aeAutoEnable.checked) {
+                        cameraAegModeConfigurationText.innerText = 'Mode: Auto'
+                    } else {
+                        cameraAegModeConfigurationText.innerText = 'Mode: Manual'
+                    }
+
+                    cameraAegExposureTimeConfigurationText.innerText = 'Exposure time: ' + exposureTimeNumber.value + ' microseconds'
+
+
+                } else if (settingId == 'auto_white_balance') {
+                    whiteBalanceEnableConfigurationText.innerText = 'Enable: ' + String(awbEnableSwitch.checked).charAt(0).toUpperCase() + String(awbEnableSwitch.checked).slice(1)
+                    if (awbMode0Check.checked) {
+                        whiteBalanceModeConfigurationText.innerText = 'Mode: Auto'
+                    } else if (awbMode1Check.checked) {
+                        whiteBalanceModeConfigurationText.innerText = 'Mode: Tungsten'
+                    } else if (awbMode2Check.checked) {
+                        whiteBalanceModeConfigurationText.innerText = 'Mode: Fluorescent'
+                    } else if (awbMode3Check.checked) {
+                        whiteBalanceModeConfigurationText.innerText = 'Mode: Indoor'
+                    } else if (awbMode4Check.checked) {
+                        whiteBalanceModeConfigurationText.innerText = 'Mode: Daylight'
+                    } else if (awbMode5Check.checked) {
+                        whiteBalanceModeConfigurationText.innerText = 'Mode: Cloudy'
+                    }
+                } else if (settingId == 'leds') {
+                    ledsFrontConfigurationText.innerText = 'Intensity front: ' + ledsFrontRange.value + ' %'
+                    if (ledsRearDeportedUvConfigurationText.innerText.startsWith('Intensity rear')) {
+                        ledsRearDeportedUvConfigurationText.innerText = 'Intensity rear: ' + ledsRearDeportedUvRange.value + ' %'
+                    } else if (ledsRearDeportedUvConfigurationText.innerText.startsWith('Intensity UV')) {
+                        ledsRearDeportedUvConfigurationText.innerText = 'Intensity UV: ' + ledsRearDeportedUvRange.value + ' %'
+                    } else if (ledsRearDeportedUvConfigurationText.innerText.startsWith('Intensity deported')) {
+                        ledsRearDeportedUvConfigurationText.innerText = 'Intensity deported: ' + ledsRearDeportedUvRange.value + ' %'
+                    }
+                    ledsDelayOnConfigurationText.innerText = 'Delay on: ' + ledsDelayOnNumber.value + ' seconds'
+                    ledsDelayOffConfigurationText.innerText = 'Delay off: ' + ledsDelayOffNumber.value + ' seconds'
+                } else if (settingId == 'files') {
+                    jpegQualityConfigurationText.innerText = 'JPEG quality: ' + jpegQualityNumber.value + ' %'
+                } else if (settingId == 'image_position') {
+                    sensorCropLimitsWidthConfigurationText.innerText = 'Width: ' + cropLimitsWidthNumber.value + ' pixels'
+                    sensorCropLimitsHeightConfigurationText.innerText = 'Height: ' + cropLimitsHeightNumber.value + ' pixels'
+                    sensorCropLimitsXConfigurationText.innerText = 'Top left corner X: ' + cropLimitsXNumber.value + ' pixels'
+                    sensorCropLimitsYConfigurationText.innerText = 'Top left corner Y: ' + cropLimitsYNumber.value + ' pixels'
+                } else if (settingId == 'ai_detection') {
+
+
+                    aiDetectionEnableConfigurationText.innerText = 'Enable: ' + String(aiDetectionEnable.checked).charAt(0).toUpperCase() + String(aiDetectionEnable.checked).slice(1)
+
+                    aiDetectionImageScaleConfigurationText.innerText = 'Image scale: ' + aiDetectionImageScaleNumber.value + ' %'
+
+                    s = aiDetectionSizeLabel.innerText
+                    wh = s.match(/\d+/g)
+
+                    aiDetectionImageWidthConfigurationText.innerText = 'Image width: ' + wh[0] + ' pixels'
+                    aiDetectionImageHeightConfigurationText.innerText = 'Image height: ' + wh[1] + ' pixels'
+
+                    aiDetectionMinConfidenceConfigurationText.innerText = 'Min. confidence: ' + aiDetectionMinConfidenceNumber.value
+
+                }
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+    }
+
+    function applyImageConstraint(constraintId, constraintValue) {
+
+        if (constraintId == 'keep_square') {
+            cropLimitsHeightNumber.value = cropLimitsWidthNumber.value
+            updateCameraPosition('width')
+        } else if (constraintId == 'keep_center') {
+            width = parseInt(cropLimitsWidthNumber.value)
+            height = parseInt(cropLimitsHeightNumber.value)
+
+            widthMax = parseInt(sensorWidthMaxConfigurationText.innerText)
+            heightMax = parseInt(sensorHeightMaxConfigurationText.innerText)
+
+            cropLimitsXNumber.value = Math.floor((widthMax - width) / 2)
+            cropLimitsYNumber.value = Math.floor((heightMax - height) / 2)
+        }
+
+        updateSaveButton('crop_limits', false)
+
+        data = [constraintId, constraintValue]
+
+        return fetch('/set_server_settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(data => {
+            //console.log('Settings updated:', data);
+            if (data.success) {
+
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+    }
+
+    function updateCameraPosition(positionId) {
+
+        square_constraint = imageConstraintSquare.checked
+        center_constraint = imageConstraintCentered.checked
+
+        var x = parseInt(cropLimitsXNumber.value)
+        var y = parseInt(cropLimitsYNumber.value)
+        var width = parseInt(cropLimitsWidthNumber.value)
+        var height = parseInt(cropLimitsHeightNumber.value)
+
+        var cropLimits = [x, y, width, height]
+
+        widthMax = parseInt(sensorWidthMaxConfigurationText.innerText)
+        heightMax = parseInt(sensorHeightMaxConfigurationText.innerText)
+
+        //console.log([widthMax, heightMax, width, height])
+
+        if (positionId == 'width') {
+            if (square_constraint) {
+                cropLimitsHeightNumber.value = cropLimitsWidthNumber.value
+                height = cropLimitsHeightNumber.value
+            }
+            if (center_constraint) {
+                x = (widthMax-width)/2
+                y = (heightMax-height)/2
+            }
+        } else if (positionId == 'height') {
+
+        } else if (positionId == 'x') {
+
+        } else if (positionId == 'y') {
+
+        }
+
+        s = aiDetectionSizeLabel.innerText
+        wh = s.match(/\d+/g)
+
+        if (width > widthMax || width < 150) {
+            console.log(['W', width, widthMax, 150])
+            updateSaveButton('crop_limits', true)
+            return
+        }
+        if (height > heightMax || heightMax < 150) {
+            console.log(['H', height, heightMax, 150])
+            updateSaveButton('crop_limits', true)
+            return
+        }
+        if (x > (widthMax-width)/2 || x < 0) {
+            console.log(['X', x, (widthMax-width)/2, 0])
+            updateSaveButton('crop_limits', true)
+            return
+        }
+        if (y > (heightMax-height)/2 || y < 0) {
+            console.log(['Y', y, (heightMax-height)/2, 0])
+            updateSaveButton('crop_limits', true)
+            return
+        }
+
+        if (center_constraint) {
+            cropLimitsXNumber.value = Math.floor((widthMax - width)/2)
+            cropLimitsYNumber.value = Math.floor((heightMax - height)/2)
+        }
+
+        setDetectionScale()
+
+        updateCameraLiveSettings('sensor')
+
+        updateSaveButton('crop_limits', false)
+
+    }
+
+    function fullScaleCameraPosition() {
+
+        if (imageConstraintSquare.checked) {
+            imageConstraintSquare.click()
+        }
+        if (imageConstraintCentered.checked) {
+            imageConstraintCentered.click()
+        }
+
+        cropLimitsXNumber.value = 0
+        cropLimitsYNumber.value = 0
+
+        cropLimitsWidthNumber.value = parseInt(sensorWidthMaxConfigurationText.innerText)
+        cropLimitsHeightNumber.value = parseInt(sensorHeightMaxConfigurationText.innerText)
+
+        setDetectionScale()
+
+        updateCameraLiveSettings('sensor')
+
+        updateSaveButton('crop_limits', false)
+
+    }
+
+    function centerCameraPosition() {
+
+        width = parseInt(cropLimitsWidthNumber.value)
+        height = parseInt(cropLimitsHeightNumber.value)
+
+        widthMax = parseInt(sensorWidthMaxConfigurationText.innerText)
+        heightMax = parseInt(sensorHeightMaxConfigurationText.innerText)
+
+        cropLimitsXNumber.value = Math.floor((widthMax - width) / 2)
+        cropLimitsYNumber.value = Math.floor((heightMax - height) / 2)
+
+        updateCameraLiveSettings('sensor')
+
+        updateSaveButton('crop_limits', false)
+
+    }
+
+    function moveImage(direction) {
+
+        incr = parseInt(cropLimitsMoveNumber.value)
+
+        var x = parseInt(cropLimitsXNumber.value)
+        var y = parseInt(cropLimitsYNumber.value)
+        var width = parseInt(cropLimitsWidthNumber.value)
+        var height = parseInt(cropLimitsHeightNumber.value)
+
+        widthMax = parseInt(sensorWidthMaxConfigurationText.innerText)
+        heightMax = parseInt(sensorHeightMaxConfigurationText.innerText)
+
+        if (direction == 'up') {
+            if ((y - incr) < 0) {
+                incr = y
+            }
+        } else if (direction == 'down') {
+            if ((y + height + incr) > heightMax) {
+                incr = heightMax - ( height + y)
+            }
+        } else if (direction == 'left') {
+            if ((x - incr) < 0) {
+                incr = x
+            }
+        } else if (direction == 'right') {
+            if ((x + width + incr) > widthMax) {
+                incr = widthMax - ( width + x)
+            }
+        }
+
+        data = [direction, incr]
+
+        updateSaveButton('crop_limits', false)
+
+        return fetch('/move_image', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Settings updated:', data);
+            if (data.success) {
+                cropLimitsXNumber.value = data.crop_limits[0]
+                cropLimitsYNumber.value = data.crop_limits[1]
+                cropLimitsWidthNumber.value = data.crop_limits[2]
+                cropLimitsHeightNumber.value = data.crop_limits[3]
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function setAeAutoAlgorithm(value) {
+
+        return fetch('/update_camera_live_settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(['AeEnable', value]),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Settings updated:', data);
+            if (data.success) {
+
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function setExposureTime(time) {
+
+        updateSaveButton('auto_exposure_gain', false)
+
+        return fetch('/update_camera_live_settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(['ExposureTime', time]),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Settings updated:', data);
+            if (data.success) {
+                currentExposureTime.innerText = 'Exposure time (' + exposureTimeNumber.value + ' ms):'
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+    }
+
+    function setLedsDelay(mode, value) {
+
+        data = [mode, value]
+
+        return fetch('/set_leds_delay', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Settings updated:', data);
+            if (data.success) {
+
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+    }
+
+    function setDetectionEnable(value) {
+
+        return fetch('/set_detection_enable', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(value),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateSaveButton('ai_detection', false)
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function setDetectionScale() {
+
+        value = parseInt(aiDetectionImageScaleNumber.value)
+
+        if (value > 100 || value < 0.0) {
+            updateSaveButton('ai_detection', true)
+            return
+        }
+
+        image_width = cropLimitsWidthNumber.value
+        image_height = cropLimitsHeightNumber.value
+
+        detection_width = Math.floor(image_width * value / 100)
+        detection_height = Math.floor(image_height * value / 100)
+
+        console.log([detection_width, detection_height])
+
+        n = Math.floor(detection_width / 64)
+        if (n == 0) {
+            detection_width = 64
+        } else {
+            detection_width = 64 * (n+1)
+            if (detection_width > image_width) {
+                detection_width = 64 * n
+            }
+        }
+
+        n = Math.floor(detection_height / 64)
+        if (n == 0) {
+            detection_height = 64
+        } else {
+            detection_height = 64 * (n+1)
+            if (detection_height > image_height) {
+                detection_height = 64 * n
+            }
+        }
+
+        data = [value, detection_width, detection_height]
+
+        return fetch('/set_detection_scale', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                aiDetectionSizeLabel.innerText = 'Detection image size: ' + detection_width + ' x ' + detection_height
+                updateSaveButton('ai_detection', false)
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function setDetectionMinConfidence(value) {
+
+        value = parseFloat(value)
+
+        if (value > 1.0 || value < 0.0) {
+            updateSaveButton('ai_detection', true)
+            return
+        }
+
+        return fetch('/set_detection_min_confidence', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(value),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateSaveButton('ai_detection', false)
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function setJpegQuality(value) {
+
+        return fetch('/set_jpeg_quality', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(value),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Settings updated:', data);
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function captureImage() {
+
+        return fetch('/capture_image', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            //if (data.success) {
+
+            //}
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+
+    }
+
+    function getCpuTemperature() {
+
+        const cpuTempNavBar = document.getElementById('cpuTempNavBar')
+
+        return fetch('/get_cpu_temperature', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.temperature >= 80) {
+                    cpuTempNavBar.style.color = 'red'
+                } else if (data.temperature >= 75) {
+                    cpuTempNavBar.style.color = 'orange'
+                } else {
+                    cpuTempNavBar.style.color = 'black'
+                }
+                cpuTempNavBar.innerText = data.temperature + ' °C'
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    var intervalId = setInterval(function() {
+        getCpuTemperature()
+    }, 10000);
+
+</script>
+{% endblock %}

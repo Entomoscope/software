@@ -1,0 +1,98 @@
+{% macro display_configuration_global_settings(configuration, tzone) %}
+    <p class="config_level_1">Site</p>
+    <p class="config_level_2" id="siteIdConfigurationText">Id: {{ configuration['site']['id'] }}</p>
+    <p class="config_level_1">Scheduler</p>
+    <p class="config_level_2" id="scheduleEnableConfigurationText">Enable: {{ configuration['schedule']['enable'] }}</p>
+    <p class="config_level_2" id="scheduleStartupConfigurationText">Next startup: {{ configuration['schedule']['next_startup'] }} {{ tzone }}</p>
+    <p class="config_level_2" id="scheduleShutdownConfigurationText">Next shutdown: {{ configuration['schedule']['next_shutdown'] }} {{ tzone }}</p>
+    <p class="config_level_2" id="scheduleOnDurationConfigurationText">On duration: {{ configuration['schedule']['on_duration'] }} minutes</p>
+    <p class="config_level_2" id="scheduleOffDurationConfigurationText">Off duration: {{ configuration['schedule']['off_duration'] }} minutes</p>
+    <p class="config_level_1">Images capture</p>
+    <p class="config_level_2" id="imagesCaptureEnableConfigurationText">Enable: {{ configuration['images_capture']['enable'] }}</p>
+    <p class="config_level_2" id="imagesCaptureModeConfigurationText">Mode: {{ configuration['images_capture']['mode'] }}</p>
+    <p class="config_level_2" id="imagesCaptureTimeStepConfigurationText">Time step: {{ configuration['images_capture']['time_step'] }} seconds</p>
+    <p class="config_level_1">Sound capture</p>
+    <p class="config_level_2" id="soundsCaptureEnableConfigurationText">Enable: {{ configuration['sounds_capture']['enable'] }}</p>
+    <p class="config_level_2" id="soundsCaptureDurationConfigurationText">Duration: {{ configuration['sounds_capture']['duration'] }} seconds</p>
+    <p class="config_level_1">Cooling system</p>
+    <p class="config_level_2" id="coolingSystemEnableConfigurationText">Enable: {{ configuration['cooling_system']['enable'] }}</p>
+    <p class="config_level_2" id="coolingSystemCpuTemperatureCheckIntervalConfigurationText">Cpu temperature check interval: {{ configuration['cooling_system']['cpu_temperature_check_interval'] }} minutes</p>
+    <p class="config_level_2" id="coolingSystemCpuTemperatureLevelsConfigurationText">Cpu temperature levels: {{ configuration['cooling_system']['cpu_temperature_levels'] }} &deg;C</p>
+    <p class="config_level_2" id="coolingSystemFanSpeedLevelsConfigurationText">Fan speed levels: {{ configuration['cooling_system']['fan_speed_levels'] }} %</p>
+{% endmacro %}
+
+{% macro display_configuration_images_capture_settings(configuration) %}
+    <!-- AI Detection -->
+    <p class="config_level_1">AI detection</p>
+    <p class="config_level_2" id="aiDetectionEnableConfigurationText">Enable: {{ configuration['ai_detection']['enable'] }}</p>
+    <p class="config_level_2" id="aiDetectionImageScaleConfigurationText">Image scale: {{ configuration['ai_detection']['image_scale'] }} %</p>
+    <p class="config_level_2" id="aiDetectionImageHeightConfigurationText">Image height: {{ configuration['ai_detection']['image_height'] }} pixels</p>
+    <p class="config_level_2" id="aiDetectionImageWidthConfigurationText">Image width: {{ configuration['ai_detection']['image_width'] }} pixels</p>
+    <p class="config_level_2" id="aiDetectionMinConfidenceConfigurationText">Min. confidence: {{ configuration['ai_detection']['min_confidence'] }}</p>
+    <!-- Camera - Image Position &amp; Size -->
+    <p class="config_level_1">Camera - Image position and size</p>
+    <p class="config_level_2" id="sensorCropLimitsWidthConfigurationText">Width: {{ configuration['camera']['sensor']['crop_limits'][2] }} pixels</p>
+    <p class="config_level_2" id="sensorCropLimitsHeightConfigurationText">Height: {{ configuration['camera']['sensor']['crop_limits'][3] }} pixels</p>
+    <p class="config_level_2" id="sensorCropLimitsXConfigurationText">Top left corner X: {{ configuration['camera']['sensor']['crop_limits'][0] }} pixels</p>
+    <p class="config_level_2" id="sensorCropLimitsYConfigurationText">Top left corner Y: {{ configuration['camera']['sensor']['crop_limits'][1] }} pixels</p>
+    <!-- Camera - Autofocus -->
+    <p class="config_level_1">Camera - Autofocus</p>
+<!--
+    <p class="config_level_3" id="cameraAutofocusEnableConfigurationText">Enable: {{ configuration['camera']['autofocus']['enable'] }}</p>
+-->
+    <p class="config_level_2" id="cameraAutofocusModeConfigurationText">Mode: {{ configuration['camera']['autofocus']['mode'] }}</p>
+    <p class="config_level_2" id="cameraAutofocusLensPositionConfigurationText">Lens Position: {{ configuration['camera']['autofocus']['lens_position'] }}</p>
+<!--
+    <p class="config_level_3" id="cameraAutofocusRangeConfigurationText">Range: {{ configuration['camera']['autofocus']['range'] }}</p>
+    <p class="config_level_3" id="cameraAutofocusSpeedConfigurationText">Speed: {{ configuration['camera']['autofocus']['speed'] }}</p>
+-->
+    <!-- Camera - Auto Exposure/Gain -->
+    <p class="config_level_1">Camera - Auto exposure/gain</p>
+    <p class="config_level_2" id="cameraAegAnalogueGainConfigurationText">Analogue gain: {{ configuration['camera']['auto_exposure_gain']['analogue_gain'] }}</p>
+    <p class="config_level_2 d-none" id="cameraAegExposureModeConfigurationText">Exposure mode: {{ configuration['camera']['auto_exposure_gain']['exposure_mode'] }}</p>
+    <p class="config_level_2" id="cameraAegExposureTimeConfigurationText">Exposure time: {{ configuration['camera']['auto_exposure_gain']['exposure_time'] }} microseconds</p>
+    <p class="config_level_2" id="cameraAegExposureValueConfigurationText">Exposure value: {{ configuration['camera']['auto_exposure_gain']['exposure_value'] }}</p>
+<!--
+    <p class="config_level_2" id="ConfigurationText">Flicker Mode: {{ configuration['camera']['auto_exposure_gain']['flicker_mode'] }}</p>
+    <p class="config_level_2" id="ConfigurationText">Flicker Period: {{ configuration['camera']['auto_exposure_gain']['flicker_period'] }}</p>
+-->
+    <p class="config_level_2" id="cameraAegModeConfigurationText">Mode: {{ configuration['camera']['auto_exposure_gain']['mode'] }}</p>
+    <!-- Camera - Auto White Balance -->
+    <p class="config_level_1 config_hide">Camera - Auto white balance</p>
+    <p class="config_level_2 config_hide" id="whiteBalanceEnableConfigurationText">Enable: {{ configuration['camera']['auto_white_balance']['enable'] }}</p>
+    <p class="config_level_2 config_hide" id="whiteBalanceModeConfigurationText">Mode: {{ configuration['camera']['auto_white_balance']['mode'] }}</p>
+    <!-- Camera - Image Adjustments -->
+    <p class="config_level_1">Camera - Image adjustments</p>
+    <p class="config_level_2" id="ConfigurationText">Brightness: {{ configuration['camera']['image_adjustments']['brightness'] }}</p>
+    <p class="config_level_2" id="ConfigurationText">Contrast: {{ configuration['camera']['image_adjustments']['contrast'] }}</p>
+    <p class="config_level_2" id="ConfigurationText">Saturation: {{ configuration['camera']['image_adjustments']['saturation'] }}</p>
+    <p class="config_level_2" id="ConfigurationText">Sharpness: {{ configuration['camera']['image_adjustments']['sharpness'] }}</p>
+    <!-- LEDs -->
+    <p class="config_level_1">Leds</p>
+    <p class="config_level_2" id="ledsFrontConfigurationText">Intensity front: {{ configuration['leds']['intensity_front'] }} %</p>
+    {% if configuration['images_capture']['mode'] == 'trap' %}
+        <p class="config_level_2" id="ledsRearDeportedUvConfigurationText">Intensity rear: {{ configuration['leds']['intensity_rear_deported_uv'] }} %</p>
+    {% elif configuration['images_capture']['mode'] == 'lepinoc' or configuration['images_capture']['mode'] == 'moth' %}
+        <p class="config_level_2" id="ledsRearDeportedUvConfigurationText">Intensity UV: {{ configuration['leds']['intensity_rear_deported_uv'] }} %</p>
+    {% elif configuration['images_capture']['mode'] == 'deported' %}
+        <p class="config_level_2" id="ledsRearDeportedUvConfigurationText">Intensity deported: {{ configuration['leds']['intensity_rear_deported_uv'] }} %</p>
+    {% endif %}
+    <p class="config_level_2" id="ledsDelayOnConfigurationText">Delay on: {{ configuration['leds']['delay_on'] }} seconds</p>
+    <p class="config_level_2" id="ledsDelayOffConfigurationText">Delay off: {{ configuration['leds']['delay_off'] }} seconds</p>
+    <!-- Files -->
+    <p class="config_level_1">Files</p>
+    <p class="config_level_2" id="jpegQualityConfigurationText">JPEG quality: {{ configuration['files']['jpeg_quality'] }} %</p>
+    <!-- Camera - Sensor -->
+    <p class="config_level_1 d-none">Camera - Sensor</p>
+    <p class="config_level_2 d-none" id="sensorCropLimitsConfigurationText">{{ configuration['camera']['sensor']['crop_limits'] }}</p>
+    <p class="config_level_2 d-none" id="sensorCaptureModeConfigurationText">{{ configuration['camera']['sensor']['capture_mode'] }}</p>
+    <p class="config_level_2 d-none" id="sensorPreviewModeConfigurationText">{{ configuration['camera']['sensor']['preview_mode'] }}</p>
+    <p class="config_level_2 d-none" id="sensorWidthMaxConfigurationText">{{ configuration['camera']['sensor']['width_max'] }}</p>
+    <p class="config_level_2 d-none" id="sensorHeightMaxConfigurationText">{{ configuration['camera']['sensor']['height_max'] }}</p>
+{% endmacro %}
+
+{% macro display_configuration_sounds_capture_settings(configuration) %}
+    <!-- Microphone -->
+    <p class="config_level_1">Microphone</p>
+    <p class="config_level_2" id="sampleRateText">Sample rate: {{ configuration['microphone']['sample_rate'] }} Hz</p>
+{% endmacro %}

@@ -8,14 +8,21 @@ from time import sleep
 # Target frequency: 25kHz, acceptable range 21kHz to 28kHz
 DEFAULT_FAN_PWM_FREQUENCY = 25000
 
+DEFAULT_FAN_PWM_LOW_SPEED = 50
+DEFAULT_FAN_PWM_MID_SPEED = 75
+DEFAULT_FAN_PWM_HIGH_SPEED = 100
+
 class Fan:
 
-    def __init__(self, pin, frequency=DEFAULT_FAN_PWM_FREQUENCY):
+    def __init__(self, pin, low_speed=DEFAULT_FAN_PWM_LOW_SPEED, mid_speed=DEFAULT_FAN_PWM_MID_SPEED, high_speed=DEFAULT_FAN_PWM_HIGH_SPEED, frequency=DEFAULT_FAN_PWM_FREQUENCY):
 
         self.pin = pin
         self.pwm = pigpio.pi()
         self.pwm.set_mode(self.pin, pigpio.OUTPUT)
         self.frequency = frequency
+        self.low_speed = low_speed
+        self.mid_speed = mid_speed
+        self.high_speed = high_speed
         self.pwm.set_PWM_frequency(self.pin, self.frequency)
         self.pwm.set_PWM_range(self.pin, 100)
         self.set_speed(0)
@@ -25,14 +32,48 @@ class Fan:
         if speed >= 0 and speed <= 100:
             self.dutycycle = speed
             self.pwm.set_PWM_dutycycle(self.pin, int(self.dutycycle))
-            
+
     def get_speed(self):
-    
+
         return self.dutycycle
+
+    def run_low_speed(self):
+
+        self.set_speed(self.low_speed)
+
+    def set_low_speed(self, speed):
+
+        if speed >= 0 and speed <= 100:
+
+            self.low_speed = speed
+
+    def run_mid_speed(self):
+
+        self.set_speed(self.mid_speed)
+
+    def set_mid_speed(self, speed):
+
+        if speed >= 0 and speed <= 100:
+
+            self.mid_speed = speed
+
+    def run_high_speed(self):
+
+        self.set_speed(self.high_speed)
+
+    def set_high_speed(self, speed):
+
+        if speed >= 0 and speed <= 100:
+
+            self.high_speed = speed
+
+    def stop(self):
+
+        self.set_speed(0)
 
     def test(self):
 
-        for i in range(0, 101, 10):            
+        for i in range(0, 101, 10):
             self.set_speed(i)
             print(f'Fan speed: {self.get_speed()}%')
             sleep(2)
@@ -44,7 +85,7 @@ def main(args):
 
     fan = Fan(18)
 
-    if args.low_speed:   
+    if args.low_speed:
         fan.set_speed(20)
     elif args.mid_speed:
         fan.set_speed(50)
@@ -71,5 +112,5 @@ if __name__ == "__main__":
                         required=False, action='store_true')
 
     args = parser.parse_args()
-    
+
     main(args)

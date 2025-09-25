@@ -28,7 +28,7 @@ from math import exp
 # Source: https://gpiozero.readthedocs.io/en/stable/remote_gpio.html
 
 class Leds():
-    
+
     pwm_frequency = 5000
     num_dimming_levels = 256
     dimming_levels = list(range(0, num_dimming_levels))
@@ -48,9 +48,9 @@ class Leds():
             # print(f'pigpio not supported yet on {rpi_model}\nLEDs flickering may occured')
 
         self.pin = pin
-        
+
         self.pi = pigpio.pi()
-        
+
         self.pi.set_PWM_range(self.pin, 100)
         self.pi.set_PWM_frequency(self.pin, self.pwm_frequency)
         self.pi.set_PWM_dutycycle(self.pin, 0)
@@ -70,7 +70,7 @@ class Leds():
         self.dimming_curve.extend([1 / (1 + exp( (-1/25) * (x - self.num_dimming_levels/2))) for x in self.dimming_levels[1:-1]])
         self.dimming_curve.append(1.0)
 
-        self.state = False
+        self.is_on = False
 
         self.intensity = intensity
 
@@ -86,7 +86,7 @@ class Leds():
 
             self.intensity = intensity
 
-            if self.state:
+            if self.is_on:
                 self.turn_on()
 
     def turn_on(self):
@@ -96,20 +96,18 @@ class Leds():
         for dimming_level in self.dimming_levels:
             if dimming_level >= value:
                 pwm = self.dimming_curve[dimming_level]
-                # self.set_pwm(pwm)
                 self.pi.set_PWM_dutycycle(self.pin, int(100*pwm))
                 break
 
-        self.state = True
+        self.is_on = True
 
     def turn_off(self):
 
-        if self.state:
+        if self.is_on:
 
-            # self.set_pwm(0)
             self.pi.set_PWM_dutycycle(self.pin, 0)
 
-            self.state = False
+            self.is_on = False
 
 if __name__ == '__main__':
 

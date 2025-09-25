@@ -159,6 +159,11 @@ def main():
 
     extra_metadata = {'SiteID': configuration.site['id'], 'Latitude': configuration.gnss['latitude'], 'Longitude': configuration.gnss['longitude']}
 
+    now_str = datetime.now().strftime('%Y%m%d%H%M%S')
+    file_path = os.path.join(IMAGES_CAPTURE_FOLDER, 'configuration_' + now_str + '.json')
+    configuration.copy_to(file_path)
+    logger.info(f'{this_script}: configuration file saved to {file_path}')
+
     while True:
 
         if on and (time() - previous_on_time > on_duration):
@@ -190,13 +195,13 @@ def main():
                 leds_front.turn_on()
             if configuration.leds['mode'] == 3:
                 leds_deported.turn_on()
-                
-            if configuration.leds['delay_on']:                
+
+            if configuration.leds['delay_on']:
                 sleep(configuration.leds['delay_on'])
 
             camera.capture(get_metadata=True)
-            
-            if configuration.leds['delay_off']:                
+
+            if configuration.leds['delay_off']:
                 sleep(configuration.leds['delay_off'])
 
             if configuration.leds['mode'] == 1:
@@ -248,7 +253,7 @@ def main():
 
         if isSignalToStandByReceived():
 
-            logger.info(f'{this_script}: in standby mode. Wait for signal to resume')
+            logger.info(f'{this_script}: standby signal received. Images capture paused')
 
             while isSignalToStandByReceived():
                 if isSignalToShutdownReceived():
@@ -263,6 +268,12 @@ def main():
                 logger.info(f'{this_script}: reload configuration')
 
                 configuration.read()
+
+                now_str = datetime.now().strftime('%Y%m%d%H%M%S')
+                file_path = os.path.join(IMAGES_CAPTURE_FOLDER, 'configuration_' + now_str + '.json')
+                configuration.copy_to(file_path)
+
+                logger.info(f'{this_script}: configuration file saved to {file_path}')
 
                 leds_rear.set_intensity(0)
                 leds_front.set_intensity(0)

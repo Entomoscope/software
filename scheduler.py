@@ -67,6 +67,26 @@ class Scheduler:
         self.begin = f'BEGIN 2025-01-01 {wakeupHour-hourOffset:02d}:{wakeupMinute:02d}:00'
         self.end = 'END 2035-07-31 23:59:59'
 
+
+# set_startup_time()
+# {
+  # sec=$(dec2bcd $4)
+  # i2c_write 0x01 $I2C_MC_ADDRESS $I2C_CONF_SECOND_ALARM1 $sec
+  # min=$(dec2bcd $3)
+  # i2c_write 0x01 $I2C_MC_ADDRESS $I2C_CONF_MINUTE_ALARM1 $min
+  # hour=$(dec2bcd $2)
+  # i2c_write 0x01 $I2C_MC_ADDRESS $I2C_CONF_HOUR_ALARM1 $hour
+  # date=$(dec2bcd $1)
+  # i2c_write 0x01 $I2C_MC_ADDRESS $I2C_CONF_DAY_ALARM1 $date
+# }
+
+# dec2bcd()
+# {
+  # local result=$((10#$1/10*16+(10#$1%10)))
+  # echo $result
+# }
+ 
+
         if onMinute and offMinute:
 
             self.on = f'ON M{onMinute}'

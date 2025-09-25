@@ -1,10 +1,17 @@
 #! /usr/bin/python3
 
 import os
+
 import logging
+from logging.handlers import RotatingFileHandler
+
 from datetime import datetime
 
 from gpiozero import CPUTemperature
+
+from configuration2 import Configuration2
+
+from globals_parameters import LOGS_DESKTOP_FOLDER, TODAY
 
 from peripherals.fan import Fan
 from peripherals.pinout import FAN_PIN
@@ -27,83 +34,96 @@ from peripherals.pinout import FAN_PIN
 # To search for errors since a date
 # journalctl -t fan_mng_entomoscope --since "YYYY-MM-DD HH:MM:SS"
 
-CPU_TEMP_LEVEL_1 = 65
-CPU_TEMP_LEVEL_2 = 70
-CPU_TEMP_LEVEL_3 = 75
-CPU_TEMP_LEVEL_4 = 80
-
-FAN_LEVEL_1 = 25
-FAN_LEVEL_2 = 50
-FAN_LEVEL_3 = 75
-FAN_LEVEL_4 = 90
 
 def main():
 
     this_script = os.path.basename(__file__)[:-3]
 
-    today = datetime.now().strftime('%Y%m%d')
+    today_log_path = os.path.join(LOGS_DESKTOP_FOLDER, TODAY)
+    if not os.path.exists(today_log_path):
+        os.mkdir(today_log_path)
 
-    user_path = os.path.expanduser('~')
+    logger = logging.getLogger('entomoscope_fan_management')
+    filename = os.path.join(today_log_path, TODAY + '_' + this_script + '.log')
+    file_handler = RotatingFileHandler(filename, mode="a", maxBytes=50000, backupCount=100, encoding="utf-8")
+    logger.addHandler(file_handler)
+    formatter = logging.Formatter('%(asctime)s;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
+    file_handler.setFormatter(formatter)
+    logger.setLevel("DEBUG")
 
-    today_path = os.path.join(user_path, 'Desktop', today)
-
-    if not os.path.exists(today_path):
-        os.mkdir(today_path)
-
-    log_path = os.path.join(user_path, 'Desktop', today, 'Logs')
-
-    if not os.path.exists(log_path):
-        os.mkdir(log_path)
-
-    logger = logging.getLogger('main')
-    filename = os.path.join(log_path, today + '_' + this_script + '.log')
-    logging.basicConfig(filename=filename,
-                        format='%(asctime)s;%(levelname)s;"%(message)s"',
-                        encoding='utf-8',
-                        datefmt='%d/%m/%Y;%H:%M:%S',
-                        level=logging.DEBUG)
-                        
     try:
 
-        fan = Fan(FAN_PIN)
+        configuration = Configuration2()
+        configuration.read()
 
-        cpu_temperature = CPUTemperature().temperature
+        if configuration.cooling_system['enable']:
 
-        if cpu_temperature > CPU_TEMP_LEVEL_4:
+            cpu_temperature_levels = configuration.cooling_system['cpu_temperature_levels']
 
-                fan.set_speed(FAN_LEVEL_4)
+            if len(cpu_temperature_levels) != 4:
+                logging.error(f'4 temperature levels required. {len(cpu_temperature_levels)} found')
+                return
 
-                logger.info(f'{this_script}: CPU temperature: {cpu_temperature:.1f}°C => fan speed {FAN_LEVEL_4}%')
-                
-        elif cpu_temperature > CPU_TEMP_LEVEL_3:
+            if any([x<0 for x in cpu_temperature_levels]):
+                logging.error('temperature levels must be greater than 0')
+                return
 
-                fan.set_speed(FAN_LEVEL_3)
+            if any([x>80 for x in cpu_temperature_levels]):
+                logging.error('temperature levels must be lower than 80')
+                return
 
-                logger.info(f'{this_script}: CPU temperature: {cpu_temperature:.1f}°C => fan speed {FAN_LEVEL_3}%')
+            fan_speed_levels = configuration.cooling_system['fan_speed_levels']
 
-        elif cpu_temperature > CPU_TEMP_LEVEL_2:
+            if len(fan_speed_levels) != 4:
+                logging.error(f'4 fan speed levels required. {len(fan_speed_levels)} found')
+                return
 
-                fan.set_speed(FAN_LEVEL_2)
+            if any([x<0 for x in fan_speed_levels]):
+                logging.error('fan speed levels must be greater than 0')
+                return
 
-                logger.info(f'{this_script}: CPU temperature: {cpu_temperature:.1f}°C => fan speed {FAN_LEVEL_2}%')
+            if any([x>100 for x in fan_speed_levels]):
+                logging.error('fan speed levels must be lower than 100')
+                return
 
-        elif cpu_temperature > CPU_TEMP_LEVEL_1:
+            fan = Fan(FAN_PIN)
 
-                fan.set_speed(FAN_LEVEL_1)
+            cpu_temperature = CPUTemperature().temperature
 
-                logger.info(f'{this_script}: CPU temperature: {cpu_temperature:.1f}°C => fan speed {FAN_LEVEL_1}%')
+            if cpu_temperature > cpu_temperature_levels[3]:
 
-        else:
+                fan.set_speed(fan_speed_levels[3])
+
+                logger.info(f'CPU temperature: {cpu_temperature:.1f}°C => fan speed {fan_speed_levels[3]}%')
+
+            elif cpu_temperature > cpu_temperature_levels[2]:
+
+                fan.set_speed(fan_speed_levels[2])
+
+                logger.info(f'CPU temperature: {cpu_temperature:.1f}°C => fan speed {fan_speed_levels[2]}%')
+
+            elif cpu_temperature > cpu_temperature_levels[1]:
+
+                fan.set_speed(fan_speed_levels[1])
+
+                logger.info(f'CPU temperature: {cpu_temperature:.1f}°C => fan speed {fan_speed_levels[1]}%')
+
+            elif cpu_temperature > cpu_temperature_levels[0]:
+
+                fan.set_speed(fan_speed_levels[0])
+
+                logger.info(f'CPU temperature: {cpu_temperature:.1f}°C => fan speed {fan_speed_levels[0]}%')
+
+            else:
 
                 fan.set_speed(0)
 
-                logger.info(f'{this_script}: CPU temperature: {cpu_temperature:.1f}°C => fan speed 0%')
-
+                logger.info(f'CPU temperature: {cpu_temperature:.1f}°C => fan speed 0%')
 
     except BaseException as e:
 
-        logging.error(str(e))     
-                        
+        logging.error(str(e))
+
 if __name__ == '__main__':
 
     main()

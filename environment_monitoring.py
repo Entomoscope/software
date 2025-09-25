@@ -4,7 +4,7 @@ import logging
 import csv
 from datetime import datetime
 from gpiozero import CPUTemperature
-from globals_parameters import ENVIRONMENT_MONITORING_FOLDER, TODAY
+from globals_parameters import LOGS_DESKTOP_FOLDER, ENVIRONMENT_MONITORING_FOLDER, TODAY
 from sensors.sht31 import SHT31
 from peripherals.wittypi import WittyPi
 
@@ -30,27 +30,18 @@ def main():
 
     this_script = os.path.basename(__file__)[:-3]
 
-    today = datetime.now().strftime('%Y%m%d')
+    today_log_path = os.path.join(LOGS_DESKTOP_FOLDER, TODAY)
 
-    user_path = os.path.expanduser('~')
+    if not os.path.exists(today_log_path):
+        os.mkdir(today_log_path)
 
-    today_path = os.path.join(user_path, 'Desktop', today)
-
-    if not os.path.exists(today_path):
-        os.mkdir(today_path)
-
-    log_path = os.path.join(user_path, 'Desktop', today, 'Logs')
-
-    if not os.path.exists(log_path):
-        os.mkdir(log_path)
-
-    logger = logging.getLogger('main')
-    filename = os.path.join(log_path, today + '_' + this_script + '.log')
-    logging.basicConfig(filename=filename,
-                        format='%(asctime)s;%(levelname)s;"%(message)s"',
-                        encoding='utf-8',
-                        datefmt='%d/%m/%Y;%H:%M:%S',
-                        level=logging.DEBUG)
+    logger = logging.getLogger('entomoscope_environement_monitoring')
+    filename = os.path.join(today_log_path, TODAY + '_' + this_script + '.log')
+    file_handler = logging.FileHandler(filename, mode="a", encoding="utf-8")
+    logger.addHandler(file_handler)
+    formatter = logging.Formatter('%(asctime)s;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
+    file_handler.setFormatter(formatter)
+    logger.setLevel("DEBUG")
 
     try:
 
@@ -59,6 +50,8 @@ def main():
         sht31.get_temperature_humidity()
 
         wittypi = WittyPi()
+
+        wittypi.get_info()
 
         cpu_temperature = CPUTemperature().temperature
 

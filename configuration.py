@@ -1,4 +1,5 @@
 import os
+from shutil import copyfile
 from json import load, dump
 
 class Configuration():
@@ -37,6 +38,7 @@ class Configuration():
                         'enable': True,
                         'min_confidence': 0.8,
                         'image_height': 320,
+                        "image_scale": 15,
                         'image_width': 320
                         })
 
@@ -68,8 +70,11 @@ class Configuration():
 
                         'model': 'v3',
                         'sensor': {
+                            'capture_mode': 2,
                             'crop_limits': [1285, 390, 1900, 1900],
-                            'mode': 2
+                            'height_max': 2592,
+                            'preview_mode': 1,
+                            'width_max': 4608
                         },
                         'white_balance': {
                             'enable': True,
@@ -142,6 +147,19 @@ class Configuration():
 
         return self.configuration
 
+    def copy_to(self, copy_path):
+
+        try:
+
+            copyfile(self.configuration_file, copy_path)
+
+            success = True
+
+        except OSError as e:
+
+            print(str(e))
+
+            success = False
 
     def to_string(self):
 

@@ -1,0 +1,129 @@
+{
+    "ai_detection": {
+        "enable": true,
+        "image_height": 192,
+        "image_scale": 15,
+        "image_width": 192,
+        "min_confidence": 0.3
+    },
+    "camera": {
+        "auto_exposure_gain": {
+            "analogue_gain": 1,
+            "enable": true,
+            "exposure_mode": "Normal",
+            "exposure_time": 3000,
+            "exposure_value": 0,
+            "flicker_mode": "Off",
+            "flicker_period": 10000,
+            "mode": "Auto"
+        },
+        "auto_white_balance": {
+            "enable": true,
+            "mode": "Auto"
+        },
+        "autofocus": {
+            "enable": true,
+            "lens_position": 2.7,
+            "mode": "Continuous",
+            "range": "Normal",
+            "speed": "Normal"
+        },
+        "image_adjustments": {
+            "brightness": 0.0,
+            "contrast": 1.0,
+            "saturation": 1.0,
+            "sharpness": 1.0
+        },
+        "image_height": 1000,
+        "image_width": 1000,
+        "model": "v3",
+        "sensor": {
+            "capture_mode": 2,
+            "crop_limits": [
+                1804,
+                796,
+                1000,
+                1000
+            ],
+            "height_max": 2592,
+            "preview_mode": 1,
+            "width_max": 4608
+        }
+    },
+    "cooling_system": {
+        "cpu_temperature_check_interval": 5,
+        "cpu_temperature_levels": [
+            60,
+            65,
+            70,
+            75
+        ],
+        "enable": true,
+        "fan_speed_levels": [
+            50,
+            67,
+            83,
+            100
+        ]
+    },
+    "ephemeris": {
+        "location": "moulis"
+    },
+    "files": {
+        "jpeg_quality": 95
+    },
+    "gnss": {
+        "altitude": 0.0,
+        "enable": true,
+        "last_update": "",
+        "last_update_dop": 0.0,
+        "latitude": "",
+        "longitude": "",
+        "mode": "auto",
+        "satellites_used": 0
+    },
+    "images_capture": {
+        "enable": false,
+        "mode": "trap",
+        "time_step": 5
+    },
+    "laser": {
+        "enable": false
+    },
+    "leds": {
+        "delay_off": 0.0,
+        "delay_on": 0.0,
+        "intensity_front": 0,
+        "intensity_rear_deported_uv": 0
+    },
+    "microphone": {
+        "sample_rate": 48000
+    },
+    "monitor_environment": {
+        "enable": true,
+        "time_step": 300
+    },
+    "schedule": {
+        "enable": false,
+        "next_shutdown": "2025-09-18 18:00",
+        "next_startup": "2025-09-18 07:00",
+        "off_duration": 1,
+        "on_duration": 1
+    },
+    "server": {
+        "image_constraints": {
+            "centered": true,
+            "square": true
+        },
+        "preview_size": {
+            "max_width": 650
+        }
+    },
+    "site": {
+        "id": ""
+    },
+    "sounds_capture": {
+        "duration": 60,
+        "enable": false
+    }
+}

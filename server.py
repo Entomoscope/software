@@ -175,6 +175,7 @@ leds_front = None
 updates_available = updates_check()
 app.logger.info(f'updates available? {updates_available}')
 
+
 @app.route('/')
 def index():
 
@@ -241,9 +242,11 @@ def index():
 
     return make_response(render_template('index.html', configuration=configuration, updates_available=updates_available, rpi=rpi, tzone=tzone, sd_card=sd_card, external_disk=external_disk, battery_level=battery_level, gnss=gnss, dateTime=dateTime, images_capture_state=images_capture_state, sounds_capture_state=sounds_capture_state))
 
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 @app.route('/', methods=['POST'])
 def upload_configuration_file():
@@ -284,6 +287,7 @@ def upload_configuration_file():
         app.logger.error(str(e))
 
         return f'Error uploading configuration file: {str(e)}', 500
+
 
 @app.route('/data')
 def data():
@@ -327,6 +331,7 @@ def data():
     istopdir = data_current_directory == DATA_FOLDER
 
     return make_response(render_template('data.html', updates_available=updates_available, files=files, isdirs=isdirs, zip=zip, istopdir=istopdir, show_preview_file=show_preview_file, show_preview_image=show_preview_image, show_preview_sound=show_preview_sound, data_current_file=data_current_file, file_data=file_data, rpi=rpi, battery_level=battery_level))
+
 
 @app.route('/manage_data/<action>/<value>')
 def manage_data(action, value):
@@ -400,6 +405,7 @@ def manage_data(action, value):
 
     return redirect('/data')
 
+
 @app.route('/global_settings')
 def global_settings():
 
@@ -449,6 +455,7 @@ def global_settings():
 
     return make_response(render_template('global_settings.html', configuration=configuration, updates_available=updates_available, today=today, tzone=tzone, startup=(startup_date, startup_time), shutdown=(shutdown_date, shutdown_time), zip=zip, rpi=rpi, battery_level=battery_level))
 
+
 @app.route('/images_capture_settings')
 def images_capture_settings():
 
@@ -496,6 +503,7 @@ def images_capture_settings():
 
     return make_response(render_template('images_capture_settings.html', updates_available=updates_available, camera_available=camera_available, leds_available=leds_available, configuration=configuration, rpi=rpi, battery_level=battery_level))
 
+
 @app.route('/sounds_capture_settings')
 def sounds_capture_settings():
 
@@ -541,6 +549,7 @@ def sounds_capture_settings():
 
     return make_response(render_template('sounds_capture_settings.html', updates_available=updates_available, microphone_available=microphone_available, configuration=configuration, rpi=rpi, battery_level=battery_level))
 
+
 @app.route('/logs')
 def logs():
 
@@ -585,6 +594,7 @@ def logs():
     istopdir = logs_current_directory == LOGS_DESKTOP_FOLDER
 
     return make_response(render_template('logs.html', updates_available=updates_available, files=files, isdirs=isdirs, zip=zip, istopdir=istopdir, show_preview_log=show_preview_log, logs_current_file=logs_current_file, log_data=log_data, rpi=rpi, battery_level=battery_level))
+
 
 @app.route('/manage_logs/<action>/<value>')
 def manage_logs(action, value):
@@ -641,6 +651,7 @@ def manage_logs(action, value):
 
     return redirect('/logs')
 
+
 @app.route('/sounds_capture_test', methods=['POST'])
 def sounds_capture_test():
 
@@ -690,6 +701,7 @@ def sounds_capture_test():
         app.logger.error(str(e))
 
         return jsonify(success=False, message="Settings updated successfully", data=str(e))
+
 
 @app.route('/video_feed')
 def video_feed():
@@ -767,6 +779,7 @@ def generate_frames():
             yield (b'--frame\r\n'
                 b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
+
 @app.route('/manage_images_capture', methods=['POST'])
 def manage_images_capture():
 
@@ -804,6 +817,7 @@ def manage_images_capture():
 
         return jsonify(success=False, message=str(e))
 
+
 @app.route('/manage_sounds_capture', methods=['POST'])
 def manage_sounds_capture():
 
@@ -840,6 +854,7 @@ def manage_sounds_capture():
         app.logger.error(str(e))
 
         return jsonify(success=False, message=str(e))
+
 
 @app.route('/save_configuration', methods=['POST'])
 def save_configuration():
@@ -899,6 +914,7 @@ def save_configuration():
         app.logger.error(str(e))
 
         return jsonify(success=False, message=str(e))
+
 
 @app.route('/update_settings', methods=['POST'])
 def update_settings():
@@ -979,6 +995,7 @@ def update_settings():
 
         return jsonify(success=False, message=str(e))
 
+
 @app.route('/update_camera_live_settings', methods=['POST'])
 def update_camera_live_settings():
 
@@ -997,6 +1014,7 @@ def update_camera_live_settings():
         app.logger.error(str(e))
 
         return jsonify(success=False, message=str(e))
+
 
 def apply_camera_settings(settingId, settingValue):
 
@@ -1091,6 +1109,7 @@ def apply_camera_settings(settingId, settingValue):
 
     return success
 
+
 @app.route('/set_images_capture_mode', methods=['POST'])
 def set_images_capture_mode():
 
@@ -1111,6 +1130,7 @@ def set_images_capture_mode():
         app.logger.error(str(e))
 
         return jsonify(success=False, message=str(e))
+
 
 @app.route('/set_leds_delay', methods=['POST'])
 def set_leds_delay():
@@ -1137,6 +1157,7 @@ def set_leds_delay():
         app.logger.error(str(e))
 
         return jsonify(success=False, message=str(e))
+
 
 @app.route('/update_leds_live_settings', methods=['POST'])
 def update_leds_live_settings():
@@ -1165,6 +1186,7 @@ def update_leds_live_settings():
         app.logger.error(str(e))
 
         return jsonify(success=False, message=str(e))
+
 
 @app.route('/move_image', methods=['POST'])
 def move_image():
@@ -1298,6 +1320,7 @@ def set_detection_enable():
 
         return jsonify(success=False, message=str(e))
 
+
 @app.route('/set_detection_min_confidence', methods=['POST'])
 def set_detection_min_confidence():
 
@@ -1321,6 +1344,7 @@ def set_detection_min_confidence():
 
         return jsonify(success=False, message=str(e))
 
+
 @app.route('/capture_image', methods=['POST'])
 def capture_image():
 
@@ -1337,6 +1361,7 @@ def capture_image():
         app.logger.error(str(e))
 
         return jsonify(success=False, message=str(e))
+
 
 @app.route('/set_jpeg_quality', methods=['POST'])
 def set_jpeg_quality():
@@ -1361,6 +1386,7 @@ def set_jpeg_quality():
 
         return jsonify(success=False, message=str(e))
 
+
 @app.route('/save_sample_rate', methods=['POST'])
 def save_sample_rate():
 
@@ -1384,6 +1410,7 @@ def save_sample_rate():
 
         return jsonify(success=False, message=str(e))
 
+
 @app.route('/get_gnss_data', methods=['POST'])
 def get_gnss_data():
 
@@ -1406,6 +1433,7 @@ def get_gnss_data():
         app.logger.error(str(e))
 
         return jsonify(success=False, message=str(e))
+
 
 @app.route('/gnss_sync_time', methods=['POST'])
 def gnss_sync_time():
@@ -1443,6 +1471,7 @@ def gnss_sync_time():
         app.logger.error(str(e))
 
         return jsonify(success=False, message=str(e))
+
 
 @app.route('/save_gnss_position', methods=['POST'])
 def save_gnss_position():
@@ -1545,18 +1574,28 @@ def check_updates():
 @app.route('/get_updates', methods=['POST'])
 def get_updates():
 
-    try:
+    global updates_available
 
-        updates_done = updates_get()
-        app.logger.info(f'updates done? {updates_done}')
+    if updates_available:
 
-        return jsonify(success=True, message='Updates done successfully', updates_done=updates_done)
+        try:
 
-    except Exception as e:
+            updates_done = updates_get()
+            app.logger.info(f'updates done? {updates_done}')
 
-        app.logger.error('' + str(e))
+            updates_available = False
 
-        return jsonify(success=False, message=str(e), updates_done=False)
+            return jsonify(success=True, message='Updates done successfully', updates_done=updates_done)
+
+        except Exception as e:
+
+            app.logger.error('' + str(e))
+
+            return jsonify(success=False, message=str(e), updates_done=False)
+
+    else:
+
+        return redirect('/')
 
 @app.before_request
 def log_request_info():

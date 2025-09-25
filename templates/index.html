@@ -259,7 +259,10 @@
                         {% if updates_available %}
                             <button type="submit" class="btn btn-primary" id="getUpdatesButton" onclick="getUpdates()">Update</button>
                         {% else %}
-                            <button type="submit" class="btn btn-primary" id="getUpdatesButton" onclick="getUpdates()">Update</button>
+<!--
+                            <button type="submit" class="btn btn-primary" id="getUpdatesButton" onclick="getUpdates()" disabled>Update</button>
+-->
+                            <button type="submit" class="btn btn-primary" id="getUpdatesButton" onclick="getUpdates()" disabled>Update</button>
                         {% endif %}
                         <button type="submit" class="btn btn-primary" id="checkUpdatesButton" onclick="checkUpdates()">Check</button>
                     </div>

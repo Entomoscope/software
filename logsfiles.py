@@ -31,7 +31,6 @@ class LogsFiles():
                 # Witty Pi logs
                 zipf.write(os.path.join(WITTY_PI_FOLDER, 'wittyPi.log'))
 
-
                 # journalctl
                 try:
 
@@ -47,17 +46,46 @@ class LogsFiles():
 
                     print(str(e))
 
+                # journalctl err
+                try:
+
+                    if os.path.exists(os.path.join(USER_FOLDER, 'journalctl_err.log')):
+                        os.remove(os.path.join(USER_FOLDER, 'journalctl_err.log'))
+                    with open(os.path.join(USER_FOLDER, 'journalctl_err.log'), "w") as outfile:
+                        run(['journalctl', '-p', 'err'], stdout=outfile)
+                    if os.path.exists(os.path.join(USER_FOLDER, 'journalctl_err.log')):
+                        zipf.write(os.path.join(USER_FOLDER, 'journalctl_err.log'))
+                        os.remove(os.path.join(USER_FOLDER, 'journalctl_err.log'))
+
+                except CalledProcessError as e:
+
+                    print(str(e))
+
+                # journalctl cron
+                try:
+
+                    if os.path.exists(os.path.join(USER_FOLDER, 'journalctl_cron.log')):
+                        os.remove(os.path.join(USER_FOLDER, 'journalctl_cron.log'))
+                    with open(os.path.join(USER_FOLDER, 'journalctl_cron.log'), "w") as outfile:
+                        run(['journalctl', '-t', 'CRON'], stdout=outfile)
+                    if os.path.exists(os.path.join(USER_FOLDER, 'journalctl_cron.log')):
+                        zipf.write(os.path.join(USER_FOLDER, 'journalctl_cron.log'))
+                        os.remove(os.path.join(USER_FOLDER, 'journalctl_cron.log'))
+
+                except CalledProcessError as e:
+
+                    print(str(e))
+
                 # dmesg
                 try:
 
                     if os.path.exists(os.path.join(USER_FOLDER, 'dmesg.log')):
                         os.remove(os.path.join(USER_FOLDER, 'dmesg.log'))
                     with open(os.path.join(USER_FOLDER, 'dmesg.log'), "w") as outfile:
-                        run(['dmesg'], stdout=outfile)
+                        run(['dmesg', '-HTx'], stdout=outfile)
                     if os.path.exists(os.path.join(USER_FOLDER, 'dmesg.log')):
                         zipf.write(os.path.join(USER_FOLDER, 'dmesg.log'))
                         os.remove(os.path.join(USER_FOLDER, 'dmesg.log'))
-
 
                 except CalledProcessError as e:
 

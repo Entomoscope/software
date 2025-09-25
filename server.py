@@ -38,6 +38,8 @@ from date_time import DateTime
 
 from globals_parameters import USER, TODAY_NOW, AI_MODEL, PYTHON_SCRIPTS_BASE_FOLDER, TMP_FOLDER, IMAGES_CAPTURE_FOLDER, SOUNDS_CAPTURE_FOLDER, TODAY, TOMORROW, LOGS_DESKTOP_FOLDER, WITTY_PI_FOLDER, DATA_FOLDER
 
+from updates import updates_check, updates_get
+
 import pigpio
 
 SERVER_PORT = 7777
@@ -72,6 +74,7 @@ werkzeug_logger.setLevel("DEBUG")
 
 app.config['UPLOAD_FOLDER'] = PYTHON_SCRIPTS_BASE_FOLDER
 
+app.logger.info('**************')
 app.logger.info('server started')
 
 cron = CronTab(user=USER)
@@ -167,6 +170,9 @@ microphone = None
 leds_rear_deported_uv = None
 leds_front = None
 
+updates_available = updates_check()
+app.logger.info(f'updates available? {updates_available}')
+
 @app.route('/')
 def index():
 
@@ -233,7 +239,7 @@ def index():
 
     gnss = Gnss2()
 
-    return make_response(render_template('index.html', configuration=configuration, rpi=rpi, tzone=tzone, sd_card=sd_card, external_disk=external_disk, battery_level=witty_pi.input_voltage, gnss=gnss, dateTime=dateTime, images_capture_state=images_capture_state, sounds_capture_state=sounds_capture_state))
+    return make_response(render_template('index.html', configuration=configuration, updates_available=updates_available, rpi=rpi, tzone=tzone, sd_card=sd_card, external_disk=external_disk, battery_level=witty_pi.input_voltage, gnss=gnss, dateTime=dateTime, images_capture_state=images_capture_state, sounds_capture_state=sounds_capture_state))
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -1517,6 +1523,40 @@ def get_cpu_temperature():
         app.logger.error('' + str(e))
 
         return jsonify(success=False, message=str(e))
+
+@app.route('/check_updates', methods=['POST'])
+def check_updates():
+
+    global updates_available
+
+    try:
+
+        updates_available = updates_check()
+        app.logger.info(f'updates available? {updates_available}')
+
+        return jsonify(success=True, message='Updates check successfully', updates_available=updates_available)
+
+    except Exception as e:
+
+        app.logger.error('' + str(e))
+
+        return jsonify(success=False, message=str(e), updates_available=updates_available)
+
+@app.route('/get_updates', methods=['POST'])
+def get_updates():
+
+    try:
+
+        updates_done = updates_get()
+        app.logger.info(f'updates done? {updates_done}')
+
+        return jsonify(success=True, message='Updates done successfully', updates_done=updates_done)
+
+    except Exception as e:
+
+        app.logger.error('' + str(e))
+
+        return jsonify(success=False, message=str(e), updates_done=False)
 
 @app.before_request
 def log_request_info():

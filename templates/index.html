@@ -211,11 +211,11 @@
               </div>
             </div>
         </div>
-        <!-- Battery Level -->
+        <!-- Battery -->
         <div class="col-4">
             <div class="card mt-3">
                 <div class="card-body">
-                    <h5 class="card-title">Battery level</h5>
+                    <h5 class="card-title">Battery</h5>
                     <p class="card-text">{{ battery_level }} V</p>
                 </div>
             </div>
@@ -241,6 +241,28 @@
                         <input type="file" name="file" id="ephemerisFileInput" accept=".csv"/>
                         <input type="submit" value="Send to Entomoscope">
                     </form>
+                </div>
+            </div>
+        </div>
+        <!-- Updates -->
+        <div class="col-4">
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Updates</h5>
+                    {% if updates_available %}
+                        <p id="updateText" class="card-text">Updates available</p>
+                    {% else %}
+                        <p id="updateText" class="card-text">No updates available</p>
+                    {% endif %}
+                    <hr/>
+                    <div class="form-button-center">
+                        {% if updates_available %}
+                            <button type="submit" class="btn btn-primary" id="getUpdatesButton" onclick="getUpdates()">Update</button>
+                        {% else %}
+                            <button type="submit" class="btn btn-primary" id="getUpdatesButton" onclick="getUpdates()">Update</button>
+                        {% endif %}
+                        <button type="submit" class="btn btn-primary" id="checkUpdatesButton" onclick="checkUpdates()">Check</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -288,6 +310,10 @@
 
     const configFileInput = document.getElementById('configFileInput')
 
+    const updateText = document.getElementById('updateText')
+    const getUpdatesButton = document.getElementById('getUpdatesButton')
+    const checkUpdatesButton = document.getElementById('checkUpdatesButton')
+
     const modalDialog = document.getElementById('modalDialog');
 
     //document.addEventListener("DOMContentLoaded", function() {
@@ -299,6 +325,65 @@
         //configFileInput.innerHTML = 'Choose a file...'
 
     //})
+
+    function checkUpdates() {
+
+        checkUpdatesButton.disabled = true
+
+        return fetch('/check_updates', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.updates_available) {
+                getUpdatesButton.disabled = false
+                updateText.innerText = 'Updates available'
+            }
+            else {
+                getUpdatesButton.disabled = true
+                updateText.innerText = 'No updates available'
+            }
+            checkUpdatesButton.disabled = false
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function getUpdates() {
+
+        getUpdatesButton.disabled = true
+
+        return fetch('/get_updates', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.updates_done) {
+                getUpdatesButton.disabled = true
+                updateText.innerText = 'Updates done. Restart the entomoscope.'
+            }
+            else {
+                getUpdatesButton.disabled = false
+                updateText.innerText = 'No updates done'
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
 
     function manageImagesCapture(action) {
 

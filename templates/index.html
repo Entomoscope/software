@@ -219,17 +219,6 @@
               </div>
             </div>
         </div>
-        <!-- Battery -->
-<!--
-        <div class="col-4">
-            <div class="card mt-3">
-                <div class="card-body">
-                    <h5 class="card-title">Battery</h5>
-                    <p class="card-text">{{ battery_level }} V</p>
-                </div>
-            </div>
-        </div>
--->
         <!-- Configuration File -->
         <div class="col-4">
             <div class="card mt-3">
@@ -315,6 +304,7 @@
     const gnssAltitude = document.getElementById('gnssAltitude')
     const gnssLastUpdate = document.getElementById('gnssLastUpdate')
 
+    const gnssUpdateButton = document.getElementById('gnssUpdateButton')
     const gnssSyncTimeButton = document.getElementById('gnssSyncTimeButton')
     const gnssSavePositionButton = document.getElementById('gnssSavePositionButton')
 
@@ -363,8 +353,9 @@
             checkUpdatesButton.disabled = false
         })
         .catch(error => {
-        console.error('Error updating settings:', error);
-        throw error;  // Re-throw the error for the next catch
+            checkUpdatesButton.disabled = false
+            console.error('Error updating settings:', error);
+            throw error;  // Re-throw the error for the next catch
         });
 
     }
@@ -392,8 +383,9 @@
             }
         })
         .catch(error => {
-        console.error('Error updating settings:', error);
-        throw error;  // Re-throw the error for the next catch
+            getUpdatesButton.disabled = false
+            console.error('Error updating settings:', error);
+            throw error;  // Re-throw the error for the next catch
         });
 
     }
@@ -515,13 +507,17 @@
             }
         })
         .catch(error => {
-        console.error('Error updating settings:', error);
-        throw error;  // Re-throw the error for the next catch
+            console.error('Error updating settings:', error);
+            throw error;  // Re-throw the error for the next catch
         });
 
     }
 
     function gnssUpdateData() {
+
+        gnssUpdateButton.disabled = true
+        gnssSyncTimeButton.disabled = true
+        gnssSavePositionButton.disabled = true
 
         return fetch('/get_gnss_data', {
             method: 'POST',
@@ -550,15 +546,23 @@
                     gnssSavePositionButton.disabled = false
                 }
             }
+            gnssUpdateButton.disabled = false
         })
         .catch(error => {
-        console.error('Error updating settings:', error);
-        throw error;  // Re-throw the error for the next catch
+            gnssUpdateButton.disabled = false
+            console.error('Error updating settings:', error);
+            throw error;  // Re-throw the error for the next catch
         });
+
+
 
     }
 
     function gnssSyncTime() {
+
+        gnssUpdateButton.disabled = true
+        gnssSyncTimeButton.disabled = true
+        gnssSavePositionButton.disabled = true
 
         return fetch('/gnss_sync_time', {
             method: 'POST',
@@ -570,16 +574,16 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-
                 console.log(data)
                 datetimeLocalText.innerText = data.date_time_info[0]
                 datetimeTimeZoneText.innerText = data.date_time_info[1]
-                gnssSyncTimeButton.disabled = true
             }
+            gnssUpdateButton.disabled = false
         })
         .catch(error => {
-        console.error('Error updating settings:', error);
-        throw error;  // Re-throw the error for the next catch
+            gnssUpdateButton.disabled = false
+            console.error('Error updating settings:', error);
+            throw error;  // Re-throw the error for the next catch
         });
 
     }
@@ -609,8 +613,8 @@
             }
         })
         .catch(error => {
-        console.error('Error updating settings:', error);
-        throw error;  // Re-throw the error for the next catch
+            console.error('Error updating settings:', error);
+            throw error;  // Re-throw the error for the next catch
         });
 
     }

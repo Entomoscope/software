@@ -33,8 +33,16 @@
           <a class="nav-link active" aria-current="page" href="{{ url_for('logs') }}">Logs</a>
         </li>
       </ul>
+      {% if updates_available %}
+        <span class="badge bg-success me-2" id="updateNavBar">
+            Update available
+        </span>
+      {% endif %}
+        <span class="badge bg-info text-dark me-2" id="batteryLevelNavBar">
+            {{ '%.1f' % battery_level }} V
+        </span>
         <span class="badge bg-info text-dark" id="cpuTempNavBar">
-            {{ '%.1f' %  rpi.get_temperature() }} &deg;C
+            {{ '%.1f' % rpi.get_temperature() }} &deg;C
         </span>
     </div>
   </div>

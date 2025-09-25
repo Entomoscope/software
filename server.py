@@ -128,6 +128,8 @@ dateTime = DateTime()
 tzone = datetime.now().astimezone().strftime('%Z')
 
 witty_pi = WittyPi()
+witty_pi.get_input_voltage()
+battery_level = witty_pi.input_voltage
 
 leds_intensity = [configuration.leds['intensity_front'], configuration.leds['intensity_rear_deported_uv']]
 
@@ -226,8 +228,6 @@ def index():
     sd_card.get_data()
     external_disk.get_data()
 
-    witty_pi.get_input_voltage()
-
     dateTime.get_date_time_info()
 
     tzone = datetime.now().astimezone().strftime('%Z')
@@ -239,7 +239,7 @@ def index():
 
     gnss = Gnss2()
 
-    return make_response(render_template('index.html', configuration=configuration, updates_available=updates_available, rpi=rpi, tzone=tzone, sd_card=sd_card, external_disk=external_disk, battery_level=witty_pi.input_voltage, gnss=gnss, dateTime=dateTime, images_capture_state=images_capture_state, sounds_capture_state=sounds_capture_state))
+    return make_response(render_template('index.html', configuration=configuration, updates_available=updates_available, rpi=rpi, tzone=tzone, sd_card=sd_card, external_disk=external_disk, battery_level=battery_level, gnss=gnss, dateTime=dateTime, images_capture_state=images_capture_state, sounds_capture_state=sounds_capture_state))
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -326,7 +326,7 @@ def data():
 
     istopdir = data_current_directory == DATA_FOLDER
 
-    return make_response(render_template('data.html', files=files, isdirs=isdirs, zip=zip, istopdir=istopdir, show_preview_file=show_preview_file, show_preview_image=show_preview_image, show_preview_sound=show_preview_sound, data_current_file=data_current_file, file_data=file_data, rpi=rpi))
+    return make_response(render_template('data.html', updates_available=updates_available, files=files, isdirs=isdirs, zip=zip, istopdir=istopdir, show_preview_file=show_preview_file, show_preview_image=show_preview_image, show_preview_sound=show_preview_sound, data_current_file=data_current_file, file_data=file_data, rpi=rpi, battery_level=battery_level))
 
 @app.route('/manage_data/<action>/<value>')
 def manage_data(action, value):
@@ -447,7 +447,7 @@ def global_settings():
 
     today = '-'.join([TODAY[:4], TODAY[4:6], TODAY[6:]])
 
-    return make_response(render_template('global_settings.html', configuration=configuration, today=today, tzone=tzone, startup=(startup_date, startup_time), shutdown=(shutdown_date, shutdown_time), zip=zip, rpi=rpi))
+    return make_response(render_template('global_settings.html', configuration=configuration, updates_available=updates_available, today=today, tzone=tzone, startup=(startup_date, startup_time), shutdown=(shutdown_date, shutdown_time), zip=zip, rpi=rpi, battery_level=battery_level))
 
 @app.route('/images_capture_settings')
 def images_capture_settings():
@@ -494,7 +494,7 @@ def images_capture_settings():
 
         leds_available = True
 
-    return make_response(render_template('images_capture_settings.html', camera_available=camera_available, leds_available=leds_available, configuration=configuration, rpi=rpi))
+    return make_response(render_template('images_capture_settings.html', updates_available=updates_available, camera_available=camera_available, leds_available=leds_available, configuration=configuration, rpi=rpi, battery_level=battery_level))
 
 @app.route('/sounds_capture_settings')
 def sounds_capture_settings():
@@ -539,7 +539,7 @@ def sounds_capture_settings():
     elif microphone_available == 1:
         app.logger.error('microphone not found')
 
-    return make_response(render_template('sounds_capture_settings.html', microphone_available=microphone_available, configuration=configuration, rpi=rpi))
+    return make_response(render_template('sounds_capture_settings.html', updates_available=updates_available, microphone_available=microphone_available, configuration=configuration, rpi=rpi, battery_level=battery_level))
 
 @app.route('/logs')
 def logs():
@@ -584,7 +584,7 @@ def logs():
 
     istopdir = logs_current_directory == LOGS_DESKTOP_FOLDER
 
-    return make_response(render_template('logs.html', files=files, isdirs=isdirs, zip=zip, istopdir=istopdir, show_preview_log=show_preview_log, logs_current_file=logs_current_file, log_data=log_data, rpi=rpi))
+    return make_response(render_template('logs.html', updates_available=updates_available, files=files, isdirs=isdirs, zip=zip, istopdir=istopdir, show_preview_log=show_preview_log, logs_current_file=logs_current_file, log_data=log_data, rpi=rpi, battery_level=battery_level))
 
 @app.route('/manage_logs/<action>/<value>')
 def manage_logs(action, value):

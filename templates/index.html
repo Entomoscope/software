@@ -33,9 +33,17 @@
           <a class="nav-link" href="{{ url_for('logs') }}">Logs</a>
         </li>
       </ul>
-      <span class="badge bg-info text-dark" id="cpuTempNavBar">
-        {{ '%.1f' %  rpi.get_temperature() }} &deg;C
-      </span>
+      {% if updates_available %}
+        <span class="badge bg-success me-2" id="updateNavBar">
+            Update available
+        </span>
+      {% endif %}
+        <span class="badge bg-info text-dark me-2" id="batteryLevelNavBar">
+            {{ '%.1f' % battery_level }} V
+        </span>
+        <span class="badge bg-info text-dark" id="cpuTempNavBar">
+            {{ '%.1f' % rpi.get_temperature() }} &deg;C
+        </span>
     </div>
   </div>
 </nav>
@@ -212,6 +220,7 @@
             </div>
         </div>
         <!-- Battery -->
+<!--
         <div class="col-4">
             <div class="card mt-3">
                 <div class="card-body">
@@ -220,6 +229,7 @@
                 </div>
             </div>
         </div>
+-->
         <!-- Configuration File -->
         <div class="col-4">
             <div class="card mt-3">

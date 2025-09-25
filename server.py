@@ -44,7 +44,7 @@ import pigpio
 
 SERVER_PORT = 7777
 DEBUG = True
-AI_ENABLE = False
+AI_ENABLE = True
 CAPTURE_DETECTION = True
 
 this_script = os.path.basename(__file__)[:-3]

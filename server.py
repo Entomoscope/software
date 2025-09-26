@@ -119,7 +119,7 @@ sd_card = Storage('sd')
 
 external_disk = Storage('external_disk')
 if not external_disk.available:
-    logger.warning('external disk not found')
+    app.logger.warning('external disk not found')
 
 gnss = None
 

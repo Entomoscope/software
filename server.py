@@ -1607,12 +1607,12 @@ def log_request_info():
 @app.errorhandler(500)
 def server_error(error):
     app.logger.error('An exception occurred during a request.')
-    return render_template('500.html', rpi=rpi)
+    return render_template('500.html', rpi=rpi, battery_level=battery_level)
 
 @app.errorhandler(404)
 def page_not_found(error):
     app.logger.error(error)
-    return render_template('404.html', rpi=rpi)
+    return render_template('404.html', rpi=rpi, battery_level=battery_level)
 
 if __name__ == '__main__':
 

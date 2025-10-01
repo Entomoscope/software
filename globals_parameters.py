@@ -78,6 +78,7 @@ else:
 logger.info('data folder: ' + DATA_FOLDER)
 
 SAVE_FOLDER = os.path.join(DATA_FOLDER, TODAY)
+
 if not os.path.exists(SAVE_FOLDER):
     try:
         os.mkdir(SAVE_FOLDER)
@@ -85,6 +86,8 @@ if not os.path.exists(SAVE_FOLDER):
     except PermissionError as e:
         logger.error(str(e))
         save_folder_created = False
+else:
+    save_folder_created = True
 
 if not save_folder_created:
 

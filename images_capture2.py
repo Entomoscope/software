@@ -268,8 +268,8 @@ def main():
                 leds_front.turn_off()
                 leds_rear_deported_uv.turn_off()
 
-            # Si IA disponible et IA activée => analyse de l'image capturée
-            if AI_AVAILABLE and configuration.ai_detection['enable']:
+            # Si IA disponible et IA activée et mode différent de Lepinoc => analyse de l'image capturée
+            if AI_AVAILABLE and configuration.ai_detection['enable'] and configuration.images_capture['mode'] != 'lepinoc' :
 
                 # Exécution du script IA
                 prediction = ai_model.predict(camera.frame_data_lores,

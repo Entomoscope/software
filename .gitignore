@@ -1,5 +1,6 @@
 # Entomoscope configuration file
 configuration.json
+configuration2.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

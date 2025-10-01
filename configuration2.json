@@ -1,6 +1,6 @@
 {
     "ai_detection": {
-        "enable": true,
+        "enable": false,
         "image_height": 192,
         "image_scale": 15,
         "image_width": 192,
@@ -83,7 +83,7 @@
         "satellites_used": 0
     },
     "images_capture": {
-        "enable": false,
+        "enable": true,
         "mode": "trap",
         "time_step": 5
     },
@@ -93,7 +93,7 @@
     "leds": {
         "delay_off": 0.0,
         "delay_on": 0.0,
-        "intensity_front": 0,
+        "intensity_front": 49,
         "intensity_rear_deported_uv": 0
     },
     "microphone": {
@@ -104,9 +104,9 @@
         "time_step": 300
     },
     "schedule": {
-        "enable": false,
-        "next_shutdown": "2025-09-18 18:00",
-        "next_startup": "2025-09-18 07:00",
+        "enable": true,
+        "next_shutdown": "2025-10-01 18:00",
+        "next_startup": "2025-10-01 15:03",
         "off_duration": 1,
         "on_duration": 1
     },

@@ -79,7 +79,22 @@ logger.info('data folder: ' + DATA_FOLDER)
 
 SAVE_FOLDER = os.path.join(DATA_FOLDER, TODAY)
 if not os.path.exists(SAVE_FOLDER):
-    os.mkdir(SAVE_FOLDER)
+    try:
+        os.mkdir(SAVE_FOLDER)
+        save_folder_created = True
+    except PermissionError as e:
+        logger.error(str(e))
+        save_folder_created = False
+
+if not save_folder_created:
+
+    DATA_FOLDER = os.path.join(DESKTOP_FOLDER, 'Data')
+    if not os.path.exists(DATA_FOLDER):
+        os.mkdir(DATA_FOLDER)
+
+    SAVE_FOLDER = os.path.join(DATA_FOLDER, TODAY)
+    if not os.path.exists(SAVE_FOLDER):
+        os.mkdir(SAVE_FOLDER)
 
 logger.info('save folder: ' + SAVE_FOLDER)
 

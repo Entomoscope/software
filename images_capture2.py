@@ -51,7 +51,9 @@ def main():
     file_handler.setFormatter(formatter)
     logger.setLevel("DEBUG")
 
-    logger.info('started')
+    logger.info('****************************')
+
+    logger.info('images capture started')
 
     logger.info(f'images capture folder: {IMAGES_CAPTURE_FOLDER}')
 
@@ -65,7 +67,7 @@ def main():
             # Si la broche SHUTDOWN_PIN passe à l'état haut => arret capture d'image
             if isSignalToShutdownReceived():
                 logger.info('shutdown signal received')
-                logger.info('stopped')
+                logger.info('images capture stopped')
                 exit()
 
             sleep(0.5)
@@ -145,17 +147,17 @@ def main():
     except BaseException as e:
         logger.error('something bad happended with the camera')
         logger.error(str(e))
-        logger.info('stopped')
+        logger.info('images capture stopped')
         exit()
 
     if camera.camera is None:
         logger.error('camera not found')
-        logger.info('stopped')
+        logger.info('images capture stopped')
         exit()
 
     if not camera.configured:
         logger.error('camera not configured')
-        logger.info('stopped')
+        logger.info('images capture stopped')
         exit()
 
     # Démarrage de la caméra
@@ -438,7 +440,7 @@ def main():
     # Arret caméra
     camera.stop()
 
-    logger.info('stopped')
+    logger.info('images capture stopped')
 
 if __name__=='__main__':
 

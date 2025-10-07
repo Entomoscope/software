@@ -88,7 +88,7 @@ class Microphone2():
 
             self.available = False
 
-            output = check_output(['AudioMoth-USB-Microphone', 'list']).decode('utf-8').split('\n')
+            output = check_output(['/usr/local/bin/AudioMoth-USB-Microphone', 'list']).decode('utf-8').split('\n')
 
             if output[-1] == '':
                 output.pop(-1)
@@ -102,9 +102,13 @@ class Microphone2():
 
                 self.available = True
 
+                logger.info(f'AudioMoth {self.id} found')
+
             else:
 
                 self.available = False
+
+                logger.error('AudioMoth not found')
 
         except BaseException as e:
 
@@ -128,7 +132,7 @@ class Microphone2():
                     if 'AudioMoth' in self.audio.get_device_info_by_index(i).get('name'):
                         self.device_index = i
                         audimoth_found = True
-                        logger.info(f'Audiomoth device found with index {i}')
+                        logger.info(f'Audiomoth {self.id} found with audio device index {i}')
                         break
 
                 if audimoth_found:
@@ -173,9 +177,9 @@ class Microphone2():
 
             try:
 
-                output = check_output(['AudioMoth-USB-Microphone', 'config', str(sample_rate), str(self.id)])
+                output = check_output(['/usr/local/bin/AudioMoth-USB-Microphone', 'config', str(sample_rate), str(self.id)])
 
-                output = check_output(['AudioMoth-USB-Microphone', 'persist'])
+                output = check_output(['/usr/local/bin/AudioMoth-USB-Microphone', 'persist'])
 
                 logger.info(f'sample rate set to {sample_rate} Hz')
 
@@ -190,7 +194,7 @@ class Microphone2():
 
             try:
 
-                output = check_output(['AudioMoth-USB-Microphone', 'read']).decode('utf-8').split('\n')
+                output = check_output(['/usr/local/bin/AudioMoth-USB-Microphone', 'read']).decode('utf-8').split('\n')
 
                 self.id = output[1].split(' ')[0]
 
@@ -205,7 +209,7 @@ class Microphone2():
 
             try:
 
-                output = check_output(['AudioMoth-USB-Microphone', 'firmware']).decode('utf-8').split('\n')
+                output = check_output(['/usr/local/bin/AudioMoth-USB-Microphone', 'firmware']).decode('utf-8').split('\n')
 
                 if output[-1] == '':
                     output.pop(-1)
@@ -228,7 +232,7 @@ class Microphone2():
 
             try:
 
-                output = check_output(['AudioMoth-USB-Microphone', 'read']).decode('utf-8').split('\n')
+                output = check_output(['/usr/local/bin/AudioMoth-USB-Microphone', 'read']).decode('utf-8').split('\n')
 
                 if output[-1] == '':
                     output.pop(-1)

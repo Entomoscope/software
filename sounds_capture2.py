@@ -14,7 +14,7 @@ from configuration2 import Configuration2
 from peripherals.microphone2 import Microphone2
 from peripherals.pinout import SOUNDS_CAPTURE_ACTIVITY_PIN, SHUTDOWN_PIN
 
-from globals_parameters import SOUNDS_CAPTURE_FOLDER, LOGS_DESKTOP_FOLDER, TODAY
+from globals_parameters import SOUNDS_CAPTURE_FOLDER, LOGS_DESKTOP_FOLDER, TODAY, MICROPHONE_DETECTION_INTERVAL, MICROPHONE_DETECTION_NUM_TRIES
 
 this_script = os.path.basename(__file__)[:-3]
 
@@ -40,7 +40,9 @@ def main():
     file_handler.setFormatter(formatter)
     logger.setLevel("DEBUG")
 
-    logger.info('started.')
+    logger.info('****************************')
+
+    logger.info('sounds capture started')
 
     logger.info(f'sounds capture folder: {SOUNDS_CAPTURE_FOLDER}')
 
@@ -49,11 +51,9 @@ def main():
         logger.info('in standby mode. Wait for resume signal to start capturing sounds')
 
         while isSignalToStandByReceived():
-
             if isSignalToShutdownReceived():
-
                 logger.info('shutdown signal received')
-                logger.info('stopped')
+                logger.info('sounds capture stopped')
                 exit()
 
             sleep(0.5)
@@ -63,18 +63,24 @@ def main():
     configuration = Configuration2()
     logger.info('configuration file read')
 
-    num_max_tries = 15
+    for i in range(0, MICROPHONE_DETECTION_NUM_TRIES):
 
-    for i in range(0, num_max_tries):
-
-        logger.info(f'try to find the microphone and open stream {i}/{num_max_tries}')
+        logger.info(f'Detecting the microphone ({i}/{MICROPHONE_DETECTION_NUM_TRIES} tries)')
 
         microphone = Microphone2()
 
-        if microphone.stream:
+        if microphone.available:
             break
         else:
-            sleep(5)
+            start_detect_time = time()
+            while (time() - start_detect_time) < MICROPHONE_DETECTION_INTERVAL:
+
+                if isSignalToShutdownReceived():
+                    logger.info('shutdown signal received')
+                    logger.info('sounds capture stopped')
+                    exit()
+
+                sleep(0.5)
 
     if microphone.available:
 
@@ -216,7 +222,9 @@ def main():
 
         logger.error('microphone not found')
 
-    logger.info('stopped')
+        pi.write(SOUNDS_CAPTURE_ACTIVITY_PIN, 1)
+
+    logger.info(f'sounds capture stopped')
 
 if __name__=='__main__':
 

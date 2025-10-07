@@ -57,6 +57,8 @@ h.setFormatter(f)
 logger.addHandler(h)
 logger.setLevel("DEBUG")
 
+logger.info('****************************')
+
 logger.info('today: ' + TODAY)
 logger.info('tomorrow: ' + TOMORROW)
 
@@ -143,5 +145,8 @@ SCHEDULE_SCRIPT_PATH = os.path.join(WITTY_PI_FOLDER, 'runScript.sh')
 SCHEDULE_FILE_PATH = os.path.join(WITTY_PI_FOLDER, 'schedule.wpi')
 
 DELAY_BEFORE_SHUTDOWN = 5
+
+MICROPHONE_DETECTION_INTERVAL = 5
+MICROPHONE_DETECTION_NUM_TRIES = 15
 
 logger.info(f'delay before shutdown: {DELAY_BEFORE_SHUTDOWN} seconds')

@@ -33,6 +33,8 @@ def main():
     file_handler.setFormatter(formatter)
     logger.setLevel("DEBUG")
 
+    logger.info('****************************')
+
     logger.info('starting the entomoscope')
 
     witty_pi = WittyPi()

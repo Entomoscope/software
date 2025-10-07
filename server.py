@@ -74,7 +74,7 @@ werkzeug_logger.setLevel("DEBUG")
 
 app.config['UPLOAD_FOLDER'] = PYTHON_SCRIPTS_BASE_FOLDER
 
-app.logger.info('**************')
+app.logger.info('****************************')
 app.logger.info('server started')
 
 cron = CronTab(user=USER)

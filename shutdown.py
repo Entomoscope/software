@@ -29,6 +29,8 @@ if __name__ == '__main__':
     file_handler.setFormatter(formatter)
     logger.setLevel("DEBUG")
 
+    logger.info('****************************')
+
     logger.info('shutting down the entomoscope')
 
     pi = pigpio.pi()

@@ -277,7 +277,7 @@ def upload_configuration_file():
                         app.logger.info('Ephemeris file sent to the entomoscope')
                     return redirect('/')
 
-                except Exception as e:
+                except BaseException as e:
 
                     app.logger.error(str(e))
                     return f'Error sending file to the entomoscope: {str(e)}', 500
@@ -811,7 +811,7 @@ def manage_images_capture():
 
         return jsonify(success=True, message='Images capture managed successfully')
 
-    except Exception as e:
+    except BaseException as e:
 
         app.logger.error(str(e))
 
@@ -849,7 +849,7 @@ def manage_sounds_capture():
 
         return jsonify(success=True, message='Sounds capture managed successfully')
 
-    except Exception as e:
+    except BaseException as e:
 
         app.logger.error(str(e))
 
@@ -909,7 +909,7 @@ def save_configuration():
 
         return jsonify(success=True, message='Configuration saved successfully')
 
-    except Exception as e:
+    except BaseException as e:
 
         app.logger.error(str(e))
 
@@ -989,7 +989,7 @@ def update_settings():
 
         return jsonify(success=True, message='Settings updated successfully', data=data, tzone=tzone)
 
-    except Exception as e:
+    except BaseException as e:
 
         app.logger.error(str(e))
 
@@ -1009,7 +1009,7 @@ def update_camera_live_settings():
 
         return jsonify(success=success, message='Camera live setting set successfully')
 
-    except Exception as e:
+    except BaseException as e:
 
         app.logger.error(str(e))
 
@@ -1077,22 +1077,25 @@ def apply_camera_settings(settingId, settingValue):
 
             try:
                 camera.camera.stop_encoder(camera.encoder)
-            except:
+            except BaseException as e:
                 app.logger.error(str(e))
             camera.camera.stop()
 
-            camera.camera.configure(camera.camera_config)
+            # camera.camera.configure(camera.camera_config)
 
             if settingId == 'LensPosition':
                 camera.camera.set_controls({'AfMode': libcamera.controls.AfModeEnum.Manual, settingId: settingValue})
             elif settingId == 'AfMode' and settingValue == libcamera.controls.AfModeEnum.Manual:
                 camera.camera.set_controls({settingId: settingValue, 'LensPosition': autofocus['lens_position']})
+            elif settingId == 'ScalerCrop':
+                camera.camera.configure(camera.camera_config)
+                camera.camera.set_controls({settingId: settingValue})
             else:
                 camera.camera.set_controls({settingId: settingValue})
 
             try:
                 camera.camera.start_encoder(camera.encoder)
-            except:
+            except BaseException as e:
                 app.logger.error(str(e))
 
             camera.camera.start()
@@ -1125,7 +1128,7 @@ def set_images_capture_mode():
 
         return jsonify(success=True, message='Images capture mode set successfully')
 
-    except Exception as e:
+    except BaseException as e:
 
         app.logger.error(str(e))
 
@@ -1152,7 +1155,7 @@ def set_leds_delay():
 
         return jsonify(success=True, message='LEDs delay set successfully')
 
-    except Exception as e:
+    except BaseException as e:
 
         app.logger.error(str(e))
 
@@ -1181,7 +1184,7 @@ def update_leds_live_settings():
 
         return jsonify(success=True, message='LEDs live setting set successfully')
 
-    except Exception as e:
+    except BaseException as e:
 
         app.logger.error(str(e))
 
@@ -1227,7 +1230,7 @@ def move_image():
 
         return jsonify(success=True, message="Image moved successfully", crop_limits=crop_limits)
 
-    except Exception as e:
+    except BaseException as e:
 
         app.logger.error(str(e))
 
@@ -1254,7 +1257,7 @@ def set_server_settings():
 
         return jsonify(success=True, message="Settings updated successfully")
 
-    except Exception as e:
+    except BaseException as e:
 
         app.logger.error(str(e))
 
@@ -1290,7 +1293,7 @@ def set_detection_scale():
 
         return jsonify(success=True, message="Settings updated successfully")
 
-    except Exception as e:
+    except BaseException as e:
 
         app.logger.error(str(e))
 
@@ -1314,7 +1317,7 @@ def set_detection_enable():
 
         return jsonify(success=True, message="Settings updated successfully")
 
-    except Exception as e:
+    except BaseException as e:
 
         app.logger.error(str(e))
 
@@ -1338,7 +1341,7 @@ def set_detection_min_confidence():
 
         return jsonify(success=True, message="Settings updated successfully")
 
-    except Exception as e:
+    except BaseException as e:
 
         app.logger.error(str(e))
 
@@ -1356,7 +1359,7 @@ def capture_image():
 
         return jsonify(success=True, message="Settings updated successfully")
 
-    except Exception as e:
+    except BaseException as e:
 
         app.logger.error(str(e))
 
@@ -1380,7 +1383,7 @@ def set_jpeg_quality():
 
         return jsonify(success=True, message="Settings updated successfully")
 
-    except Exception as e:
+    except BaseException as e:
 
         app.logger.error(str(e))
 
@@ -1404,7 +1407,7 @@ def save_sample_rate():
 
         return jsonify(success=True, message='Microphone sample rate saved successfully', data=sample_rate)
 
-    except Exception as e:
+    except BaseException as e:
 
         app.logger.error(str(e))
 
@@ -1428,7 +1431,7 @@ def get_gnss_data():
 
         return jsonify(success=True, message='GNSS data get successfully', data=gnss.data)
 
-    except Exception as e:
+    except BaseException as e:
 
         app.logger.error(str(e))
 
@@ -1466,7 +1469,7 @@ def gnss_sync_time():
 
             return jsonify(success=False, message='RPi time not synchronized with GNSS')
 
-    except Exception as e:
+    except BaseException as e:
 
         app.logger.error(str(e))
 
@@ -1504,7 +1507,7 @@ def save_gnss_position():
 
         return jsonify(success=True, message='GNSS position saved successfully', data=[latitude, ns, longitude, ew, altitude, satellites_used])
 
-    except Exception as e:
+    except BaseException as e:
 
         app.logger.error(str(e))
 

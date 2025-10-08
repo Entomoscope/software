@@ -215,7 +215,7 @@ class Camera2():
                     logger.info(f'lores format {lores_format}')
                     logger.info(f'lores size {lores_size}')
 
-                except RuntimeError as e:
+                except BaseException as e:
 
                     logger.error('camera not configured')
                     logger.error(str(e))
@@ -256,7 +256,7 @@ class Camera2():
                     logger.info(f'lores format {lores_format}')
                     logger.info(f'lores size {lores_size}')
 
-                except RuntimeError as e:
+                except BaseException as e:
 
                     logger.error('camera not configured')
                     logger.error(str(e))
@@ -333,7 +333,7 @@ class Camera2():
             self.started = True
             logger.info('camera started')
 
-        except RuntimeError as e:
+        except BaseException as e:
 
             logger.error('camera not started')
             logger.error(str(e))
@@ -352,7 +352,7 @@ class Camera2():
                 self.started = False
                 logger.info('camera stopped')
 
-        except RuntimeError as e:
+        except BaseException as e:
 
             logger.error('camera not stopped')
             logger.error(str(e))

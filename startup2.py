@@ -56,7 +56,7 @@ def main():
 
             lepinoc_startup_set = False
 
-            if configuration.images_capture['mode'].lower() == 'lepinoc':
+            if configuration.mode['mode'].lower() == 'lepinoc':
 
                 ephemeris = Ephemeris()
 

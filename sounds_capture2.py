@@ -98,11 +98,11 @@ def main():
             shutdown_signal_received = False
             standby_signal_received = False
 
-            on_duration = configuration.schedule['on_duration'] * 60
-            off_duration = configuration.schedule['off_duration'] * 60
+            on_duration = configuration.schedule['on_duration']
+            off_duration = configuration.schedule['off_duration']
 
-            logger.info(f"on duration: {configuration.schedule['on_duration']} minutes")
-            logger.info(f"off duration: {configuration.schedule['off_duration']} minutes")
+            logger.info(f"on duration: {configuration.schedule['on_duration']} seconds")
+            logger.info(f"off duration: {configuration.schedule['off_duration']} seconds")
 
             on = True
             off = not(on)
@@ -196,11 +196,11 @@ def main():
 
                             logger.info(f"sound capture duration {configuration.sounds_capture['duration']} seconds")
 
-                            on_duration = configuration.schedule['on_duration'] * 60
-                            off_duration = configuration.schedule['off_duration'] * 60
+                            on_duration = configuration.schedule['on_duration']
+                            off_duration = configuration.schedule['off_duration']
 
-                            logger.info(f"on duration: {configuration.schedule['on_duration']} minutes")
-                            logger.info(f"off duration: {configuration.schedule['off_duration']} minutes")
+                            logger.info(f"on duration: {configuration.schedule['on_duration']} seconds")
+                            logger.info(f"off duration: {configuration.schedule['off_duration']} seconds")
 
                     if isSignalToShutdownReceived() or shutdown_signal_received:
                         logger.info('shutdown signal received')

@@ -308,8 +308,23 @@
                     <div class="form-check">
                         {% if configuration['camera']['autofocus']['mode'] == 'Manual' %}
                         <input type="range" class="form-range" min="0" max="32" step="0.1" id="manualFocusRange" value="{{ configuration.camera['autofocus']['lens_position'] }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
+                        <div class="input-group mb-1">
+                            <input type="number" id="manualFocusRangeNumber" class="form-control" min="0" step="0.1" max="32" value="{{ configuration.camera['autofocus']['lens_position'] }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
+                            <div class="input-group-text">dioptres</div>
+                        </div>
+                        <div class="form-button-center">
+                            <div class="btn-group mt-2" role="group" aria-label="Standard Button Group">
+                                <button type="submit" class="btn btn-primary" id="manualFocusPlus" onclick="manualFocus('minus')">-</button>
+                                <input type="number" id="manualFocusStep" class="form-control" min="0" step="0.1" max="1" value="0.1" onchange=""/>
+                                <button type="submit" class="btn btn-primary" id="manualFocusMinus" onclick="manualFocus('plus')">+</button>
+                            </div>
+                        </div>
                         {% else %}
                         <input type="range" class="form-range" min="0" max="32" step="0.1" id="manualFocusRange" value="{{ configuration.camera['autofocus']['lens_position'] }}" onchange="adjustSliderSetting('LensPosition', this.value)" disabled />
+                        <div class="input-group mb-1">
+                            <input type="number" id="manualFocusRangeNumber" class="form-control" min="0" step="0.1" max="32" value="{{ configuration.camera['autofocus']['lens_position'] }}" onchange="adjustSliderSetting('LensPosition', this.value)" disabled />
+                            <div class="input-group-text">dioptres</div>
+                        </div>
                         {% endif %}
                     </div>
                     <hr/>
@@ -535,11 +550,11 @@
                         <!-- LEDs - Intensity Rear/Deported/UV -->
                         <div class="form-group">
                             <div class="d-flex w-100 align-items-center justify-content-between">
-                                {% if configuration['images_capture']['mode'] == 'trap' %}
+                                {% if configuration['mode']['mode'] == 'trap' %}
                                 <strong class="mb-1"><label for="contrast" class="form-label" id="ledsRearDeportedUvLabel">LEDs rear ({{ configuration['leds']['intensity_rear_deported_uv'] }}%)</label></strong>
-                                {% elif configuration['images_capture']['mode'] == 'lepinoc' or configuration['images_capture']['mode'] == 'moth' %}
+                                {% elif configuration['mode']['mode'] == 'lepinoc' or configuration['mode']['mode'] == 'moth' %}
                                 <strong class="mb-1"><label for="contrast" class="form-label" id="ledsRearDeportedUvLabel">LEDs UV ({{ configuration['leds']['intensity_rear_deported_uv'] }}%)</label></strong>
-                                {% elif configuration['images_capture']['mode'] == 'deported' %}
+                                {% elif configuration['mode']['mode'] == 'deported' %}
                                 <strong class="mb-1"><label for="contrast" class="form-label" id="ledsRearDeportedUvLabel">LEDs deported ({{ configuration['leds']['intensity_rear_deported_uv'] }}%)</label></strong>
                                 {% endif %}
                             </div>
@@ -628,6 +643,10 @@
     //const afMode1Check = document.getElementById('AfMode1');
     const afMode2Check = document.getElementById('AfMode2');
     const manualFocusRange = document.getElementById('manualFocusRange');
+    const manualFocusRangeNumber = document.getElementById('manualFocusRangeNumber');
+    const manualFocusMinus = document.getElementById('manualFocusMinus');
+    const manualFocusStep = document.getElementById('manualFocusStep');
+    const manualFocusPlus = document.getElementById('manualFocusPlus');
     const autofocusSaveButton = document.getElementById('autofocusSaveButton');
 
     // Auto Exposure/Gain
@@ -788,6 +807,7 @@
                 //afMode1Check.checked = false
                 afMode2Check.checked = false
                 manualFocusRange.disabled = false
+                manualFocusRangeNumber.disabled = false
                 settingValue = 'Manual'
             }
             //else if (selection == '1') {
@@ -802,6 +822,7 @@
                 //afMode1Check.checked = false
                 afMode2Check.checked = true
                 manualFocusRange.disabled = true
+                manualFocusRangeNumber.disabled = true
                 settingValue = 'Continuous'
             }
 
@@ -877,6 +898,12 @@
         if (settingId == 'LensPosition') {
             autofocusSaveButton.disabled = false
             url = '/update_camera_live_settings'
+            manualFocusRange.value = settingValue
+            manualFocusRange.disabled = true
+            manualFocusRangeNumber.value = settingValue
+            manualFocusRangeNumber.disabled = true
+            manualFocusMinus.disabled = true
+            manualFocusPlus.disabled = true
         } else if (settingId == 'Brightness' || settingId == 'Contrast' || settingId == 'Saturation' || settingId == 'Sharpness') {
             imageAdjustmentsSaveButton.disabled = false
             url = '/update_camera_live_settings'
@@ -926,12 +953,54 @@
                     currentAnalogueGain.innerText = 'Analogue gain (' + settingValue + '):'
                 }
             }
+            if (settingId == 'LensPosition') {
+                manualFocusRange.disabled = false
+                manualFocusRangeNumber.disabled = false
+                manualFocusMinus.disabled = false
+                manualFocusPlus.disabled = false
+            }
         })
         .catch(error => {
         console.error('Error updating settings:', error);
         throw error;  // Re-throw the error for the next catch
         });
 
+    }
+
+    function manualFocus(dir) {
+
+        focus = parseFloat(manualFocusRange.value)
+
+        focus_step = parseFloat(manualFocusStep.value)
+
+        console.log(focus)
+        console.log(focus_step)
+
+        if (dir == 'minus')
+        {
+            if (focus > focus_step) {
+                focus -= focus_step
+                manualFocusRange.value = focus
+                manualFocusRangeNumber.value = focus
+                adjustSliderSetting('LensPosition', focus)
+            }
+        }
+        else
+        {
+            if ((32.0 - focus) > focus_step) {
+                focus += focus_step
+                manualFocusRange.value = focus
+                manualFocusRangeNumber.value = focus
+                adjustSliderSetting('LensPosition', focus)
+            }
+        }
+
+
+
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     function saveConfiguration(settingId) {
@@ -949,6 +1018,9 @@
             updateSaveButton('files', true)
         } else if (settingId == 'image_position') {
             saveConfiguration('ai_detection')
+            console.log("Enter sleep")
+            sleep(500)
+            console.log("Exit sleep")
             updateSaveButton('image_position', true)
         } else if (settingId == 'ai_detection') {
             updateSaveButton('ai_detection', true)

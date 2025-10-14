@@ -5,11 +5,12 @@
     <p class="config_level_2" id="scheduleEnableConfigurationText">Enable: {{ configuration['schedule']['enable'] }}</p>
     <p class="config_level_2" id="scheduleStartupConfigurationText">Next startup: {{ configuration['schedule']['next_startup'] }} {{ tzone }}</p>
     <p class="config_level_2" id="scheduleShutdownConfigurationText">Next shutdown: {{ configuration['schedule']['next_shutdown'] }} {{ tzone }}</p>
-    <p class="config_level_2" id="scheduleOnDurationConfigurationText">On duration: {{ configuration['schedule']['on_duration'] }} minutes</p>
-    <p class="config_level_2" id="scheduleOffDurationConfigurationText">Off duration: {{ configuration['schedule']['off_duration'] }} minutes</p>
+    <p class="config_level_2" id="scheduleOnDurationConfigurationText">On duration: {{ configuration['schedule']['on_duration'] }} seconds</p>
+    <p class="config_level_2" id="scheduleOffDurationConfigurationText">Off duration: {{ configuration['schedule']['off_duration'] }} seconds</p>
+    <p class="config_level_1">Mode</p>
+    <p class="config_level_2" id="captureModeConfigurationText">Mode: {{ configuration['mode']['mode'] }}</p>
     <p class="config_level_1">Images capture</p>
     <p class="config_level_2" id="imagesCaptureEnableConfigurationText">Enable: {{ configuration['images_capture']['enable'] }}</p>
-    <p class="config_level_2" id="imagesCaptureModeConfigurationText">Mode: {{ configuration['images_capture']['mode'] }}</p>
     <p class="config_level_2" id="imagesCaptureTimeStepConfigurationText">Time step: {{ configuration['images_capture']['time_step'] }} seconds</p>
     <p class="config_level_1">Sound capture</p>
     <p class="config_level_2" id="soundsCaptureEnableConfigurationText">Enable: {{ configuration['sounds_capture']['enable'] }}</p>
@@ -70,11 +71,11 @@
     <!-- LEDs -->
     <p class="config_level_1">Leds</p>
     <p class="config_level_2" id="ledsFrontConfigurationText">Intensity front: {{ configuration['leds']['intensity_front'] }} %</p>
-    {% if configuration['images_capture']['mode'] == 'trap' %}
+    {% if configuration['mode']['mode'] == 'trap' %}
         <p class="config_level_2" id="ledsRearDeportedUvConfigurationText">Intensity rear: {{ configuration['leds']['intensity_rear_deported_uv'] }} %</p>
-    {% elif configuration['images_capture']['mode'] == 'lepinoc' or configuration['images_capture']['mode'] == 'moth' %}
+    {% elif configuration['mode']['mode'] == 'lepinoc' or configuration['mode']['mode'] == 'moth' %}
         <p class="config_level_2" id="ledsRearDeportedUvConfigurationText">Intensity UV: {{ configuration['leds']['intensity_rear_deported_uv'] }} %</p>
-    {% elif configuration['images_capture']['mode'] == 'deported' %}
+    {% elif configuration['mode']['mode'] == 'deported' %}
         <p class="config_level_2" id="ledsRearDeportedUvConfigurationText">Intensity deported: {{ configuration['leds']['intensity_rear_deported_uv'] }} %</p>
     {% endif %}
     <p class="config_level_2" id="ledsDelayOnConfigurationText">Delay on: {{ configuration['leds']['delay_on'] }} seconds</p>

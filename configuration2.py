@@ -8,7 +8,7 @@ DEFAULT_CONFIGURATION_FILE = 'configuration2.json'
 
 class Configuration2():
 
-    _attributes = {'ai_detection', 'camera', 'cooling_system', 'ephemeris', 'files', 'gnss', 'images_capture', 'laser', 'leds', 'microphone', 'monitor_environment', 'schedule', 'site', 'server', 'sounds_capture'}
+    _attributes = {'ai_detection', 'camera', 'cooling_system', 'ephemeris', 'files', 'gnss', 'images_capture', 'laser', 'leds', 'microphone', 'mode', 'monitor_environment', 'schedule', 'site', 'server', 'sounds_capture'}
 
     def __init__(self, configuration_file=DEFAULT_CONFIGURATION_FILE):
 
@@ -111,7 +111,6 @@ class Configuration2():
 
         setattr(self, 'images_capture', {
                             'enable': False,
-                            'mode': 'trap',
                             'time_step': 5
                         })
 
@@ -128,6 +127,10 @@ class Configuration2():
 
         setattr(self, 'microphone', {
                             "sample_rate": 44100
+                        })
+
+        setattr(self, 'mode', {
+                            'mode': 'trap'
                         })
 
         setattr(self, 'monitor_environment', {

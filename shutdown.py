@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
         if witty_pi.get_latest_action_reason_code() == witty_pi.ALARM_SHUTDOWN:
 
-            if configuration.images_capture['mode'].lower() != 'lepinoc':
+            if configuration.mode['mode'].lower() != 'lepinoc':
 
                 alarm = witty_pi.get_shutdown_alarm()
 

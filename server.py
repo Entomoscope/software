@@ -133,7 +133,7 @@ battery_level = witty_pi.input_voltage
 
 leds_intensity = [configuration.leds['intensity_front'], configuration.leds['intensity_rear_deported_uv']]
 
-images_capture_mode = configuration.images_capture['mode']
+capture_mode = configuration.mode['mode']
 
 autofocus = {'mode': configuration.camera['autofocus']['mode'], 'lens_position': configuration.camera['autofocus']['lens_position']}
 white_balance = {'enable': configuration.camera['auto_white_balance']['enable'], 'mode': configuration.camera['auto_white_balance']['mode']}
@@ -930,9 +930,10 @@ def update_settings():
         if data[0] == 'site':
             configuration.site['id'] = data[1]['id']
             data = None
+        elif data[0] == 'capture_mode':
+            configuration.mode['mode'] = capture_mode
         elif data[0] == 'images_capture':
             configuration.images_capture['enable'] = data[1]['enable']
-            configuration.images_capture['mode'] = images_capture_mode
             configuration.images_capture['time_step'] = int(data[1]['time_step'])
             data = None
         elif data[0] == 'sounds_capture':
@@ -1113,18 +1114,18 @@ def apply_camera_settings(settingId, settingValue):
     return success
 
 
-@app.route('/set_images_capture_mode', methods=['POST'])
-def set_images_capture_mode():
+@app.route('/set_capture_mode', methods=['POST'])
+def set_capture_mode():
 
-    global images_capture_mode
+    global capture_mode
 
     try:
 
-        images_capture_mode = request.get_json()
+        capture_mode = request.get_json()
 
         app.logger.info('json: %s', request.get_json())
 
-        app.logger.info(f'images capture mode set to {images_capture_mode}')
+        app.logger.info(f'images capture mode set to {capture_mode}')
 
         return jsonify(success=True, message='Images capture mode set successfully')
 

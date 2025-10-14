@@ -79,12 +79,12 @@ def main():
     configuration = Configuration2()
     logger.info('configuration file read')
 
-    logger.info(f"capturing images using mode {configuration.images_capture['mode']}")
+    logger.info(f"capturing images using mode {configuration.mode['mode']}")
     logger.info(f"capturing images using time step of {configuration.images_capture['time_step']} seconds")
 
     # Paramétrage des LEDs Front
     leds_front = Leds(LEDS_FRONT_PIN)
-    if configuration.images_capture['mode'] == 'trap' or configuration.images_capture['mode'] == 'lepinoc' or configuration.images_capture['mode'] == 'moth':
+    if configuration.mode['mode'] == 'trap' or configuration.mode['mode'] == 'lepinoc' or configuration.mode['mode'] == 'moth':
         leds_front.set_intensity(configuration.leds['intensity_front'])
         logger.info(f"LEDs front intensity set to {configuration.leds['intensity_front']} %")
     else: # Mode deported
@@ -95,23 +95,23 @@ def main():
     leds_rear_deported_uv = Leds(LEDS_REAR_DEPORTED_UV_PIN)
     leds_rear_deported_uv.set_intensity(configuration.leds['intensity_rear_deported_uv'])
 
-    if configuration.images_capture['mode'] == 'trap':
+    if configuration.mode['mode'] == 'trap':
         logger.info(f"LEDs rear intensity set to {configuration.leds['intensity_rear_deported_uv']} %")
-    elif configuration.images_capture['mode'] == 'lepinoc':
+    elif configuration.mode['mode'] == 'lepinoc':
         logger.info(f"LEDs UV intensity set to {configuration.leds['intensity_rear_deported_uv']} %")
-    elif configuration.images_capture['mode'] == 'deported':
+    elif configuration.mode['mode'] == 'deported':
         logger.info(f"LEDs deported intensity set to {configuration.leds['intensity_rear_deported_uv']} %")
-    elif configuration.images_capture['mode'] == 'moth':
+    elif configuration.mode['mode'] == 'moth':
         logger.info(f"LEDs UV intensity set to {configuration.leds['intensity_rear_deported_uv']} %")
 
     logger.info(f"delay LEDs on before image capture {configuration.leds['delay_on']} seconds")
     logger.info(f"delay LEDs off after image capture {configuration.leds['delay_on']} seconds")
 
     # Configuration des périodes d'alternance On/Off de capture d'images
-    on_duration = configuration.schedule['on_duration'] * 60
-    logger.info(f"capture on duration: {configuration.schedule['on_duration']} minutes")
-    off_duration = configuration.schedule['off_duration'] * 60
-    logger.info(f"capture off duration: {configuration.schedule['off_duration']} minutes")
+    on_duration = configuration.schedule['on_duration']
+    logger.info(f"capture on duration: {configuration.schedule['on_duration']} seconds")
+    off_duration = configuration.schedule['off_duration']
+    logger.info(f"capture off duration: {configuration.schedule['off_duration']} seconds")
 
     # Activation de l'IA si disponible et activée dans le fichier de configuration
     if AI_AVAILABLE:
@@ -164,7 +164,7 @@ def main():
     camera.start()
 
     # Si capture en mode Lepinoc ou Moth => allumer les LEDs UV
-    if configuration.images_capture['mode'] == 'lepinoc' or configuration.images_capture['mode'] == 'moth':
+    if configuration.mode['mode'] == 'lepinoc' or configuration.mode['mode'] == 'moth':
         leds_rear_deported_uv.turn_on()
 
     # Définition des metadata complémentaires enregistrées pour chaque capture
@@ -232,16 +232,16 @@ def main():
             file_path = os.path.join(IMAGES_CAPTURE_FOLDER, now_str)
 
             # Gestion des LEDs avant capture d'image en fonction du mode
-            if configuration.images_capture['mode'] == 'trap': # Front On et Rear On
+            if configuration.mode['mode'] == 'trap': # Front On et Rear On
                 leds_front.turn_on()
                 leds_rear_deported_uv.turn_on()
-            elif configuration.images_capture['mode'] == 'moth': # Front On et UV Off
+            elif configuration.mode['mode'] == 'moth': # Front On et UV Off
                 leds_front.turn_on()
                 leds_rear_deported_uv.turn_off()
-            elif configuration.images_capture['mode'] == 'lepinoc': # Front On et UV Off
+            elif configuration.mode['mode'] == 'lepinoc': # Front On et UV Off
                 leds_front.turn_on()
                 leds_rear_deported_uv.turn_off()
-            elif configuration.images_capture['mode'] == 'deported': # Front Off et Deported On
+            elif configuration.mode['mode'] == 'deported': # Front Off et Deported On
                 leds_front.turn_off()
                 leds_rear_deported_uv.turn_on()
 
@@ -257,21 +257,21 @@ def main():
                 sleep(configuration.leds['delay_off'])
 
             # Gestion des LEDs après capture d'image en fonction du mode
-            if configuration.images_capture['mode'] == 'trap': # Front Off et Rear Off
+            if configuration.mode['mode'] == 'trap': # Front Off et Rear Off
                 leds_front.turn_off()
                 leds_rear_deported_uv.turn_off()
-            elif configuration.images_capture['mode'] == 'moth': # Front Off et UV On
+            elif configuration.mode['mode'] == 'moth': # Front Off et UV On
                 leds_front.turn_off()
                 leds_rear_deported_uv.turn_on()
-            elif configuration.images_capture['mode'] == 'lepinoc': # Front Off et UV On
+            elif configuration.mode['mode'] == 'lepinoc': # Front Off et UV On
                 leds_front.turn_off()
                 leds_rear_deported_uv.turn_on()
-            elif configuration.images_capture['mode'] == 'deported': # Front Off et Deported Off
+            elif configuration.mode['mode'] == 'deported': # Front Off et Deported Off
                 leds_front.turn_off()
                 leds_rear_deported_uv.turn_off()
 
             # Si IA disponible et IA activée et mode différent de Lepinoc => analyse de l'image capturée
-            if AI_AVAILABLE and configuration.ai_detection['enable'] and configuration.images_capture['mode'] != 'lepinoc' :
+            if AI_AVAILABLE and configuration.ai_detection['enable'] and configuration.mode['mode'] != 'lepinoc' :
 
                 # Exécution du script IA
                 prediction = ai_model.predict(camera.frame_data_lores,
@@ -333,9 +333,9 @@ def main():
             logger.info('standby signal received. Images capture paused')
 
             # Extinction des LEDs
-            if configuration.images_capture['mode'] == 'trap' or configuration.images_capture['mode'] == 'lepinoc' or configuration.images_capture['mode'] == 'deported' or configuration.images_capture['mode'] == 'moth':
+            if configuration.mode['mode'] == 'trap' or configuration.mode['mode'] == 'lepinoc' or configuration.mode['mode'] == 'deported' or configuration.mode['mode'] == 'moth':
                 leds_rear_deported_uv.turn_off()
-            if configuration.images_capture['mode'] == 'trap' or configuration.images_capture['mode'] == 'lepinoc' or configuration.images_capture['mode'] == 'moth':
+            if configuration.mode['mode'] == 'trap' or configuration.mode['mode'] == 'lepinoc' or configuration.mode['mode'] == 'moth':
                 leds_front.turn_off()
 
             # Tant que la broche IMAGES_CAPTURE_ACTIVITY_PIN est à l'état haut => capture d'image en pause
@@ -363,7 +363,7 @@ def main():
                 logger.info(f'configuration file saved to {file_path}')
 
                 # Paramétrage des LEDs Front
-                if configuration.images_capture['mode'] == 'trap' or configuration.images_capture['mode'] == 'lepinoc' or configuration.images_capture['mode'] == 'moth':
+                if configuration.mode['mode'] == 'trap' or configuration.mode['mode'] == 'lepinoc' or configuration.mode['mode'] == 'moth':
                     leds_front.set_intensity(configuration.leds['intensity_front'])
                     logger.info(f"LEDs front intensity set to {configuration.leds['intensity_front']} %")
                 else: # Mode deported
@@ -373,13 +373,13 @@ def main():
                 # Paramétrage des LEDs Rear/Deported/UV
                 leds_rear_deported_uv = Leds(LEDS_REAR_DEPORTED_UV_PIN)
                 leds_rear_deported_uv.set_intensity(configuration.leds['intensity_rear_deported_uv'])
-                if configuration.images_capture['mode'] == 'trap':
+                if configuration.mode['mode'] == 'trap':
                     logger.info(f"LEDs rear intensity set to {configuration.leds['intensity_rear_deported_uv']} %")
-                elif configuration.images_capture['mode'] == 'lepinoc':
+                elif configuration.mode['mode'] == 'lepinoc':
                     logger.info(f"LEDs UV intensity set to {configuration.leds['intensity_rear_deported_uv']} %")
-                elif configuration.images_capture['mode'] == 'deported':
+                elif configuration.mode['mode'] == 'deported':
                     logger.info(f"LEDs deported intensity set to {configuration.leds['intensity_rear_deported_uv']} %")
-                elif configuration.images_capture['mode'] == 'moth':
+                elif configuration.mode['mode'] == 'moth':
                     logger.info(f"LEDs UV intensity set to {configuration.leds['intensity_rear_deported_uv']} %")
 
                 # Définition des metadata complémentaires enregistrées pour chaque capture
@@ -399,10 +399,10 @@ def main():
                 logger.info(f"delay LEDs off after image capture {configuration.leds['delay_on']} seconds")
 
                 # Configuration des périodes d'alternance On/Off de capture d'images
-                on_duration = configuration.schedule['on_duration'] * 60
-                logger.info(f"on duration: {configuration.schedule['on_duration']} minutes")
-                off_duration = configuration.schedule['off_duration'] * 60
-                logger.info(f"off duration: {configuration.schedule['off_duration']} minutes")
+                on_duration = configuration.schedule['on_duration']
+                logger.info(f"on duration: {configuration.schedule['on_duration']} seconds")
+                off_duration = configuration.schedule['off_duration']
+                logger.info(f"off duration: {configuration.schedule['off_duration']} seconds")
 
                 # Activation de l'IA si disponible et activée dans le fichier de configuration
                 if AI_AVAILABLE and configuration.ai_detection['enable']:

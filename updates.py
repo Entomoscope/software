@@ -34,12 +34,12 @@ def updates_check():
     try:
 
         logger.info('fetching...')
-        result = run(['git', '--git-dir=' + git_folder, 'fetch'], timeout=10, text=True, capture_output=True)
+        result = run(['git', '-C', git_folder, 'fetch'], timeout=10, text=True, capture_output=True)
 
         if result.returncode == 0:
 
             logger.info('status...')
-            result = run(['git', '--git-dir=' + git_folder, 'status'], timeout=10, text=True, capture_output=True)
+            result = run(['git', '-C', git_folder, 'status'], timeout=10, text=True, capture_output=True)
 
             if result.returncode == 0:
 
@@ -72,7 +72,7 @@ def updates_get():
         try:
 
             logger.info('pulling updates...')
-            result = run(['git', '--git-dir=' + git_folder, 'pull'], text=True, capture_output=True)
+            result = run(['git', '-C', git_folder, 'pull'], text=True, capture_output=True)
 
             if result.returncode == 0:
                 logger.info(result.stdout.strip())
@@ -98,7 +98,7 @@ def updates_back_to_previous():
     try:
 
         logger.info('back to previous version...')
-        result = run(['git', '--git-dir=' + git_folder, 'reset', '--hard'], text=True, capture_output=True)
+        result = run(['git', '-C', git_folder, 'reset', '--hard'], text=True, capture_output=True)
 
         if result.returncode == 0:
             logger.info(result.stdout.strip())

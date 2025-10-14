@@ -243,11 +243,11 @@
                 </div>
             </div>
         </div>
-        <!-- Updates -->
+        <!-- Firmware -->
         <div class="col-4">
             <div class="card mt-3">
                 <div class="card-body">
-                    <h5 class="card-title">Updates</h5>
+                    <h5 class="card-title">Firmware</h5>
                     {% if updates_available %}
                         <p id="updateText" class="card-text">Updates available</p>
                     {% else %}
@@ -372,7 +372,8 @@
         .then(data => {
             if (data.updates_done) {
                 getUpdatesButton.disabled = true
-                updateText.innerText = 'Updates done. Restart the entomoscope.'
+                updateText.innerText = 'Updates downloaded and installed. Restart the entomoscope.'
+                updateText.style = 'font-weight: bold; color: red'
             }
             else {
                 getUpdatesButton.disabled = false

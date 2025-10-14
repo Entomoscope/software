@@ -22,32 +22,33 @@ logger.setLevel("DEBUG")
 
 updates_available = False
 
-git_folder = os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, '.git')
+git_folder = os.path.join(PYTHON_SCRIPTS_BASE_FOLDER)
 
 def updates_check():
 
     global updates_available
 
     # Check for update on the GitHub repo
-    logger.info('updates checking...')
+    logger.info('checking updates...')
 
     try:
 
-        logger.info('fetching...')
+        logger.info('fetching main branch...')
         result = run(['git', '-C', git_folder, 'fetch'], timeout=10, text=True, capture_output=True)
 
         if result.returncode == 0:
 
-            logger.info('status...')
+            logger.info('getting status...')
             result = run(['git', '-C', git_folder, 'status'], timeout=10, text=True, capture_output=True)
 
             if result.returncode == 0:
 
+                for r in result.stdout.split('\n'):
+                    logger.info(r)
+
                 if 'Your branch is behind' in result.stdout:
-                    logger.info('updates available')
                     updates_available = True
                 else:
-                    logger.info('no updates available')
                     updates_available = False
 
             else:
@@ -75,10 +76,12 @@ def updates_get():
             result = run(['git', '-C', git_folder, 'pull'], text=True, capture_output=True)
 
             if result.returncode == 0:
-                logger.info(result.stdout.strip())
+                for r in result.stdout.split('\n'):
+                    logger.info(r)
                 updates_done = True
             else:
-                logger.error(result.stderr.strip())
+                for r in result.stderr.split('\n'):
+                    logger.error(r)
                 updates_done = False
 
         except Exception as e:
@@ -101,9 +104,11 @@ def updates_back_to_previous():
         result = run(['git', '-C', git_folder, 'reset', '--hard'], text=True, capture_output=True)
 
         if result.returncode == 0:
-            logger.info(result.stdout.strip())
+            for r in result.stdout.split('\n'):
+                logger.info(r)
         else:
-            logger.error(result.stderr.strip())
+            for r in result.stderr.split('\n'):
+                logger.error(r)
 
     except Exception as e:
 

@@ -4,7 +4,7 @@ import os
 from subprocess import run
 import logging
 
-from globals_parameters import LOGS_DESKTOP_FOLDER, TODAY
+from globals_parameters import PYTHON_SCRIPTS_BASE_FOLDER, LOGS_DESKTOP_FOLDER, TODAY
 
 this_script = os.path.basename(__file__)[:-3]
 
@@ -22,6 +22,8 @@ logger.setLevel("DEBUG")
 
 updates_available = False
 
+git_folder = os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, '.git')
+
 def updates_check():
 
     global updates_available
@@ -32,12 +34,12 @@ def updates_check():
     try:
 
         logger.info('fetching...')
-        result = run(['git', 'fetch'], timeout=10, text=True, capture_output=True)
+        result = run(['git', '--git-dir=' + git_folder, 'fetch'], timeout=10, text=True, capture_output=True)
 
         if result.returncode == 0:
 
             logger.info('status...')
-            result = run(['git', 'status'], timeout=10, text=True, capture_output=True)
+            result = run(['git', '--git-dir=' + git_folder, 'status'], timeout=10, text=True, capture_output=True)
 
             if result.returncode == 0:
 
@@ -70,7 +72,7 @@ def updates_get():
         try:
 
             logger.info('pulling updates...')
-            result = run(['git', 'pull'], text=True, capture_output=True)
+            result = run(['git', '--git-dir=' + git_folder, 'pull'], text=True, capture_output=True)
 
             if result.returncode == 0:
                 logger.info(result.stdout.strip())
@@ -90,6 +92,22 @@ def updates_get():
         updates_done = False
 
     return updates_done
+
+def updates_back_to_previous():
+
+    try:
+
+        logger.info('back to previous version...')
+        result = run(['git', '--git-dir=' + git_folder, 'reset', '--hard'], text=True, capture_output=True)
+
+        if result.returncode == 0:
+            logger.info(result.stdout.strip())
+        else:
+            logger.error(result.stderr.strip())
+
+    except Exception as e:
+
+        logger.error(str(e))
 
 if __name__ == '__main__':
 

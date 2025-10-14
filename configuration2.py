@@ -42,7 +42,7 @@ class Configuration2():
                         'enable': False,
                         'min_confidence': 0.8,
                         'image_height': 320,
-                        "image_scale": 1.0,
+                        "image_scale": 10.0,
                         'image_width': 320
                         })
 
@@ -57,9 +57,9 @@ class Configuration2():
                         'auto_exposure_gain': {
                             'analogue_gain': 1,
                             "enable": True,
-                            'mode': 'Manual',
+                            'mode': 'Auto',
                             'exposure_mode': 'Normal',
-                            'exposure_time': 2000,
+                            'exposure_time': 10000,
                             'exposure_value': 0.0,
                             'flicker_mode': 'Off',
                             'flicker_period': 10000
@@ -70,13 +70,15 @@ class Configuration2():
                             'saturation': 1.0,
                             'sharpness': 1.0
                         },
-                        'image_height': 1900,
-                        'image_width': 1900,
-
+                        'image_height': 1500,
+                        'image_width': 1500,
                         'model': 'v3',
                         'sensor': {
-                            'crop_limits': [1285, 390, 1900, 1900],
-                            'mode': 2
+                            'capture_mode': 2,
+                            'crop_limits': [1554, 546, 1500, 1500],
+                            'height_max': 2592,
+                            'preview_mode': 1,
+                            'width_max': 4608
                         },
                         'auto_white_balance': {
                             'enable': True,
@@ -122,7 +124,7 @@ class Configuration2():
                             'delay_off': 0,
                             'delay_on': 0,
                             'intensity_front': 0,
-                            'intensity_rear_deported_uv': 90
+                            'intensity_rear_deported_uv': 0
                         })
 
         setattr(self, 'microphone', {
@@ -140,8 +142,8 @@ class Configuration2():
 
         setattr(self, 'schedule', {
                             'enable': False,
-                            'off_duration': 1,
-                            'on_duration': 1,
+                            'off_duration': 60,
+                            'on_duration': 60,
                             'next_startup': '2025-01-01 07:00',
                             'next_shutdown': '2025-01-01 18:00',
                         })
@@ -161,7 +163,7 @@ class Configuration2():
                         })
 
         setattr(self, 'sounds_capture', {
-                            'duration': 3,
+                            'duration': 60,
                             'enable': False
                         })
 

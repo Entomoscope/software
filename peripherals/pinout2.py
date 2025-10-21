@@ -1,3 +1,6 @@
+# Shtartup complete pin
+STARTUP_PIN = 10
+
 # Shutdown pin
 SHUTDOWN_PIN = 22
 

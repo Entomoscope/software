@@ -117,20 +117,20 @@ class WittyPi():
 
     def get_date(self):
 
-        year = self.read_register(64)
-        year = ((year & 0b11110000) >> 4) * 10 + (year & 0b00001111)
-        month = self.read_register(63)
-        month = ((month & 0b11110000) >> 4) * 10 + (month & 0b00001111)
-        day = self.read_register(61)
-        day = ((day & 0b11110000) >> 4) * 10 + (day & 0b00001111)
-        hour = self.read_register(60)
-        hour = ((hour & 0b11110000) >> 4) * 10 + (hour & 0b00001111)
-        minute = self.read_register(59)
-        minute = ((minute & 0b11110000) >> 4) * 10 + (minute & 0b00001111)
-        second = self.read_register(58)
-        second = ((second & 0b11110000) >> 4) * 10 + (second & 0b00001111)
+        self.year = self.read_register(64)
+        self.year = ((self.year & 0b11110000) >> 4) * 10 + (self.year & 0b00001111)
+        self.month = self.read_register(63)
+        self.month = ((self.month & 0b11110000) >> 4) * 10 + (self.month & 0b00001111)
+        self.day = self.read_register(61)
+        self.day = ((self.day & 0b11110000) >> 4) * 10 + (self.day & 0b00001111)
+        self.hour = self.read_register(60)
+        self.hour = ((self.hour & 0b11110000) >> 4) * 10 + (self.hour & 0b00001111)
+        self.minute = self.read_register(59)
+        self.minute = ((self.minute & 0b11110000) >> 4) * 10 + (self.minute & 0b00001111)
+        self.second = self.read_register(58) & 0b01111111 # line 217 in wittypi/utilities.sh
+        self.second = ((self.second & 0b11110000) >> 4) * 10 + (self.second & 0b00001111)
 
-        self.date = f'{year + 2000}-{month:02d}-{day:02d} {hour:02d}:{minute:02d}:{second:02d}'
+        self.date = f'{self.year + 2000}-{self.month:02d}-{self.day:02d} {self.hour:02d}:{self.minute:02d}:{self.second:02d}'
 
     def get_firmware_id(self):
 

@@ -23,7 +23,7 @@ from crontab import CronTab
 
 from configuration2 import Configuration2
 
-from peripherals.pinout2 import IMAGES_CAPTURE_ACTIVITY_PIN, SOUNDS_CAPTURE_ACTIVITY_PIN, SHUTDOWN_PIN, LEDS_FRONT_PIN, LEDS_REAR_DEPORTED_UV_PIN
+from peripherals.pinout2 import IMAGES_CAPTURE_ACTIVITY_PIN, SOUNDS_CAPTURE_ACTIVITY_PIN, SHUTDOWN_PIN, STARTUP_PIN, LEDS_FRONT_PIN, LEDS_REAR_DEPORTED_UV_PIN
 from peripherals.rpi import Rpi
 from peripherals.storage import Storage
 from peripherals.leds import Leds
@@ -41,6 +41,8 @@ from globals_parameters import USER, TODAY_NOW, AI_MODEL, PYTHON_SCRIPTS_BASE_FO
 from updates import updates_check, updates_get
 
 import pigpio
+
+pi = pigpio.pi()
 
 SERVER_PORT = 7777
 DEBUG = True
@@ -74,12 +76,13 @@ werkzeug_logger.setLevel("DEBUG")
 
 app.config['UPLOAD_FOLDER'] = PYTHON_SCRIPTS_BASE_FOLDER
 
+while pi.read(STARTUP_PIN) == 0:
+    sleep(0.5)
+
 app.logger.info('****************************')
 app.logger.info('server started')
 
 cron = CronTab(user=USER)
-
-pi = pigpio.pi()
 
 if pi.read(SHUTDOWN_PIN) == 1:
 

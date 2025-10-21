@@ -14,7 +14,7 @@ from configuration2 import Configuration2
 from peripherals.camera2 import Camera2
 from peripherals.leds import Leds
 from peripherals.laser import Laser
-from peripherals.pinout2 import IMAGES_CAPTURE_ACTIVITY_PIN, SHUTDOWN_PIN, LEDS_REAR_DEPORTED_UV_PIN, LEDS_FRONT_PIN
+from peripherals.pinout2 import IMAGES_CAPTURE_ACTIVITY_PIN, SHUTDOWN_PIN, STARTUP_PIN, LEDS_REAR_DEPORTED_UV_PIN, LEDS_FRONT_PIN
 from peripherals.rpi import Rpi
 
 from globals_parameters import IMAGES_CAPTURE_FOLDER, AI_MODEL, LOGS_DESKTOP_FOLDER, TODAY, AI_MODEL_FILE
@@ -28,6 +28,10 @@ else:
     AI_AVAILABLE = False
 
 this_script = os.path.basename(__file__)[:-3]
+
+def isStartupCompleted():
+
+    return pi.read(STARTUP_PIN)
 
 def isSignalToShutdownReceived():
 
@@ -50,6 +54,11 @@ def main():
     formatter = logging.Formatter('%(asctime)s;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
     file_handler.setFormatter(formatter)
     logger.setLevel("DEBUG")
+
+    while not isStartupCompleted():
+        if isSignalToShutdownReceived():
+            exit()
+        sleep(0.5)
 
     logger.info('****************************')
 

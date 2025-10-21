@@ -12,11 +12,15 @@ pi = pigpio.pi()
 from configuration2 import Configuration2
 
 from peripherals.microphone2 import Microphone2
-from peripherals.pinout2 import SOUNDS_CAPTURE_ACTIVITY_PIN, SHUTDOWN_PIN
+from peripherals.pinout2 import SOUNDS_CAPTURE_ACTIVITY_PIN, SHUTDOWN_PIN, STARTUP_PIN
 
 from globals_parameters import SOUNDS_CAPTURE_FOLDER, LOGS_DESKTOP_FOLDER, TODAY, MICROPHONE_DETECTION_INTERVAL, MICROPHONE_DETECTION_NUM_TRIES
 
 this_script = os.path.basename(__file__)[:-3]
+
+def isStartupCompleted():
+
+    return pi.read(STARTUP_PIN)
 
 def isSignalToShutdownReceived():
 
@@ -39,6 +43,11 @@ def main():
     formatter = logging.Formatter('%(asctime)s;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
     file_handler.setFormatter(formatter)
     logger.setLevel("DEBUG")
+
+    while not isStartupCompleted():
+        if isSignalToShutdownReceived():
+            exit()
+        sleep(0.5)
 
     logger.info('****************************')
 

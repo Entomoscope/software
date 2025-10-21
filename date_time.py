@@ -25,6 +25,24 @@ class DateTime():
 
         call(cmd, shell=True)
 
+    def set_time(self, year, month, day, hours, minutes, seconds):
+
+        cmd = f'sudo date --set "{year}-{month:02d}-{day:02d} {hours:02d}:{minutes:02d}:{seconds:02d}"'
+
+        call(cmd, shell=True)
+
+    def start_web_synchronisation(self):
+
+        cmd = 'sudo timedatectl set-ntp on'
+
+        call(cmd, shell=True)
+
+    def stop_web_synchronisation(self):
+
+        cmd = 'sudo timedatectl set-ntp off'
+
+        call(cmd, shell=True)
+
     def __str__(self):
 
         return '\n'.join(self.date_time_info)

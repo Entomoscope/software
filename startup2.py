@@ -8,14 +8,20 @@ from subprocess import check_output
 
 import pigpio
 
-from peripherals.pinout2 import IMAGES_CAPTURE_ACTIVITY_PIN, SOUNDS_CAPTURE_ACTIVITY_PIN, SHUTDOWN_PIN
+from peripherals.pinout2 import IMAGES_CAPTURE_ACTIVITY_PIN, SOUNDS_CAPTURE_ACTIVITY_PIN, SHUTDOWN_PIN, STARTUP_PIN
 from peripherals.wittypi import WittyPi
 from peripherals.externaldisk import ExternalDisk
 from ephemeris import Ephemeris
+from date_time import DateTime
 
 from globals_parameters import LOGS_DESKTOP_FOLDER, TODAY, TODAY_NOW, TOMORROW, TOMORROW_NOW
 
 from configuration2 import Configuration2
+
+pi = pigpio.pi()
+
+pi.write(SHUTDOWN_PIN, 0)
+pi.write(STARTUP_PIN, 0)
 
 def main():
 
@@ -29,15 +35,26 @@ def main():
     filename = os.path.join(today_log_path, TODAY + '_' + this_script + '.log')
     file_handler = logging.FileHandler(filename, mode="a", encoding="utf-8")
     logger.addHandler(file_handler)
-    formatter = logging.Formatter('%(asctime)s;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
+    formatter = logging.Formatter('XX/XX/XXXX;XX:XX:XX;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"')
     file_handler.setFormatter(formatter)
     logger.setLevel("DEBUG")
 
     logger.info('****************************')
 
-    logger.info('starting the entomoscope')
+    logger.info('starting up the system')
 
     witty_pi = WittyPi()
+
+    witty_pi.get_date()
+
+    dateTime = DateTime()
+
+    dateTime.set_time(witty_pi.year, witty_pi.month, witty_pi.day, witty_pi.hour, witty_pi.minute, witty_pi.second)
+
+    formatter = logging.Formatter('%(asctime)s;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
+    file_handler.setFormatter(formatter)
+
+    logger.info(f'system time set to: "{witty_pi.day:02d}/{witty_pi.month:02d}/{2000+witty_pi.year} {witty_pi.hour:02d}:{witty_pi.minute:02d}:{witty_pi.second:02d}"')
 
     if witty_pi.get_latest_action_reason_code() == witty_pi.ALARM_STARTUP:
         logger.info('startup due to RTC alarm')
@@ -139,10 +156,6 @@ def main():
         else:
             logger.warning('external disk found but not mounted')
 
-    pi = pigpio.pi()
-
-    pi.write(SHUTDOWN_PIN, 0)
-
     if configuration.images_capture['enable'] and (witty_pi.get_latest_action_reason_code() == witty_pi.ALARM_STARTUP or witty_pi.get_latest_action_reason_code() == witty_pi.ALARM1_DELAYED):
         pi.write(IMAGES_CAPTURE_ACTIVITY_PIN, 0)
         logger.info(f'GPIO{IMAGES_CAPTURE_ACTIVITY_PIN:02d} set to 0')
@@ -161,7 +174,9 @@ def main():
         logger.info(f'GPIO{SOUNDS_CAPTURE_ACTIVITY_PIN:02d} set to 1')
         logger.info(f'sounds capture paused')
 
-    logger.info('system started')
+    pi.write(STARTUP_PIN, 1)
+
+    logger.info('startup completed')
 
 if __name__ == '__main__':
 

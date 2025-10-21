@@ -6,7 +6,7 @@ from datetime import datetime
 
 from peripherals.wittypi import WittyPi
 from peripherals.externaldisk import ExternalDisk
-from peripherals.pinout import SHUTDOWN_PIN
+from peripherals.pinout2 import SHUTDOWN_PIN
 from globals_parameters import LOGS_DESKTOP_FOLDER, TODAY, TOMORROW, DELAY_BEFORE_SHUTDOWN, PYTHON_SCRIPTS_BASE_FOLDER, TMP_FOLDER
 
 from logsfiles import LogsFiles

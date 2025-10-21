@@ -802,27 +802,33 @@
     function adjustCheckboxSetting(settingId, selection) {
 
         if (settingId == 'AfMode') {
-            if (selection == '0') {
+            if (selection == '0') { // Manual
                 afMode0Check.checked = true
                 //afMode1Check.checked = false
                 afMode2Check.checked = false
                 manualFocusRange.disabled = false
                 manualFocusRangeNumber.disabled = false
+                manualFocusMinus.disabled = false
+                manualFocusStep.disabled = false
+                manualFocusPlus.disabled = false
                 settingValue = 'Manual'
             }
-            //else if (selection == '1') {
+            //else if (selection == '1') { // Auto
                 //afMode0Check.checked = false
                 //afMode1Check.checked = true
                 //afMode2Check.checked = false
                 //manualFocusRange.disabled = true
                 //settingValue = 'Auto'
             //}
-            else if (selection == '2') {
+            else if (selection == '2') { // Continuous
                 afMode0Check.checked = false
                 //afMode1Check.checked = false
                 afMode2Check.checked = true
                 manualFocusRange.disabled = true
                 manualFocusRangeNumber.disabled = true
+                manualFocusMinus.disabled = true
+                manualFocusStep.disabled = true
+                manualFocusPlus.disabled = true
                 settingValue = 'Continuous'
             }
 

@@ -1,28 +1,17 @@
-# Ornithoscope board
-# LED 1 Blue    GPIO23
-# LED 1 Red     GPIO24
-# LED 1 Green   GPIO10
-# LED 2 Blue    GPIO09
-# LED 2 Red     GPIO25
-# LED 2 Green   GPIO11
-# LED 3 Blue    GPIO13
-# LED 3 Red     GPIO19
-# LED 3 Green   GPIO16
-# LED 4 Blue    GPIO26
-# LED 4 Red     GPIO20
-# LED 4 Green   GPIO21
-
+# Shutdown pin
 SHUTDOWN_PIN = 22
 
+# Images capture activity pin
 IMAGES_CAPTURE_ACTIVITY_PIN = 5
+
+# Sounds capture activity pin
 SOUNDS_CAPTURE_ACTIVITY_PIN = 6
 
-LEDS_REAR_DEPORTED_UV_PIN = 24
+# Fan pin
+FAN_PIN = 18
 
+# LEDs front pin
 LEDS_FRONT_PIN = 23
 
-GNSS_EXI_PIN = 25
-
-GNSS_RESET_PIN = 9
-
-FAN_PIN = 18
+# LEDs Rear/Deported/UV pin
+LEDS_REAR_DEPORTED_UV_PIN = 24

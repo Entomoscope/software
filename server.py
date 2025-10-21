@@ -717,67 +717,73 @@ def generate_frames():
 
         if camera:
 
-            frame = camera.get_preview_frame()
+            try:
 
-            if AI_AVAILABLE and AI_ENABLE and configuration.ai_detection['enable']:
+                frame = camera.get_preview_frame()
 
-                data = np.frombuffer(frame, dtype=np.uint8)
+                if AI_AVAILABLE and AI_ENABLE and configuration.ai_detection['enable']:
 
-                frame2 = cv2.imdecode(data, 1)
+                    data = np.frombuffer(frame, dtype=np.uint8)
 
-                image_width = frame2.shape[1]
-                image_height = frame2.shape[0]
+                    frame2 = cv2.imdecode(data, 1)
 
-                frameDetect = cv2.resize(frame2, (configuration.ai_detection['image_width'], configuration.ai_detection['image_height']))
+                    image_width = frame2.shape[1]
+                    image_height = frame2.shape[0]
 
-                prediction = ai_model.predict(frameDetect, imgsz=(frameDetect.shape[0], frameDetect.shape[1]), conf=configuration.ai_detection['min_confidence'], show=False, save=False, save_txt=False, verbose=False)[0]
+                    frameDetect = cv2.resize(frame2, (configuration.ai_detection['image_width'], configuration.ai_detection['image_height']))
 
-                insect_detected = len(prediction.boxes) > 0
+                    prediction = ai_model.predict(frameDetect, imgsz=(frameDetect.shape[0], frameDetect.shape[1]), conf=configuration.ai_detection['min_confidence'], show=False, save=False, save_txt=False, verbose=False)[0]
 
-                if insect_detected is True:
+                    insect_detected = len(prediction.boxes) > 0
 
-                    speed = prediction.speed['preprocess'] + prediction.speed['inference'] + prediction.speed['postprocess']
-                    app.logger.info(f'Detection - Num box: {len(prediction.boxes)} - Speed: {speed:.0f} ms')
+                    if insect_detected is True:
 
-                    idx_color = 0
-                    for box in prediction.boxes:
-                        box_lists = box.xywhn.tolist()
-                        for box_list in box_lists:
-                            x, y, w, h = int(box_list[0] * image_width), int(box_list[1] * image_height), int(box_list[2] * image_width), int(box_list[3] * image_height)
-                            frame2 = cv2.rectangle(frame2, (int(x-w/2),int(y-h/2)), (int(x+w/2),int(y+h/2)), ai_boxes_color[idx_color], 2)
-                            idx_color += 1
-                            if idx_color > len(ai_boxes_color):
-                                idx_color = 0
+                        speed = prediction.speed['preprocess'] + prediction.speed['inference'] + prediction.speed['postprocess']
+                        app.logger.info(f'Detection - Num box: {len(prediction.boxes)} - Speed: {speed:.0f} ms')
 
-                    img_encode = cv2.imencode('.jpg', frame2)[1]
+                        idx_color = 0
+                        for box in prediction.boxes:
+                            box_lists = box.xywhn.tolist()
+                            for box_list in box_lists:
+                                x, y, w, h = int(box_list[0] * image_width), int(box_list[1] * image_height), int(box_list[2] * image_width), int(box_list[3] * image_height)
+                                frame2 = cv2.rectangle(frame2, (int(x-w/2),int(y-h/2)), (int(x+w/2),int(y+h/2)), ai_boxes_color[idx_color], 2)
+                                idx_color += 1
+                                if idx_color >= len(ai_boxes_color):
+                                    idx_color = 0
 
-                    if CAPTURE_DETECTION:
+                        img_encode = cv2.imencode('.jpg', frame2)[1]
 
-                        now_str = datetime.now().strftime('%Y%m%d%H%M%S_%f')
+                        if CAPTURE_DETECTION:
 
-                        file_path = os.path.join(IMAGES_CAPTURE_FOLDER, now_str + '_detection_test.jpg')
+                            now_str = datetime.now().strftime('%Y%m%d%H%M%S_%f')
 
-                        camera.jpeg_data = img_encode.tobytes()
-                        camera.save_jpeg(file_path)
+                            file_path = os.path.join(IMAGES_CAPTURE_FOLDER, now_str + '_detection_test.jpg')
 
-                    data_encode = np.array(img_encode)
-                    frame = data_encode.tobytes()
+                            camera.jpeg_data = img_encode.tobytes()
+                            camera.save_jpeg(file_path)
 
-            if capture_next_image:
+                        data_encode = np.array(img_encode)
+                        frame = data_encode.tobytes()
 
-                capture_next_image = False
+                if capture_next_image:
 
-                now_str = datetime.now().strftime('%Y%m%d%H%M%S_%f')
+                    capture_next_image = False
 
-                file_path = os.path.join(IMAGES_CAPTURE_FOLDER, now_str)
+                    now_str = datetime.now().strftime('%Y%m%d%H%M%S_%f')
 
-                camera.capture()
-                camera.frame_to_jpeg(stream='main')
+                    file_path = os.path.join(IMAGES_CAPTURE_FOLDER, now_str)
 
-                jpeg_file_path, json_file_path = camera.save_capture(file_path + '_capture_test.jpg', save_metadata=False)
+                    camera.capture()
+                    camera.frame_to_jpeg(stream='main')
 
-            yield (b'--frame\r\n'
-                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                    jpeg_file_path, json_file_path = camera.save_capture(file_path + '_capture_test.jpg', save_metadata=False)
+
+                yield (b'--frame\r\n'
+                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+            except BaseException as e:
+
+                app.logger.error(str(e))
 
 
 @app.route('/manage_images_capture', methods=['POST'])

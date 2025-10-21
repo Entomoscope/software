@@ -12,7 +12,7 @@ pi = pigpio.pi()
 from configuration2 import Configuration2
 
 from peripherals.microphone2 import Microphone2
-from peripherals.pinout import SOUNDS_CAPTURE_ACTIVITY_PIN, SHUTDOWN_PIN
+from peripherals.pinout2 import SOUNDS_CAPTURE_ACTIVITY_PIN, SHUTDOWN_PIN
 
 from globals_parameters import SOUNDS_CAPTURE_FOLDER, LOGS_DESKTOP_FOLDER, TODAY, MICROPHONE_DETECTION_INTERVAL, MICROPHONE_DETECTION_NUM_TRIES
 

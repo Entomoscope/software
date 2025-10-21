@@ -14,7 +14,7 @@ from configuration2 import Configuration2
 from globals_parameters import LOGS_DESKTOP_FOLDER, TODAY
 
 from peripherals.fan import Fan
-from peripherals.pinout import FAN_PIN
+from peripherals.pinout2 import FAN_PIN
 
 # This scripts should be run in background using crontab
 # Use "crontab -e" to edit the crontab file

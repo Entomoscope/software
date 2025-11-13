@@ -53,7 +53,9 @@
 <div class="container-fluid">
   <div class="row align-items-start mt-3">
     <div class="col-6 text-center">
-        {% if camera_available %}
+        {% if camera_supported %}
+            {% if images_capture_state == 'stopped' %}
+
 <!--
         <div class="row align-items-start mt-3">
             <div class="form-button-center">
@@ -61,15 +63,23 @@
             </div>
         </div>
 -->
-        <div class="row align-items-start mt-3">
-            <!-- Camera Image Preview -->
-            <img class="img-fluid mx-auto" id="camera_preview" style="max-width: {{configuration.server['preview_size']['max_width']}}px;width: 100%;height: auto;">
-        </div>
+                <div class="row align-items-start mt-3">
+                    <!-- Camera Image Preview -->
+                    <img class="img-fluid mx-auto" id="camera_preview" style="max-width: {{configuration.server['preview_size']['max_width']}}px;width: 100%;height: auto;">
+                </div>
+            {% else %}
+                <div class="card">
+                  <div class="card-body">
+                    <h5 class="card-title">Warning</h5>
+                    <p class="card-text">Images capture script is running.<br/>Go to the home page and press the stop button to enable the camera here.</p>
+                  </div>
+                </div>
+            {% endif %}
         {% else %}
         <div class="card">
           <div class="card-body">
             <h5 class="card-title">Warning</h5>
-            <p class="card-text">Images capture script is running.<br/>Go to the home page and press the stop button to enable the camera here.</p>
+            <p class="card-text">Matching error between connected camera model and configuration file.</p>
           </div>
         </div>
         {% endif  %}
@@ -132,7 +142,66 @@
                     </div>
                 </div>
             </div>
-            {% if camera_available %}
+            <!-- Camera - Info -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cameraInfoCollapse" aria-expanded="false" aria-controls="collapseFour">
+                    Camera - Info
+                    </button>
+                </h2>
+                <div id="cameraInfoCollapse" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+                    <div class="accordion-body">
+                        <!-- Camera - Info  - Model -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">Model</label></strong>
+                            </div>
+                            <!-- Model - V1 -->
+                            <div class="form-check form-check-inline">
+                                {% if configuration['camera']['model'] == 'v1' %}
+                                <input class="form-check-input" type="checkbox" id="cameraV1Model" value="V1" onchange="updateSaveButton('camera_model', false)" onclick="applyCameraModel(this.value)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" id="cameraV1Model" value="V1" onchange="updateSaveButton('camera_model', false)" onclick="applyCameraModel(this.value)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="cameraV3Model">V1</label>
+                            </div>
+                            <!-- Model - V2 -->
+                            <div class="form-check form-check-inline">
+                                {% if configuration['camera']['model'] == 'v2' %}
+                                <input class="form-check-input" type="checkbox" id="cameraV2Model" value="V2" onchange="updateSaveButton('camera_model', false)" onclick="applyCameraModel(this.value)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" id="cameraV2Model" value="V2" onchange="updateSaveButton('camera_model', false)" onclick="applyCameraModel(this.value)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="cameraV3Model">V2</label>
+                            </div>
+                            <!-- Model - V3 -->
+                            <div class="form-check form-check-inline">
+                                {% if configuration['camera']['model'] == 'v3' %}
+                                <input class="form-check-input" type="checkbox" id="cameraV3Model" value="V3" onchange="updateSaveButton('camera_model', false)" onclick="applyCameraModel(this.value)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" id="cameraV3Model" value="V3" onchange="updateSaveButton('camera_model', false)" onclick="applyCameraModel(this.value)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="cameraV3Model">V3</label>
+                            </div>
+                            <!-- Model - HQ -->
+                            <div class="form-check form-check-inline">
+                                {% if configuration['camera']['model'] == 'hq' %}
+                                <input class="form-check-input" type="checkbox" id="cameraHQModel" value="HQ" onchange="updateSaveButton('camera_model', false)" onclick="applyCameraModel(this.value)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" id="cameraHQModel" value="HQ" onchange="updateSaveButton('camera_model', false)" onclick="applyCameraModel(this.value)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="cameraV3Model">HQ</label>
+                            </div>
+                        </div>
+                        <hr/>
+                        <!-- Camera - Info - Save -->
+                        <div class="form-button-center">
+                            <button type="submit" class="btn btn-primary" id="cameraModelSaveButton" onclick="saveConfiguration('camera_model')" disabled>Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% if camera_supported %}
             <!-- Camera - Image Position and Size-->
             <div class="accordion-item">
                 <h2 class="accordion-header">
@@ -262,79 +331,79 @@
                     </div>
                 </div>
             </div>
-            <!-- Camera - Autofocus -->
-            {% if configuration.camera['model'].lower() == 'v3' %}
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cameraAutofocusCollapse" aria-expanded="true" aria-controls="panelsStayOpen-collapseOne">
-                    Camera - Autofocus
-                  </button>
-                </h2>
-                <div id="cameraAutofocusCollapse" class="accordion-collapse collapse">
-                  <!-- Camera - Autofocus - Mode -->
-                  <div class="accordion-body">
-                    <div class="d-flex w-100 align-items-center justify-content-between">
-                    <strong class="mb-1">Mode</strong>
-                    </div>
-                    <!-- Camera - Autofocus - Mode - Manual -->
-                    <div class="form-check form-check-inline">
-                        {% if configuration['camera']['autofocus']['mode'] == 'Manual' %}
-                        <input class="form-check-input AfMode" type="checkbox" name="AfMode" id="AfMode0" value="manual" onclick="adjustCheckboxSetting('AfMode', '0')" checked />
-                        {% else %}
-                        <input class="form-check-input AfMode" type="checkbox" name="AfMode" id="AfMode0" value="manual" onclick="adjustCheckboxSetting('AfMode', '0')"/>
-                        {% endif %}
-                        <label class="form-check-label" for="AfMode0">Manual</label>
-                    </div>
-                    <!-- Camera - Autofocus - Mode - Auto -->
-<!--
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input AfMode" type="checkbox" name="AfMode" id="AfMode1" value="auto" onclick="adjustCheckboxSetting('AfMode', '1')">
-                        <label class="form-check-label" for="AfMode1">Auto</label>
-                    </div>
--->
-                    <!-- Camera - Autofocus - Mode - Continuous -->
-                    <div class="form-check form-check-inline">
-                        {% if configuration['camera']['autofocus']['mode'] == 'Continuous' %}
-                        <input class="form-check-input AfMode" type="checkbox" name="AfMode" id="AfMode2" value="continuous" onclick="adjustCheckboxSetting('AfMode', '2')" checked />
-                        {% else %}
-                        <input class="form-check-input AfMode" type="checkbox" name="AfMode" id="AfMode2" value="continuous" onclick="adjustCheckboxSetting('AfMode', '2')"/>
-                        {% endif %}
-                        <label class="form-check-label" for="AfMode2">Continuous</label>
-                    </div>
-                    <!-- Camera - Autofocus - Lens Position -->
-                    <div class="d-flex w-100 align-items-center justify-content-between">
-                    <strong class="mb-1">Lens Position</strong>
-                    </div>
-                    <div class="form-check">
-                        {% if configuration['camera']['autofocus']['mode'] == 'Manual' %}
-                        <input type="range" class="form-range" min="0" max="32" step="0.1" id="manualFocusRange" value="{{ configuration.camera['autofocus']['lens_position'] }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
-                        <div class="input-group mb-1">
-                            <input type="number" id="manualFocusRangeNumber" class="form-control" min="0" step="0.1" max="32" value="{{ configuration.camera['autofocus']['lens_position'] }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
-                            <div class="input-group-text">dioptres</div>
+            {% if autofocus_available %}
+                <!-- Camera - Autofocus -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cameraAutofocusCollapse" aria-expanded="true" aria-controls="panelsStayOpen-collapseOne">
+                        Camera - Autofocus
+                      </button>
+                    </h2>
+                    <div id="cameraAutofocusCollapse" class="accordion-collapse collapse">
+                      <!-- Camera - Autofocus - Mode -->
+                      <div class="accordion-body">
+                        <div class="d-flex w-100 align-items-center justify-content-between">
+                        <strong class="mb-1">Mode</strong>
                         </div>
-                        <div class="form-button-center">
-                            <div class="btn-group mt-2" role="group" aria-label="Standard Button Group">
-                                <button type="submit" class="btn btn-primary" id="manualFocusPlus" onclick="manualFocus('minus')">-</button>
-                                <input type="number" id="manualFocusStep" class="form-control" min="0" step="0.1" max="1" value="0.1" onchange=""/>
-                                <button type="submit" class="btn btn-primary" id="manualFocusMinus" onclick="manualFocus('plus')">+</button>
+                        <!-- Camera - Autofocus - Mode - Manual -->
+                        <div class="form-check form-check-inline">
+                            {% if configuration['camera']['autofocus']['mode'] == 'Manual' %}
+                            <input class="form-check-input AfMode" type="checkbox" name="AfMode" id="AfMode0" value="manual" onclick="adjustCheckboxSetting('AfMode', '0')" checked />
+                            {% else %}
+                            <input class="form-check-input AfMode" type="checkbox" name="AfMode" id="AfMode0" value="manual" onclick="adjustCheckboxSetting('AfMode', '0')"/>
+                            {% endif %}
+                            <label class="form-check-label" for="AfMode0">Manual</label>
+                        </div>
+                        <!-- Camera - Autofocus - Mode - Auto -->
+    <!--
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input AfMode" type="checkbox" name="AfMode" id="AfMode1" value="auto" onclick="adjustCheckboxSetting('AfMode', '1')">
+                            <label class="form-check-label" for="AfMode1">Auto</label>
+                        </div>
+    -->
+                        <!-- Camera - Autofocus - Mode - Continuous -->
+                        <div class="form-check form-check-inline">
+                            {% if configuration['camera']['autofocus']['mode'] == 'Continuous' %}
+                            <input class="form-check-input AfMode" type="checkbox" name="AfMode" id="AfMode2" value="continuous" onclick="adjustCheckboxSetting('AfMode', '2')" checked />
+                            {% else %}
+                            <input class="form-check-input AfMode" type="checkbox" name="AfMode" id="AfMode2" value="continuous" onclick="adjustCheckboxSetting('AfMode', '2')"/>
+                            {% endif %}
+                            <label class="form-check-label" for="AfMode2">Continuous</label>
+                        </div>
+                        <!-- Camera - Autofocus - Lens Position -->
+                        <div class="d-flex w-100 align-items-center justify-content-between">
+                        <strong class="mb-1">Lens Position</strong>
+                        </div>
+                        <div class="form-check">
+                            {% if configuration['camera']['autofocus']['mode'] == 'Manual' %}
+                            <input type="range" class="form-range" min="0" max="32" step="0.1" id="manualFocusRange" value="{{ configuration.camera['autofocus']['lens_position'] }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
+                            <div class="input-group mb-1">
+                                <input type="number" id="manualFocusRangeNumber" class="form-control" min="0" step="0.1" max="32" value="{{ configuration.camera['autofocus']['lens_position'] }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
+                                <div class="input-group-text">dioptres</div>
                             </div>
+                            <div class="form-button-center">
+                                <div class="btn-group mt-2" role="group" aria-label="Standard Button Group">
+                                    <button type="submit" class="btn btn-primary" id="manualFocusPlus" onclick="manualFocus('minus')">-</button>
+                                    <input type="number" id="manualFocusStep" class="form-control" min="0" step="0.1" max="1" value="0.1" onchange=""/>
+                                    <button type="submit" class="btn btn-primary" id="manualFocusMinus" onclick="manualFocus('plus')">+</button>
+                                </div>
+                            </div>
+                            {% else %}
+                            <input type="range" class="form-range" min="0" max="32" step="0.1" id="manualFocusRange" value="{{ configuration.camera['autofocus']['lens_position'] }}" onchange="adjustSliderSetting('LensPosition', this.value)" disabled />
+                            <div class="input-group mb-1">
+                                <input type="number" id="manualFocusRangeNumber" class="form-control" min="0" step="0.1" max="32" value="{{ configuration.camera['autofocus']['lens_position'] }}" onchange="adjustSliderSetting('LensPosition', this.value)" disabled />
+                                <div class="input-group-text">dioptres</div>
+                            </div>
+                            {% endif %}
                         </div>
-                        {% else %}
-                        <input type="range" class="form-range" min="0" max="32" step="0.1" id="manualFocusRange" value="{{ configuration.camera['autofocus']['lens_position'] }}" onchange="adjustSliderSetting('LensPosition', this.value)" disabled />
-                        <div class="input-group mb-1">
-                            <input type="number" id="manualFocusRangeNumber" class="form-control" min="0" step="0.1" max="32" value="{{ configuration.camera['autofocus']['lens_position'] }}" onchange="adjustSliderSetting('LensPosition', this.value)" disabled />
-                            <div class="input-group-text">dioptres</div>
+                        <hr/>
+                        <!-- Camera - Autofocus - Save -->
+                        <div class="form-button-center">
+                            <button type="submit" class="btn btn-primary" id="autofocusSaveButton" onclick="saveConfiguration('autofocus')" disabled>Save</button>
                         </div>
-                        {% endif %}
+                      </div>
                     </div>
-                    <hr/>
-                    <!-- Camera - Autofocus - Save -->
-                    <div class="form-button-center">
-                        <button type="submit" class="btn btn-primary" id="autofocusSaveButton" onclick="saveConfiguration('autofocus')" disabled>Save</button>
-                    </div>
-                  </div>
                 </div>
-            </div>
             {% endif %}
             <!-- Camera - Auto Exposure/Gain -->
             <div class="accordion-item">
@@ -620,7 +689,7 @@
     </div>
     <!-- Configuration -->
     <div class="col-3" style="background-color: #FFFFFF">
-      {{ display_configuration_images_capture_settings(configuration) }}
+      {{ display_configuration_images_capture_settings(configuration, autofocus_available) }}
     </div>
   </div>
 </div>
@@ -637,6 +706,14 @@
     const aiDetectionImageHeightConfigurationText = document.getElementById('aiDetectionImageHeightConfigurationText');
     const aiDetectionImageWidthConfigurationText = document.getElementById('aiDetectionImageWidthConfigurationText');
     const aiDetectionMinConfidenceConfigurationText = document.getElementById('aiDetectionMinConfidenceConfigurationText');
+
+    // Camera - Info
+    const cameraModelSaveButton = document.getElementById('cameraModelSaveButton');
+    const cameraV1Model = document.getElementById('cameraV1Model');
+    const cameraV2Model = document.getElementById('cameraV2Model');
+    const cameraV3Model = document.getElementById('cameraV3Model');
+    const cameraHQModel = document.getElementById('cameraHQModel');
+    const cameraModelConfigurationText = document.getElementById('cameraModelConfigurationText');
 
     // Camera - Autofocus
     const afMode0Check = document.getElementById('AfMode0');
@@ -718,7 +795,7 @@
     const jpegQualityNumber = document.getElementById('jpegQualityNumber');
     const jpegQualityConfigurationText = document.getElementById('jpegQualityConfigurationText');
 
-{% if camera_available %}
+{% if camera_supported %}
     document.addEventListener('DOMContentLoaded', function () {
 
         const camera_preview = document.getElementById('camera_preview');
@@ -729,7 +806,9 @@
 
     function updateSaveButton(settingId, state) {
 
-        if (settingId == 'crop_limits') {
+        if (settingId == 'camera_model') {
+            cameraModelSaveButton.disabled = state
+        } else if (settingId == 'crop_limits') {
             cropLimitsSaveButton.disabled = state
         } else if (settingId == 'files') {
             filesSaveButton.disabled = state
@@ -1001,8 +1080,6 @@
             }
         }
 
-
-
     }
 
     function sleep(ms) {
@@ -1011,7 +1088,9 @@
 
     function saveConfiguration(settingId) {
 
-        if (settingId == 'autofocus') {
+        if (settingId == 'camera_model') {
+            cameraModelSaveButton.disabled = true
+        } else if (settingId == 'autofocus') {
             autofocusSaveButton.disabled = true
         }
         else if (settingId == 'auto_white_balance') {
@@ -1045,7 +1124,18 @@
         .then(data => {
             console.log('Settings updated:', data);
             if (data.success) {
-                if (settingId == 'autofocus') {
+                if (settingId == 'camera_model') {
+                    if (cameraV1Model.checked) {
+                        cameraModelConfigurationText.innerText = 'Model: V1'
+                    } else if (cameraV2Model.checked) {
+                        cameraModelConfigurationText.innerText = 'Model: V2'
+                    } else if (cameraV3Model.checked) {
+                        cameraModelConfigurationText.innerText = 'Model: V3'
+                    } else if (cameraHQModel.checked) {
+                        cameraModelConfigurationText.innerText = 'Model: HQ'
+                    }
+                }
+                else if (settingId == 'autofocus') {
                     if (afMode0Check.checked) {
                     cameraAutofocusModeConfigurationText.innerText = 'Mode: Manual'
                     } else if (afMode2Check.checked) {
@@ -1119,6 +1209,46 @@
         console.error('Error updating settings:', error);
         throw error;  // Re-throw the error for the next catch
         });
+    }
+
+    function applyCameraModel(model) {
+
+        cameraV1Model.checked = false
+        cameraV2Model.checked = false
+        cameraV3Model.checked = false
+        cameraHQModel.checked = false
+
+        if (model == 'V1') {
+            cameraV1Model.checked = true
+        } else if (model == 'V2') {
+            cameraV2Model.checked = true
+        } else if (model == 'V3') {
+            cameraV3Model.checked = true
+        } else if (model == 'HQ') {
+            cameraHQModel.checked = true
+        }
+
+        data = model
+
+        return fetch('/set_camera_model', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(data => {
+            //console.log('Settings updated:', data);
+            if (data.success) {
+
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
     }
 
     function applyImageConstraint(constraintId, constraintValue) {

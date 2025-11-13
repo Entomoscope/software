@@ -22,7 +22,7 @@
     <p class="config_level_2" id="coolingSystemFanSpeedLevelsConfigurationText">Fan speed levels: {{ configuration['cooling_system']['fan_speed_levels'] }} %</p>
 {% endmacro %}
 
-{% macro display_configuration_images_capture_settings(configuration) %}
+{% macro display_configuration_images_capture_settings(configuration, autofocus_available) %}
     <!-- AI Detection -->
     <p class="config_level_1">AI detection</p>
     <p class="config_level_2" id="aiDetectionEnableConfigurationText">Enable: {{ configuration['ai_detection']['enable'] }}</p>
@@ -30,12 +30,19 @@
     <p class="config_level_2" id="aiDetectionImageHeightConfigurationText">Image height: {{ configuration['ai_detection']['image_height'] }} pixels</p>
     <p class="config_level_2" id="aiDetectionImageWidthConfigurationText">Image width: {{ configuration['ai_detection']['image_width'] }} pixels</p>
     <p class="config_level_2" id="aiDetectionMinConfidenceConfigurationText">Min. confidence: {{ configuration['ai_detection']['min_confidence'] }}</p>
+    <!-- Camera - Model -->
+    <p class="config_level_1">Camera - Info</p>
+    <p class="config_level_2" id="cameraModelConfigurationText">Model: {{ configuration['camera']['model'].upper() }}</p>
+<!--
+    <p class="config_level_2" id="sensorResolutionConfigurationText">Sensor resolution: {{ configuration['camera']['sensor']['width_max'] }} x {{ configuration['camera']['sensor']['height_max'] }}</p>
+-->
     <!-- Camera - Image Position &amp; Size -->
     <p class="config_level_1">Camera - Image position and size</p>
     <p class="config_level_2" id="sensorCropLimitsWidthConfigurationText">Width: {{ configuration['camera']['sensor']['crop_limits'][2] }} pixels</p>
     <p class="config_level_2" id="sensorCropLimitsHeightConfigurationText">Height: {{ configuration['camera']['sensor']['crop_limits'][3] }} pixels</p>
     <p class="config_level_2" id="sensorCropLimitsXConfigurationText">Top left corner X: {{ configuration['camera']['sensor']['crop_limits'][0] }} pixels</p>
     <p class="config_level_2" id="sensorCropLimitsYConfigurationText">Top left corner Y: {{ configuration['camera']['sensor']['crop_limits'][1] }} pixels</p>
+    {% if autofocus_available %}
     <!-- Camera - Autofocus -->
     <p class="config_level_1">Camera - Autofocus</p>
 <!--
@@ -47,6 +54,7 @@
     <p class="config_level_3" id="cameraAutofocusRangeConfigurationText">Range: {{ configuration['camera']['autofocus']['range'] }}</p>
     <p class="config_level_3" id="cameraAutofocusSpeedConfigurationText">Speed: {{ configuration['camera']['autofocus']['speed'] }}</p>
 -->
+    {% endif %}
     <!-- Camera - Auto Exposure/Gain -->
     <p class="config_level_1">Camera - Auto exposure/gain</p>
     <p class="config_level_2" id="cameraAegAnalogueGainConfigurationText">Analogue gain: {{ configuration['camera']['auto_exposure_gain']['analogue_gain'] }}</p>

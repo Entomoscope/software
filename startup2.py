@@ -91,13 +91,15 @@ def main():
                         next_startup = datetime(TOMORROW_NOW.year, TOMORROW_NOW.month, TOMORROW_NOW.day, ephemeris.tomorrow_setting['hour'], ephemeris.tomorrow_setting['minute'], 0, 0, tzinfo=timezone.utc)
                         next_startup = next_startup.astimezone()
 
-                        witty_pi.set_startup_alarm(next_startup.day, next_startup.hour, next_startup.minute)
-
                         configuration.schedule['next_startup'] = next_startup.strftime('%Y-%m-%d %H:%M')
 
                         logger.info('Lepinoc startup alarm shifted to ' + next_startup.strftime('%Y-%m-%d %H:%M %Z'))
 
                         configuration.save()
+
+                        next_startup = next_startup - timedelta(minutes=1)
+
+                        witty_pi.set_startup_alarm(next_startup.day, next_startup.hour, next_startup.minute)
 
                         lepinoc_startup_set = True
 
@@ -115,22 +117,41 @@ def main():
 
             if not lepinoc_startup_set:
 
-                alarm = witty_pi.get_startup_alarm()
+                startup_date = [int(x) for x in configuration.schedule['next_startup'].replace('-', ' ').replace(':', ' ').split()]
+                startup_date = datetime(startup_date[0], startup_date[1], startup_date[2], startup_date[3], startup_date[4], 0, 0)
 
-                if alarm[3] == -1 or alarm[2] == -1 and alarm[1] == -1:
+                # next_startup = datetime(TOMORROW_NOW.year, TOMORROW_NOW.month, TOMORROW_NOW.day, ephemeris.tomorrow_setting['hour'], ephemeris.tomorrow_setting['minute'], 0, 0, tzinfo=timezone.utc)
+                # next_startup = next_startup.astimezone()
 
-                    logger.info(f'startup alarm not shifted because wrong values ({alarm[3]} {alarm[2]}:{alarm[1]})')
+                next_startup = startup_date + timedelta(hours=24)
 
-                else:
+                configuration.schedule['next_startup'] = next_startup.strftime('%Y-%m-%d %H:%M')
 
-                    alarm[3] = int(TOMORROW[6:])
+                # configuration.schedule['next_startup'] = '-'.join([TOMORROW[:4], TOMORROW[4:6], TOMORROW[6:]]) + f' {alarm[2]:02d}:{alarm[1]:02d}'
+                configuration.save()
 
-                    witty_pi.set_startup_alarm(alarm[3], alarm[2], alarm[1])
+                logger.info(f"startup alarm shifted to {configuration.schedule['next_startup']} {datetime.now().astimezone().strftime('%Z')}")
 
-                    configuration.schedule['next_startup'] = '-'.join([TOMORROW[:4], TOMORROW[4:6], TOMORROW[6:]]) + f' {alarm[2]:02d}:{alarm[1]:02d}'
-                    configuration.save()
+                next_startup = next_startup - timedelta(minutes=1)
 
-                    logger.info(f"startup alarm shifted to {configuration.schedule['next_startup']} {datetime.now().astimezone().strftime('%Z')}")
+                witty_pi.set_startup_alarm(next_startup.day, next_startup.hour, next_startup.minute)
+
+                # alarm = witty_pi.get_startup_alarm()
+
+                # if alarm[3] == -1 or alarm[2] == -1 and alarm[1] == -1:
+
+                    # logger.info(f'startup alarm not shifted because wrong values ({alarm[3]} {alarm[2]}:{alarm[1]})')
+
+                # else:
+
+                    # alarm[3] = int(TOMORROW[6:])
+
+                    # witty_pi.set_startup_alarm(alarm[3], alarm[2], alarm[1])
+
+                    # configuration.schedule['next_startup'] = '-'.join([TOMORROW[:4], TOMORROW[4:6], TOMORROW[6:]]) + f' {alarm[2]:02d}:{alarm[1]:02d}'
+                    # configuration.save()
+
+                    # logger.info(f"startup alarm shifted to {configuration.schedule['next_startup']} {datetime.now().astimezone().strftime('%Z')}")
 
         elif witty_pi.get_latest_action_reason_code() == witty_pi.BUTTON_CLICKED:
 

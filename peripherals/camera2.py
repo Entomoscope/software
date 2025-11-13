@@ -72,6 +72,8 @@ class Camera2():
             self.camera_config = None
             self.model = self.camera.camera_properties['Model'].lower()
 
+            logger.info(f'camera model {self.model } found')
+
             self.started = False
             self.encoder_started = False
 
@@ -99,7 +101,7 @@ class Camera2():
 
         except IndexError as e:
 
-            logger.error('camera not initialised - Bad index')
+            logger.error('camera not initialised - bad index')
             logger.error(str(e))
 
             self.camera = None
@@ -126,7 +128,7 @@ class Camera2():
             self.is_camera_supported = True
             self.autofocus_available = False
             self.sensor_resolution = (4056, 3040)
-        self.image_ratio = self.sensor_resolution[0] / self.sensor_resolution[1]
+        # self.image_ratio = self.sensor_resolution[0] / self.sensor_resolution[1]
 
         if self.is_camera_supported:
 

@@ -235,21 +235,27 @@ class WittyPi():
 
         success = False
 
-        if day > 0 and day < 32 and hour >= 0 and hour <= 23 and minute >= 0 and minute < 60:
+        try:
 
-            day_bcd = ((day // 10) << 4)+ (day - 10 * (day // 10))
-            hour_bcd = ((hour // 10) << 4) + (hour - 10 * (hour // 10))
-            minute_bcd = ((minute // 10) << 4) + (minute - 10 * (minute // 10))
+            if day > 0 and day < 32 and hour >= 0 and hour <= 23 and minute >= 0 and minute < 60:
 
-            success = self.write_register(0x1B, 0)
+                day_bcd = ((day // 10) << 4)+ (day - 10 * (day // 10))
+                hour_bcd = ((hour // 10) << 4) + (hour - 10 * (hour // 10))
+                minute_bcd = ((minute // 10) << 4) + (minute - 10 * (minute // 10))
 
-            success = self.write_register(0x1C, minute_bcd)
+                success = self.write_register(0x1B, 0)
 
-            success = self.write_register(0x1D, hour_bcd)
+                success = self.write_register(0x1C, minute_bcd)
 
-            success = self.write_register(0x1E, day_bcd)
+                success = self.write_register(0x1D, hour_bcd)
 
-            logger.info(f'startup alarm set to {day:02d} {hour:02d}:{minute:02d}')
+                success = self.write_register(0x1E, day_bcd)
+
+                logger.info(f'startup alarm set to {day:02d} {hour:02d}:{minute:02d}')
+
+        except BaseException as e:
+
+            logger.error(str(e))
 
         return success
 

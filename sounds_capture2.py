@@ -113,19 +113,30 @@ def main():
             logger.info(f"on duration: {configuration.schedule['on_duration']} seconds")
             logger.info(f"off duration: {configuration.schedule['off_duration']} seconds")
 
-            on = True
-            off = not(on)
-
-            if on:
-                logger.info('sounds capture on')
-
-            previous_on_time = time()
-            previous_off_time = time()
-
             now_str = datetime.now().strftime('%Y%m%d%H%M%S')
             file_path = os.path.join(SOUNDS_CAPTURE_FOLDER, 'configuration_' + now_str + '.json')
             configuration.copy_to(file_path)
             logger.info(f'configuration file saved to {file_path}')
+
+            on = True
+            off = not(on)
+            force_on = True
+
+            try:
+                now = datetime.now()
+                configuration_startup_hour = int(configuration.schedule['next_startup'][11:13])
+                configuration_startup_minute = int(configuration.schedule['next_startup'][14:16])
+                t = datetime(now.year, now.month, now.day, configuration_startup_hour, configuration_startup_minute, 0)
+                delta = t-now
+                logger.info(f'wait {delta.seconds} seconds for full minute before capturing sounds')
+                while (now < t):
+                    sleep(0.1)
+                    now = datetime.now()
+            except BaseException as e:
+                logger.error(str(e))
+
+            previous_on_time = time()
+            previous_off_time = time()
 
             logger.info('start capturing sounds')
 
@@ -140,10 +151,11 @@ def main():
                         off = True
                         logger.info('sounds capture off')
 
-                    if off and (time() - previous_off_time > off_duration):
+                    if (off and (time() - previous_off_time > off_duration)) or force_on:
 
                         previous_on_time = time()
                         previous_capture_time = 0
+                        force_on = False
                         on = True
                         off = False
                         logger.info('sounds capture on')

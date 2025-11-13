@@ -1,6 +1,6 @@
 import os
 from time import time, sleep
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import logging
 from logging.handlers import RotatingFileHandler
@@ -198,6 +198,19 @@ def main():
 
     shutdown_signal_received = False
 
+    try:
+        now = datetime.now()
+        configuration_startup_hour = int(configuration.schedule['next_startup'][11:13])
+        configuration_startup_minute = int(configuration.schedule['next_startup'][14:16])
+        t = datetime(now.year, now.month, now.day, configuration_startup_hour, configuration_startup_minute, 0) - timedelta(seconds=configuration.leds['delay_on'])
+        delta = t - now
+        logger.info(f'wait {delta.seconds} seconds for full minute before capturing images')
+        while (now < t):
+            sleep(0.1)
+            now = datetime.now()
+    except BaseException as e:
+        logger.error(str(e))
+
     # Forçage du système à démarrer en mode On avec capture d'image immédiate
     on = False
     off = True
@@ -234,12 +247,6 @@ def main():
 
             previous_capture_time = time()
 
-            # Récupération date et heure courante
-            now_str = datetime.now().strftime('%Y%m%d%H%M%S')
-
-            # Création du nom du fichier de base avec la date courante
-            file_path = os.path.join(IMAGES_CAPTURE_FOLDER, now_str)
-
             # Gestion des LEDs avant capture d'image en fonction du mode
             if configuration.mode['mode'] == 'trap': # Front On et Rear On
                 leds_front.turn_on()
@@ -257,6 +264,9 @@ def main():
             # Attente avant la capture d'image pour permettre à la caméra de se stabiliser
             if configuration.leds['delay_on']:
                 sleep(configuration.leds['delay_on'])
+
+            # Récupération date et heure courante
+            now_str = datetime.now().strftime('%Y%m%d%H%M%S')
 
             # Capture de l'image avec metadata
             camera.capture(get_metadata=True)
@@ -278,6 +288,9 @@ def main():
             elif configuration.mode['mode'] == 'deported': # Front Off et Deported Off
                 leds_front.turn_off()
                 leds_rear_deported_uv.turn_off()
+
+            # Création du nom du fichier de base avec la date courante
+            file_path = os.path.join(IMAGES_CAPTURE_FOLDER, now_str)
 
             # Si IA disponible et IA activée et mode différent de Lepinoc => analyse de l'image capturée
             if AI_AVAILABLE and configuration.ai_detection['enable'] and configuration.mode['mode'] != 'lepinoc' :

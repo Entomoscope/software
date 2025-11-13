@@ -145,6 +145,8 @@ crop_limits = configuration.camera['sensor']['crop_limits']
 leds_delays = [configuration.leds['delay_on'], configuration.leds['delay_off']]
 auto_exposure_gain = {'enable': configuration.camera['auto_exposure_gain']['enable'], 'mode': configuration.camera['auto_exposure_gain']['mode'], 'exposure_time': configuration.camera['auto_exposure_gain']['exposure_time'], 'exposure_value': configuration.camera['auto_exposure_gain']['exposure_value']}
 
+camera_model = configuration.camera['model']
+
 server_settings = {'keep_image_center': configuration.server['image_constraints']['centered'], 'keep_image_square': configuration.server['image_constraints']['square'], 'preview_max_width': configuration.server['preview_size']['max_width']}
 
 ai_detection = {'enable': configuration.ai_detection['enable'],
@@ -480,17 +482,17 @@ def images_capture_settings():
             microphone = None
             app.logger.info('microphone stopped')
 
-    camera_available = False
     leds_available = False
 
     if images_capture_state == 'stopped':
 
         if not camera:
             camera = Camera2(configuration=configuration, mode='preview')
-            camera.start()
-            app.logger.info('camera started')
-
-        camera_available = True
+            if camera.is_camera_supported:
+                camera.start()
+                app.logger.info('camera started')
+            else:
+                app.logger.warning('camera not started because model is not supported')
 
         if not leds_rear_deported_uv:
             leds_rear_deported_uv = Leds(LEDS_REAR_DEPORTED_UV_PIN)
@@ -504,7 +506,7 @@ def images_capture_settings():
 
         leds_available = True
 
-    return make_response(render_template('images_capture_settings.html', updates_available=updates_available, camera_available=camera_available, leds_available=leds_available, configuration=configuration, rpi=rpi, battery_level=battery_level))
+    return make_response(render_template('images_capture_settings.html', updates_available=updates_available, camera_supported=camera.is_camera_supported, autofocus_available=camera.autofocus_available, images_capture_state=images_capture_state, leds_available=leds_available, configuration=configuration, rpi=rpi, battery_level=battery_level))
 
 
 @app.route('/sounds_capture_settings')
@@ -709,8 +711,10 @@ def sounds_capture_test():
 @app.route('/video_feed')
 def video_feed():
 
-    if camera:
+    if camera and camera.is_camera_supported:
         return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    else:
+        return Response('')
 
 def generate_frames():
 
@@ -876,6 +880,8 @@ def save_configuration():
 
         app.logger.info(f'saving {data} in configuration')
 
+        if data == 'camera_model':
+            configuration.camera['model'] = camera_model.lower()
         if data == 'autofocus':
             configuration.camera['autofocus']['mode'] = autofocus['mode']
             configuration.camera['autofocus']['lens_position'] = autofocus['lens_position']
@@ -961,7 +967,13 @@ def update_settings():
                 startup_date = [int(x) for x in configuration.schedule['next_startup'].replace('-', ' ').replace(':', ' ').split()]
                 shutdown_date = [int(x) for x in configuration.schedule['next_shutdown'].replace('-', ' ').replace(':', ' ').split()]
 
-                witty_pi.set_startup_alarm(startup_date[2], startup_date[3], startup_date[4])
+                startup_date = datetime(startup_date[0], startup_date[1], startup_date[2], startup_date[3], startup_date[4], 0, 0)
+                #startup_date = startup_date.astimezone()
+
+                startup_date = startup_date - timedelta(minutes=1)
+
+                # witty_pi.set_startup_alarm(startup_date[2], startup_date[3], startup_date[4])
+                witty_pi.set_startup_alarm(startup_date.day, startup_date.hour, startup_date.minute)
 
                 witty_pi.set_shutdown_alarm(shutdown_date[2], shutdown_date[3], shutdown_date[4])
 
@@ -1121,6 +1133,28 @@ def apply_camera_settings(settingId, settingValue):
         success = False
 
     return success
+
+
+@app.route('/set_camera_model', methods=['POST'])
+def set_camera_model():
+
+    global camera_model
+
+    try:
+
+        camera_model = request.get_json()
+
+        app.logger.info('json: %s', request.get_json())
+
+        app.logger.info(f'camera model set to {camera_model}')
+
+        return jsonify(success=True, message='Camera model set successfully')
+
+    except BaseException as e:
+
+        app.logger.error(str(e))
+
+        return jsonify(success=False, message=str(e))
 
 
 @app.route('/set_capture_mode', methods=['POST'])
@@ -1433,7 +1467,7 @@ def get_gnss_data():
 
         sleep(0.1)
 
-        gnss.get_data(2)
+        gnss.get_data(2, False)
 
         gnss.stop()
 

@@ -117,7 +117,7 @@ class Gnss2():
 
                             logger.info(nmea_str)
 
-                            if nmea_str.startswith('$GPRMC'):
+                            if nmea_str.startswith('GPRMC'):
 
                                 # $GPRMC,124127.00,A,4337.15017,N,00119.40006,E,0.054,,020925,,,A*74
 
@@ -128,7 +128,7 @@ class Gnss2():
                                 if len(data[9]) == 6:
                                     self.data['date'] = [int(data[9][4:]), int(data[9][2:4]), int(data[9][0:2])]
 
-                            elif nmea_str.startswith('$GPGGA'):
+                            elif nmea_str.startswith('GPGGA'):
 
                                 # $GPGGA,124028.00,4337.15005,N,00119.40064,E,1,09,0.97,183.9,M,48.5,M,,*51
 

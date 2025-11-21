@@ -6,6 +6,9 @@ import logging
 
 from globals_parameters import PYTHON_SCRIPTS_BASE_FOLDER, LOGS_DESKTOP_FOLDER, TODAY
 
+# Cloning the repo :
+# git clone https://github.com/Entomoscope/software.git /home/entomoscope/Entomoscope
+
 this_script = os.path.basename(__file__)[:-3]
 
 today_log_path = os.path.join(LOGS_DESKTOP_FOLDER, TODAY)

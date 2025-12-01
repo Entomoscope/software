@@ -125,6 +125,7 @@ if rpi.arch_version == '64-bit':
         app.logger.info(f"AI model file loaded: {configuration.ai_detection['file']}")
         app.logger.info(f"AI model file loading time: {elapsed_time.seconds}.{elapsed_time.microseconds} seconds")
     else:
+        AI_AVAILABLE = False
         app.logger.info('64-bit arch => AI available but manualy disabled')
 else:
     AI_AVAILABLE = False
@@ -168,6 +169,8 @@ ai_detection = {'enable': configuration.ai_detection['enable'],
                 'image_width': configuration.ai_detection['image_width'],
                 'image_height': configuration.ai_detection['image_height']}
 ai_boxes_color = [(255,85,0), (255,170,0), (255,255,0), (170,255,85), (85,255,170), (0,255,255), (0,170,255), (0,85,255), (0,0,255), (0,0,170)]
+
+current_lens_position = 0.0
 
 capture_next_image = False
 
@@ -757,7 +760,7 @@ def video_feed():
 
 def generate_frames():
 
-    global capture_next_image
+    global capture_next_image, current_lens_position
 
     while True:
 
@@ -765,9 +768,15 @@ def generate_frames():
 
             try:
 
-                frame = camera.get_preview_frame()
+                frame, metadata = camera.get_preview_frame()
+
+                current_lens_position = metadata['LensPosition']
+
+                # print(current_lens_position)
 
                 # print(f'frame: {frame.shape}', flush=True)
+
+                # print(metadata, flush=True)
 
                 if AI_AVAILABLE and AI_ENABLE and configuration.ai_detection['enable']:
 
@@ -1074,7 +1083,7 @@ def update_camera_live_settings():
 
         success = apply_camera_settings(data[0], data[1])
 
-        return jsonify(success=success, message='Camera live setting set successfully')
+        return jsonify(success=success, message='Camera live setting set successfully', data=current_lens_position)
 
     except BaseException as e:
 
@@ -1153,7 +1162,8 @@ def apply_camera_settings(settingId, settingValue):
             if settingId == 'LensPosition':
                 camera.camera.set_controls({'AfMode': libcamera.controls.AfModeEnum.Manual, settingId: settingValue})
             elif settingId == 'AfMode' and settingValue == libcamera.controls.AfModeEnum.Manual:
-                camera.camera.set_controls({settingId: settingValue, 'LensPosition': autofocus['lens_position']})
+                # camera.camera.set_controls({settingId: settingValue, 'LensPosition': autofocus['lens_position']})
+                camera.camera.set_controls({settingId: settingValue, 'LensPosition': current_lens_position})
             elif settingId == 'ScalerCrop':
                 camera.camera.configure(camera.camera_config)
                 camera.camera.set_controls({settingId: settingValue})

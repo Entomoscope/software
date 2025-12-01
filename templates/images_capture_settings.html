@@ -393,15 +393,15 @@
                         </div>
                         <div class="form-check">
                             {% if configuration['camera']['autofocus']['mode'] == 'Manual' %}
-                            <input type="range" class="form-range" min="0" max="32" step="0.1" id="manualFocusRange" value="{{ configuration.camera['autofocus']['lens_position'] }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
+                            <input type="range" class="form-range" min="0" max="32" step="0.025" id="manualFocusRange" value="{{ configuration.camera['autofocus']['lens_position'] }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
                             <div class="input-group mb-1">
-                                <input type="number" id="manualFocusRangeNumber" class="form-control" min="0" step="0.1" max="32" value="{{ configuration.camera['autofocus']['lens_position'] }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
+                                <input type="number" id="manualFocusRangeNumber" class="form-control" min="0" step="0.025" max="32" value="{{ configuration.camera['autofocus']['lens_position'] }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
                                 <div class="input-group-text">dioptres</div>
                             </div>
                             <div class="form-button-center">
                                 <div class="btn-group mt-2" role="group" aria-label="Standard Button Group">
                                     <button type="submit" class="btn btn-primary" id="manualFocusPlus" onclick="manualFocus('minus')">-</button>
-                                    <input type="number" id="manualFocusStep" class="form-control" min="0" step="0.1" max="1" value="0.1" onchange=""/>
+                                    <input type="number" id="manualFocusStep" class="form-control" min="0.025" step="0.025" max="1" value="0.025" onchange=""/>
                                     <button type="submit" class="btn btn-primary" id="manualFocusMinus" onclick="manualFocus('plus')">+</button>
                                 </div>
                             </div>
@@ -982,6 +982,16 @@
             },
             body: JSON.stringify(data),
         })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Settings updated:', data);
+            if (data.success) {
+
+                if (settingId == 'AfMode' && settingValue == 'Manual') {
+                    manualFocusRangeNumber.value = data.data.toFixed(3)
+                }
+            }
+        })
         .catch(error => {
         console.error('Error updating settings:', error);
         throw error;  // Re-throw the error for the next catch
@@ -1083,8 +1093,8 @@
         {
             if (focus > focus_step) {
                 focus -= focus_step
-                manualFocusRange.value = focus
-                manualFocusRangeNumber.value = focus
+                manualFocusRange.value = focus.toFixed(3)
+                manualFocusRangeNumber.value = focus.toFixed(3)
                 adjustSliderSetting('LensPosition', focus)
             }
         }
@@ -1092,8 +1102,8 @@
         {
             if ((32.0 - focus) > focus_step) {
                 focus += focus_step
-                manualFocusRange.value = focus
-                manualFocusRangeNumber.value = focus
+                manualFocusRange.value = focus.toFixed(3)
+                manualFocusRangeNumber.value = focus.toFixed(3)
                 adjustSliderSetting('LensPosition', focus)
             }
         }

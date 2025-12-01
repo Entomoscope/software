@@ -366,7 +366,9 @@ class Camera2():
             self.streamOut.condition.wait()
             self.frame = self.streamOut.frame
 
-        return self.frame
+            metadata = self.camera.capture_metadata()
+
+        return self.frame, metadata
 
     def get_preview_main_size(self, crop_limits, configuration):
 

@@ -125,13 +125,13 @@ TMP_FOLDER = os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'tmp')
 
 logger.info('tmp folder: ' + TMP_FOLDER)
 
-AI_MODEL_FILE = 'arthropod_dectector_wave18_best.pt'
+# AI_MODEL_FILE = 'arthropod_dectector_wave18_best.pt'
 AI_MODEL_PATH = os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'ai_models')
-AI_MODEL = os.path.join(AI_MODEL_PATH, AI_MODEL_FILE)
+# AI_MODEL = os.path.join(AI_MODEL_PATH, AI_MODEL_FILE)
 
-logger.info('ai model file: ' + AI_MODEL_FILE)
+# logger.info('ai model file: ' + AI_MODEL_FILE)
 logger.info('ai model path: ' + AI_MODEL_PATH)
-logger.info('ai model: ' + AI_MODEL)
+# logger.info('ai model: ' + AI_MODEL)
 
 EPHEMERIS_FILE_PATH = os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'static', 'ephemeris')
 

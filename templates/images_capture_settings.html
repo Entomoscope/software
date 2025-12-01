@@ -53,8 +53,8 @@
 <div class="container-fluid">
   <div class="row align-items-start mt-3">
     <div class="col-6 text-center">
-        {% if camera_supported %}
-            {% if images_capture_state == 'stopped' %}
+        {% if images_capture_state == 'stopped' %}
+            {% if camera_supported %}
 
 <!--
         <div class="row align-items-start mt-3">
@@ -68,21 +68,21 @@
                     <img class="img-fluid mx-auto" id="camera_preview" style="max-width: {{configuration.server['preview_size']['max_width']}}px;width: 100%;height: auto;">
                 </div>
             {% else %}
-                <div class="card">
-                  <div class="card-body">
-                    <h5 class="card-title">Warning</h5>
-                    <p class="card-text">Images capture script is running.<br/>Go to the home page and press the stop button to enable the camera here.</p>
-                  </div>
-                </div>
-            {% endif %}
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Warning</h5>
+                <p class="card-text">Matching error between connected camera model and configuration file.</p>
+              </div>
+            </div>
+            {% endif  %}
         {% else %}
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">Warning</h5>
-            <p class="card-text">Matching error between connected camera model and configuration file.</p>
-          </div>
-        </div>
-        {% endif  %}
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Warning</h5>
+                <p class="card-text">Images capture script is running.<br/>Go to the home page and press the stop button to enable the camera here.</p>
+              </div>
+            </div>
+        {% endif %}
     </div>
     <!-- Image Capture Settings -->
     <div class="col-3">
@@ -115,6 +115,23 @@
                         {% else %}
                         <div class="collapse p-2" id="ai_settings">
                         {% endif %}
+                            <!-- AI Detection - File -->
+                            <div class="form-group">
+                                <div class="d-flex w-100 align-items-center justify-content-between">
+                                    <strong class="mb-1"><label for="brightness" class="form-label">File</label></strong>
+                                </div>
+                                <div class="input-group mb-1">
+                                    <select class="form-select" id="aiDetectionFileSelect" aria-label="AI model file select" onchange="selectAiModelFile(this.value)">
+                                        {% for model in ai_models %}
+                                            {% if model == configuration['ai_detection']['file'] %}
+                                            <option value="{{ loop.index }}" selected>{{ model }}</option>
+                                            {% else %}
+                                            <option value="{{ loop.index }}">{{ model }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
                             <!-- AI Detection - Image detection scale (%) -->
                             <div class="form-group">
                                 <div class="d-flex w-100 align-items-center justify-content-between">
@@ -697,6 +714,7 @@
 <script type="text/javascript">
 
     // AI Detection
+    const aiDetectionFileSelect = document.getElementById('aiDetectionFileSelect');
     const aiDetectionImageScaleNumber = document.getElementById('aiDetectionImageScaleNumber');
     const aiDetectionSizeLabel = document.getElementById('aiDetectionSizeLabel');
     const aiDetectionMinConfidenceNumber = document.getElementById('aiDetectionMinConfidenceNumber');
@@ -1082,6 +1100,31 @@
 
     }
 
+    function selectAiModelFile(value) {
+
+        data = aiDetectionFileSelect.options[aiDetectionFileSelect.selectedIndex].text
+
+        return fetch('/set_ai_model_file', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(data => {
+            //console.log('Settings updated:', data);
+            if (data.success) {
+
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
     function sleep(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
     }
@@ -1306,7 +1349,8 @@
         widthMax = parseInt(sensorWidthMaxConfigurationText.innerText)
         heightMax = parseInt(sensorHeightMaxConfigurationText.innerText)
 
-        //console.log([widthMax, heightMax, width, height])
+        console.log('widthMax heightMax width height')
+        console.log([widthMax, heightMax, width, height])
 
         if (positionId == 'width') {
             if (square_constraint) {
@@ -1318,7 +1362,10 @@
                 y = (heightMax-height)/2
             }
         } else if (positionId == 'height') {
-
+            if (center_constraint) {
+                x = (widthMax-width)/2
+                y = (heightMax-height)/2
+            }
         } else if (positionId == 'x') {
 
         } else if (positionId == 'y') {
@@ -1350,9 +1397,14 @@
         }
 
         if (center_constraint) {
+            //console.log('center_constraint')
             cropLimitsXNumber.value = Math.floor((widthMax - width)/2)
             cropLimitsYNumber.value = Math.floor((heightMax - height)/2)
         }
+
+
+        //console.log('cropLimitsX cropLimitsY cropLimitsWidth cropLimitsHeightNumber')
+        //console.log([cropLimitsXNumber.value, cropLimitsYNumber.value, cropLimitsWidthNumber.value, cropLimitsHeightNumber.value])
 
         setDetectionScale()
 

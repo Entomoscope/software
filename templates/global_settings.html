@@ -266,6 +266,20 @@
                                 <div class="input-group-text">seconds</div>
                             </div>
                         </div>
+                        <!-- Images capture - Fast capture mode -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">Fast mode</label></strong>
+                            </div>
+                            <div class="form-check form-switch">
+                                {% if configuration['images_capture']['fast_mode'] %}
+                                <input class="form-check-input" type="checkbox" role="switch" id="imagesCaptureFastMode" onchange="updateSaveButton('images_capture', false)" checked />
+                                {% else  %}
+                                <input class="form-check-input" type="checkbox" role="switch" id="imagesCaptureFastMode" onchange="updateSaveButton('images_capture', false)"/>
+                                {% endif  %}
+                                <label class="form-check-label" for="imagesCaptureFastMode">Disabled/Enabled</label>
+                            </div>
+                        </div>
                     </div>
                     <hr/>
                     <!-- Images capture - Save -->
@@ -405,6 +419,7 @@
     const siteSaveButton = document.getElementById('siteSaveButton');
 
     const imagesCaptureEnable = document.getElementById('imagesCaptureEnable');
+    const imagesCaptureFastMode = document.getElementById('imagesCaptureFastMode');
     const imagesCaptureTimeStepNumber = document.getElementById('imagesCaptureTimeStepNumber');
     const imagesCaptureSaveButton = document.getElementById('imagesCaptureSaveButton');
 
@@ -481,7 +496,7 @@
             if (captureLepinocMode.checked) {
                 updateSettings('schedule')
             }
-            data = [settingId, {'enable': imagesCaptureEnable.checked, 'time_step': imagesCaptureTimeStepNumber.value}]
+            data = [settingId, {'enable': imagesCaptureEnable.checked, 'fast_mode': imagesCaptureFastMode.checked, 'time_step': imagesCaptureTimeStepNumber.value}]
         } else if (settingId == 'sounds_capture') {
             data = [settingId, {'enable': soundsCaptureEnable.checked, 'duration': soundsCaptureDurationNumber.value}]
         } else if (settingId == 'schedule') {
@@ -531,6 +546,7 @@
                     }
                 } else if (settingId == 'images_capture') {
                     imagesCaptureEnableConfigurationText.innerText = 'Enable: ' + String(imagesCaptureEnable.checked).charAt(0).toUpperCase() + String(imagesCaptureEnable.checked).slice(1)
+                    imagesCaptureFastModeConfigurationText.innerText = 'Fast mode: ' + String(imagesCaptureFastMode.checked).charAt(0).toUpperCase() + String(imagesCaptureFastMode.checked).slice(1)
                     imagesCaptureTimeStepConfigurationText.innerText = 'Time step: ' + imagesCaptureTimeStepNumber.value + ' seconds'
                 } else if (settingId == 'sounds_capture') {
                     soundsCaptureEnableConfigurationText.innerText = 'Enable: ' + String(soundsCaptureEnable.checked).charAt(0).toUpperCase() + String(soundsCaptureEnable.checked).slice(1)

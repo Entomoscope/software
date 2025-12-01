@@ -36,7 +36,7 @@ from ephemeris import Ephemeris
 
 from date_time import DateTime
 
-from globals_parameters import USER, TODAY_NOW, AI_MODEL, PYTHON_SCRIPTS_BASE_FOLDER, TMP_FOLDER, IMAGES_CAPTURE_FOLDER, SOUNDS_CAPTURE_FOLDER, TODAY, TOMORROW, LOGS_DESKTOP_FOLDER, WITTY_PI_FOLDER, DATA_FOLDER
+from globals_parameters import USER, TODAY_NOW, AI_MODEL_PATH, PYTHON_SCRIPTS_BASE_FOLDER, TMP_FOLDER, IMAGES_CAPTURE_FOLDER, SOUNDS_CAPTURE_FOLDER, TODAY, TOMORROW, LOGS_DESKTOP_FOLDER, WITTY_PI_FOLDER, DATA_FOLDER
 
 from updates import updates_check, updates_get
 
@@ -48,6 +48,8 @@ SERVER_PORT = 7777
 DEBUG = True
 AI_ENABLE = True
 CAPTURE_DETECTION = True
+
+STARTUP_MINUTES_SHIFT = 1
 
 this_script = os.path.basename(__file__)[:-3]
 
@@ -108,15 +110,25 @@ app.logger.info('configuration read')
 
 rpi = Rpi()
 
-if rpi.arch_version == '64-bit' and AI_ENABLE:
-    AI_AVAILABLE = True
-    from ultralytics import YOLO
+if rpi.arch_version == '64-bit':
+    if AI_ENABLE:
+        AI_AVAILABLE = True
+        app.logger.info('64-bit arch => AI available')
+        start_time = datetime.now()
+        from ultralytics import YOLO
+        elapsed_time = datetime.now() - start_time
+        app.logger.info(f"YOLO import time: {elapsed_time.seconds + 1} seconds")
+        ai_model_file = os.path.join(AI_MODEL_PATH, configuration.ai_detection['file'])
+        start_time = datetime.now()
+        ai_model = YOLO(ai_model_file)
+        elapsed_time = datetime.now() - start_time
+        app.logger.info(f"AI model file loaded: {configuration.ai_detection['file']}")
+        app.logger.info(f"AI model file loading time: {elapsed_time.seconds}.{elapsed_time.microseconds} seconds")
+    else:
+        app.logger.info('64-bit arch => AI available but manualy disabled')
 else:
     AI_AVAILABLE = False
-
-if AI_AVAILABLE and AI_ENABLE:
-    ai_model = YOLO(AI_MODEL)
-    app.logger.info(f'ai model loaded: {AI_MODEL}')
+    app.logger.info('32-bit arch => AI not available')
 
 sd_card = Storage('sd')
 
@@ -150,6 +162,7 @@ camera_model = configuration.camera['model']
 server_settings = {'keep_image_center': configuration.server['image_constraints']['centered'], 'keep_image_square': configuration.server['image_constraints']['square'], 'preview_max_width': configuration.server['preview_size']['max_width']}
 
 ai_detection = {'enable': configuration.ai_detection['enable'],
+                'file': configuration.ai_detection['file'],
                 'image_scale': configuration.ai_detection['image_scale'],
                 'min_confidence': configuration.ai_detection['min_confidence'],
                 'image_width': configuration.ai_detection['image_width'],
@@ -466,94 +479,120 @@ def images_capture_settings():
 
     global camera, leds_front, leds_rear_deported_uv, gnss, microphone
 
-    configuration.read()
+    try:
 
-    crop_limits = configuration.camera['sensor']['crop_limits']
+        configuration.read()
 
-    if gnss:
-        gnss.stop()
-        gnss = None
-        app.logger.info('GNSS stopped')
+        crop_limits = configuration.camera['sensor']['crop_limits']
 
-    if sounds_capture_state == 'stopped':
+        if gnss:
+            gnss.stop()
+            gnss = None
+            app.logger.info('GNSS stopped')
 
-        if microphone:
-            microphone.stop()
-            microphone = None
-            app.logger.info('microphone stopped')
+        if sounds_capture_state == 'stopped':
 
-    leds_available = False
+            if microphone:
+                microphone.stop()
+                microphone = None
+                app.logger.info('microphone stopped')
 
-    if images_capture_state == 'stopped':
+        if images_capture_state == 'stopped':
 
-        if not camera:
-            camera = Camera2(configuration=configuration, mode='preview')
-            if camera.is_camera_supported:
-                camera.start()
-                app.logger.info('camera started')
-            else:
-                app.logger.warning('camera not started because model is not supported')
+            if not camera:
+                camera = Camera2(configuration=configuration, mode='preview')
+                if camera and camera.is_camera_supported:
+                    camera.start()
+                    app.logger.info('camera started')
+                    camera_supported = camera.is_camera_supported
+                    autofocus_available = camera.autofocus_available
+                else:
+                    app.logger.warning('camera not started because model is not supported')
+                    camera_supported = False
+                    autofocus_available = False
 
-        if not leds_rear_deported_uv:
-            leds_rear_deported_uv = Leds(LEDS_REAR_DEPORTED_UV_PIN)
-            leds_rear_deported_uv.set_intensity(configuration.leds['intensity_rear_deported_uv'])
-            leds_rear_deported_uv.turn_on()
+            if not leds_rear_deported_uv:
+                leds_rear_deported_uv = Leds(LEDS_REAR_DEPORTED_UV_PIN)
+                leds_rear_deported_uv.set_intensity(configuration.leds['intensity_rear_deported_uv'])
+                leds_rear_deported_uv.turn_on()
 
-        if not leds_front:
-            leds_front = Leds(LEDS_FRONT_PIN)
-            leds_front.set_intensity(configuration.leds['intensity_front'])
-            leds_front.turn_on()
+            if not leds_front:
+                leds_front = Leds(LEDS_FRONT_PIN)
+                leds_front.set_intensity(configuration.leds['intensity_front'])
+                leds_front.turn_on()
 
-        leds_available = True
+            leds_available = True
 
-    return make_response(render_template('images_capture_settings.html', updates_available=updates_available, camera_supported=camera.is_camera_supported, autofocus_available=camera.autofocus_available, images_capture_state=images_capture_state, leds_available=leds_available, configuration=configuration, rpi=rpi, battery_level=battery_level))
+        else:
 
+            leds_available = False
+            camera_supported = False
+            autofocus_available = False
+
+        ai_models = sorted(os.listdir(AI_MODEL_PATH))
+
+        ai_models = [x for x in ai_models if not x.endswith('.onnx')]
+
+        return make_response(render_template('images_capture_settings.html', updates_available=updates_available, camera_supported=camera_supported, autofocus_available=autofocus_available, images_capture_state=images_capture_state, leds_available=leds_available, ai_models=ai_models, configuration=configuration, rpi=rpi, battery_level=battery_level, zip=zip))
+
+    except BaseException as e:
+
+        app.logger.error(str(e))
+
+        return redirect('/images_capture_settings')
 
 @app.route('/sounds_capture_settings')
 def sounds_capture_settings():
 
     global camera, leds_front, leds_rear_deported_uv,microphone, gnss
 
-    if gnss:
-        gnss.stop()
-        gnss = None
-        app.logger.info('GNSS stopped')
+    try:
 
-    if images_capture_state == 'stopped':
+        if gnss:
+            gnss.stop()
+            gnss = None
+            app.logger.info('GNSS stopped')
 
-        if camera:
-            camera.stop()
-            camera.camera.close()
-            camera = None
-            app.logger.info('camera stopped')
+        if images_capture_state == 'stopped':
 
-        if leds_front:
-            leds_front.turn_off()
-            leds_front = None
-            app.logger.info('LEDs front stopped')
+            if camera:
+                camera.stop()
+                camera.camera.close()
+                camera = None
+                app.logger.info('camera stopped')
 
-        if leds_rear_deported_uv:
-            leds_rear_deported_uv.turn_off()
-            leds_rear_deported_uv = None
-            app.logger.info('LEDs rear/UV/deported stopped')
+            if leds_front:
+                leds_front.turn_off()
+                leds_front = None
+                app.logger.info('LEDs front stopped')
 
-    if sounds_capture_state == 'stopped':
-        if microphone:
-            microphone.stop()
-            microphone = None
-            app.logger.info('microphone stopped')
-        microphone = Microphone2()
-        microphone_available = 1 if not microphone.available else 2
-    else:
-        microphone_available = 0
+            if leds_rear_deported_uv:
+                leds_rear_deported_uv.turn_off()
+                leds_rear_deported_uv = None
+                app.logger.info('LEDs rear/UV/deported stopped')
 
-    if microphone_available == 0:
-        app.logger.warning('microphone not available because sounds capture is running')
-    elif microphone_available == 1:
-        app.logger.error('microphone not found')
+        if sounds_capture_state == 'stopped':
+            if microphone:
+                microphone.stop()
+                microphone = None
+                app.logger.info('microphone stopped')
+            microphone = Microphone2()
+            microphone_available = 1 if not microphone.available else 2
+        else:
+            microphone_available = 0
 
-    return make_response(render_template('sounds_capture_settings.html', updates_available=updates_available, microphone_available=microphone_available, configuration=configuration, rpi=rpi, battery_level=battery_level))
+        if microphone_available == 0:
+            app.logger.warning('microphone not available because sounds capture is running')
+        elif microphone_available == 1:
+            app.logger.error('microphone not found')
 
+        return make_response(render_template('sounds_capture_settings.html', updates_available=updates_available, microphone_available=microphone_available, configuration=configuration, rpi=rpi, battery_level=battery_level))
+
+    except BaseException as e:
+
+        app.logger.error(str(e))
+
+        return redirect('/sounds_capture_settings')
 
 @app.route('/logs')
 def logs():
@@ -728,11 +767,15 @@ def generate_frames():
 
                 frame = camera.get_preview_frame()
 
+                # print(f'frame: {frame.shape}', flush=True)
+
                 if AI_AVAILABLE and AI_ENABLE and configuration.ai_detection['enable']:
 
                     data = np.frombuffer(frame, dtype=np.uint8)
 
                     frame2 = cv2.imdecode(data, 1)
+
+                    # print(f'frame2: {frame2.shape}\n', flush=True)
 
                     image_width = frame2.shape[1]
                     image_height = frame2.shape[0]
@@ -913,6 +956,7 @@ def save_configuration():
             configuration.server['image_constraints']['square'] = server_settings['keep_image_square']
         elif data == 'ai_detection':
             configuration.ai_detection['enable'] = ai_detection['enable']
+            configuration.ai_detection['file'] = ai_detection['file']
             configuration.ai_detection['image_scale'] = ai_detection['image_scale']
             configuration.ai_detection['min_confidence'] = ai_detection['min_confidence']
             configuration.ai_detection['image_width'] = ai_detection['image_width']
@@ -949,6 +993,7 @@ def update_settings():
             configuration.mode['mode'] = capture_mode
         elif data[0] == 'images_capture':
             configuration.images_capture['enable'] = data[1]['enable']
+            configuration.images_capture['fast_mode'] = data[1]['fast_mode']
             configuration.images_capture['time_step'] = int(data[1]['time_step'])
             data = None
         elif data[0] == 'sounds_capture':
@@ -970,7 +1015,7 @@ def update_settings():
                 startup_date = datetime(startup_date[0], startup_date[1], startup_date[2], startup_date[3], startup_date[4], 0, 0)
                 #startup_date = startup_date.astimezone()
 
-                startup_date = startup_date - timedelta(minutes=1)
+                startup_date = startup_date - timedelta(minutes=STARTUP_MINUTES_SHIFT)
 
                 # witty_pi.set_startup_alarm(startup_date[2], startup_date[3], startup_date[4])
                 witty_pi.set_startup_alarm(startup_date.day, startup_date.hour, startup_date.minute)
@@ -1358,6 +1403,35 @@ def set_detection_enable():
         ai_detection['enable'] = data
 
         app.logger.info(f"ai detection set to {ai_detection['enable']}")
+
+        return jsonify(success=True, message="Settings updated successfully")
+
+    except BaseException as e:
+
+        app.logger.error(str(e))
+
+        return jsonify(success=False, message=str(e))
+
+
+@app.route('/set_ai_model_file', methods=['POST'])
+def set_ai_model_file():
+
+    global ai_detection, ai_model
+
+    try:
+
+        data = request.get_json()
+
+        app.logger.info('json: %s', request.get_json())
+
+        ai_detection['file'] = data
+
+        ai_model_file = os.path.join(AI_MODEL_PATH, ai_detection['file'])
+        start_time = datetime.now()
+        ai_model = YOLO(ai_model_file)
+        elapsed_time = datetime.now() - start_time
+        app.logger.info(f"AI model file loaded: {ai_detection['file']}")
+        app.logger.info(f"AI model file loading time: {elapsed_time.seconds}.{elapsed_time.microseconds} seconds")
 
         return jsonify(success=True, message="Settings updated successfully")
 

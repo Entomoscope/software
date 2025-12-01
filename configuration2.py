@@ -40,6 +40,7 @@ class Configuration2():
 
         setattr(self, 'ai_detection', {
                         'enable': False,
+                        'file': '',
                         'min_confidence': 0.8,
                         'image_height': 320,
                         "image_scale": 10.0,
@@ -113,6 +114,7 @@ class Configuration2():
 
         setattr(self, 'images_capture', {
                             'enable': False,
+                            'fast_mode': False,
                             'time_step': 5
                         })
 

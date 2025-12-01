@@ -245,7 +245,8 @@ class Camera2():
 
                     self.camera.configure(self.camera_config)
 
-                    self.encoder = MJPEGEncoder(10000000)
+                    # self.encoder = MJPEGEncoder(10000000)
+                    self.encoder = MJPEGEncoder(None)
                     self.streamOut = StreamingOutput()
                     self.streamOut2 = FileOutput(self.streamOut)
                     self.encoder.output = [self.streamOut2]

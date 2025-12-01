@@ -51,7 +51,7 @@ def main():
 
     logger.info('****************************')
 
-    logger.info('sounds capture started')
+    logger.info('sounds capture script started')
 
     logger.info(f'sounds capture folder: {SOUNDS_CAPTURE_FOLDER}')
 

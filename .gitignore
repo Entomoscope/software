@@ -2,10 +2,6 @@
 configuration.json
 configuration2.json
 
-# AI model files
-*.pt
-*.onnx
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

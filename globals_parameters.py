@@ -76,7 +76,6 @@ if not os.path.exists(EXTERNAL_DISK_FOLDER):
         os.mkdir(DATA_FOLDER)
 else:
     DATA_FOLDER = EXTERNAL_DISK_FOLDER
-
 logger.info('data folder: ' + DATA_FOLDER)
 
 SAVE_FOLDER = os.path.join(DATA_FOLDER, TODAY)
@@ -92,61 +91,70 @@ else:
     save_folder_created = True
 
 if not save_folder_created:
-
     DATA_FOLDER = os.path.join(DESKTOP_FOLDER, 'Data')
     if not os.path.exists(DATA_FOLDER):
         os.mkdir(DATA_FOLDER)
-
     SAVE_FOLDER = os.path.join(DATA_FOLDER, TODAY)
     if not os.path.exists(SAVE_FOLDER):
         os.mkdir(SAVE_FOLDER)
-
 logger.info('save folder: ' + SAVE_FOLDER)
 
 SOUNDS_CAPTURE_FOLDER = os.path.join(SAVE_FOLDER, 'Sounds')
 if not os.path.exists(SOUNDS_CAPTURE_FOLDER):
     os.mkdir(SOUNDS_CAPTURE_FOLDER)
-
 logger.info('sounds capture folder: ' + SOUNDS_CAPTURE_FOLDER)
 
 IMAGES_CAPTURE_FOLDER = os.path.join(SAVE_FOLDER, 'Images')
 if not os.path.exists(IMAGES_CAPTURE_FOLDER):
     os.mkdir(IMAGES_CAPTURE_FOLDER)
-
 logger.info('images capture folder: ' + IMAGES_CAPTURE_FOLDER)
 
 ENVIRONMENT_MONITORING_FOLDER = os.path.join(SAVE_FOLDER, 'Environment')
 if not os.path.exists(ENVIRONMENT_MONITORING_FOLDER):
     os.mkdir(ENVIRONMENT_MONITORING_FOLDER)
-
 logger.info('environment monitoring folder: ' + ENVIRONMENT_MONITORING_FOLDER)
 
 TMP_FOLDER = os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'tmp')
-
 logger.info('tmp folder: ' + TMP_FOLDER)
 
-# AI_MODEL_FILE = 'arthropod_dectector_wave18_best.pt'
-AI_MODEL_PATH = os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'ai_models')
-# AI_MODEL = os.path.join(AI_MODEL_PATH, AI_MODEL_FILE)
+AI_ENABLE = False
+logger.info(f'ai enable: {AI_ENABLE}')
 
-# logger.info('ai model file: ' + AI_MODEL_FILE)
+AI_MODEL_PATH = os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'ai_models')
 logger.info('ai model path: ' + AI_MODEL_PATH)
-# logger.info('ai model: ' + AI_MODEL)
+
+CAPTURE_AI_DETECTION = True
+logger.info(f'capture ai detection: {CAPTURE_AI_DETECTION}')
 
 EPHEMERIS_FILE_PATH = os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'static', 'ephemeris')
-
 logger.info('ephemeris file path: ' + EPHEMERIS_FILE_PATH)
 
 WITTY_PI_FOLDER = os.path.join(USER_FOLDER, 'wittypi')
-
 logger.info('witty pi folder: ' + WITTY_PI_FOLDER)
 
 SCHEDULE_SCRIPT_PATH = os.path.join(WITTY_PI_FOLDER, 'runScript.sh')
 SCHEDULE_FILE_PATH = os.path.join(WITTY_PI_FOLDER, 'schedule.wpi')
 
-DELAY_BEFORE_SHUTDOWN = 5
+MINUTES_OFFSET_FOR_STARTING_ON_TIME = 1
+logger.info(f'offset for starting on time: {MINUTES_OFFSET_FOR_STARTING_ON_TIME} minutes')
 
-MICROPHONE_DETECTION_INTERVAL = 5
-MICROPHONE_DETECTION_NUM_TRIES = 15
-
+DELAY_BEFORE_SHUTDOWN = 5 # seconds
 logger.info(f'delay before shutdown: {DELAY_BEFORE_SHUTDOWN} seconds')
+
+MICROPHONE_DETECTION_INTERVAL = 5 # seconds
+logger.info(f'microphone detection interval: {MICROPHONE_DETECTION_INTERVAL} seconds')
+MICROPHONE_DETECTION_NUM_TRIES = 15
+logger.info(f'microphone detection number of tries: {MICROPHONE_DETECTION_NUM_TRIES}')
+
+WIFI_CONNECTION_TRY_DURATION = 5 # seconds
+logger.info(f'wifi connection try duration: {WIFI_CONNECTION_TRY_DURATION} seconds')
+INTERNET_CONNECTION_TRY_DURATION = 5 # seconds
+logger.info(f'internet connection try duration: {INTERNET_CONNECTION_TRY_DURATION} seconds')
+WIFI_AUTOCONNECT_AP = True
+logger.info(f'wifi AP autoconnection set to: {WIFI_AUTOCONNECT_AP}')
+
+SERVER_PORT = 7777
+logger.info(f'server port: {SERVER_PORT}')
+SERVER_DEBUG = True
+logger.info(f'server debug mode: {SERVER_DEBUG}')
+SERVER_ALLOWED_EXTENSIONS = {'csv', 'json'}

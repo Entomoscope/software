@@ -8,7 +8,7 @@ DEFAULT_CONFIGURATION_FILE = 'configuration2.json'
 
 class Configuration2():
 
-    _attributes = {'ai_detection', 'camera', 'cooling_system', 'ephemeris', 'files', 'gnss', 'images_capture', 'laser', 'leds', 'microphone', 'mode', 'monitor_environment', 'schedule', 'site', 'server', 'sounds_capture'}
+    _attributes = {'ai_detection', 'camera', 'cooling_system', 'ephemeris', 'files', 'gnss', 'images_capture', 'laser', 'leds', 'microphone', 'mode', 'environmental_monitoring', 'schedule', 'site', 'server', 'sounds_capture', 'wifi'}
 
     def __init__(self, configuration_file=DEFAULT_CONFIGURATION_FILE):
 
@@ -51,6 +51,8 @@ class Configuration2():
                         'autofocus': {
                             'enable': True,
                             'lens_position': 8.5,
+                            'measure_enable': False,
+                            'measure_mode': 'laplacian',
                             'mode': 'Manual',
                             'range': 'Normal',
                             'speed': 'Normal'
@@ -93,6 +95,11 @@ class Configuration2():
                             'fan_speed_levels': [25, 50, 75, 100]
                         })
 
+        setattr(self, 'environmental_monitoring', {
+                            'enable': True,
+                            'time_step': 300
+                        })
+
         setattr(self, 'ephemeris', {
                             'location': ''
                         })
@@ -123,6 +130,7 @@ class Configuration2():
                         })
 
         setattr(self, 'leds', {
+                            'always_on': False,
                             'delay_off': 0,
                             'delay_on': 0,
                             'intensity_front': 0,
@@ -130,16 +138,12 @@ class Configuration2():
                         })
 
         setattr(self, 'microphone', {
-                            "sample_rate": 44100
+                            "sample_rate": 48000,
+                            'gain': 2
                         })
 
         setattr(self, 'mode', {
                             'mode': 'trap'
-                        })
-
-        setattr(self, 'monitor_environment', {
-                            'enable': True,
-                            'time_step': 300
                         })
 
         setattr(self, 'schedule', {
@@ -167,6 +171,10 @@ class Configuration2():
         setattr(self, 'sounds_capture', {
                             'duration': 60,
                             'enable': False
+                        })
+
+        setattr(self, 'wifi', {
+                            'station_ssid': ''
                         })
 
         self.configuration = {key: None for key in self._attributes}

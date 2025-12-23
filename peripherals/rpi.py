@@ -30,6 +30,11 @@ class Rpi():
         self.model = self.get_model()
         self.revision = self.get_revision()
         self.serial = self.get_serial()
+        if self.serial:
+            self.uuid = self.serial[-8:]
+        else:
+            self.uuid = 'xxxxxxxx'
+
         # self.ram = self.get_ram()
 
         self.hostname = self.get_hostname()
@@ -107,8 +112,7 @@ class Rpi():
     def get_wifi_ssid(self):
 
         try:
-            # wifi_ssid = check_output(['iwgetid', '-r']).decode('utf-8').strip()
-            # wifi_ssid = check_output('nmcli d show wlan0 | grep "GENERAL.CONNECTION:"', shell=True).decode('utf-8').split()[1].split('/')[0]
+
             wifi_ssid = check_output('nmcli d show wlan0 | grep "GENERAL.CONNECTION:"', shell=True).decode('utf-8').split(':')[1].strip()
 
         except BaseException as e:
@@ -216,6 +220,7 @@ class Rpi():
         s += '  Model: ' + self.model + '\n'
         s += '  Revision: ' + self.revision + '\n'
         s += '  Serial: ' + self.serial + '\n'
+        s += '  UUID: ' + self.uuid + '\n'
         s += '  OS version: ' + self.os_version + '\n'
         s += '  Arch version: ' + self.arch_version + '\n'
         s += '  Hostname: ' + self.hostname + '\n'

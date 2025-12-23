@@ -393,9 +393,9 @@
                         </div>
                         <div class="form-check">
                             {% if configuration['camera']['autofocus']['mode'] == 'Manual' %}
-                            <input type="range" class="form-range" min="0" max="32" step="0.025" id="manualFocusRange" value="{{ configuration.camera['autofocus']['lens_position'] }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
+                            <input type="range" class="form-range" min="0" max="32" step="0.025" id="manualFocusRange" value="{{ configuration.camera['autofocus']['lens_position'] | round(3) }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
                             <div class="input-group mb-1">
-                                <input type="number" id="manualFocusRangeNumber" class="form-control" min="0" step="0.025" max="32" value="{{ configuration.camera['autofocus']['lens_position'] }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
+                                <input type="number" id="manualFocusRangeNumber" class="form-control" min="0" step="0.025" max="32" value="{{ configuration.camera['autofocus']['lens_position'] | round(3) }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
                                 <div class="input-group-text">dioptres</div>
                             </div>
                             <div class="form-button-center">
@@ -406,12 +406,86 @@
                                 </div>
                             </div>
                             {% else %}
-                            <input type="range" class="form-range" min="0" max="32" step="0.1" id="manualFocusRange" value="{{ configuration.camera['autofocus']['lens_position'] }}" onchange="adjustSliderSetting('LensPosition', this.value)" disabled />
+                            <input type="range" class="form-range" min="0" max="32" step="0.025" id="manualFocusRange" value="{{ configuration.camera['autofocus']['lens_position'] | round(3) }}" onchange="adjustSliderSetting('LensPosition', this.value)" disabled />
                             <div class="input-group mb-1">
-                                <input type="number" id="manualFocusRangeNumber" class="form-control" min="0" step="0.1" max="32" value="{{ configuration.camera['autofocus']['lens_position'] }}" onchange="adjustSliderSetting('LensPosition', this.value)" disabled />
+                                <input type="number" id="manualFocusRangeNumber" class="form-control" min="0" step="0.025" max="32" value="{{ configuration.camera['autofocus']['lens_position'] | round(3) }}" onchange="adjustSliderSetting('LensPosition', this.value)" disabled />
                                 <div class="input-group-text">dioptres</div>
                             </div>
+                            <div class="form-button-center">
+                                <div class="btn-group mt-2" role="group" aria-label="Standard Button Group">
+                                    <button type="submit" class="btn btn-primary" id="manualFocusPlus" onclick="manualFocus('minus')" disabled >-</button>
+                                    <input type="number" id="manualFocusStep" class="form-control" min="0.025" step="0.025" max="1" value="0.025" onchange="" disabled />
+                                    <button type="submit" class="btn btn-primary" id="manualFocusMinus" onclick="manualFocus('plus')" disabled >+</button>
+                                </div>
+                            </div>
                             {% endif %}
+                        </div>
+                        <!-- Camera - Autofocus - Focus measure -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">Focus measure</label></strong>
+                            </div>
+                            <div class="form-check form-switch">
+                                {% if configuration['camera']['autofocus']['measure_enable'] %}
+                                <input class="form-check-input" type="checkbox" role="switch" id="focusMeasureEnable" data-bs-toggle="collapse" href="#focus_measure" onchange="updateSaveButton('autofocus', false)" onclick="applyFocusMeasureEnable(this.checked)" checked />
+                                {% else  %}
+                                <input class="form-check-input" type="checkbox" role="switch" id="focusMeasureEnable" data-bs-toggle="collapse" href="#focus_measure" onchange="updateSaveButton('autofocus', false)" onclick="applyFocusMeasureEnable(this.checked)"/>
+                                {% endif  %}
+                                <label class="form-check-label" for="focusMeasureEnable">Disabled/Enabled</label>
+                            </div>
+                        </div>
+                        {% if configuration['camera']['autofocus']['measure_enable'] %}
+                        <div class="collapse show p-2" id="focus_measure">
+                        {% else %}
+                        <div class="collapse p-2" id="focus_measure">
+                        {% endif %}
+                            <div class="form-group">
+                                <!-- Camera - Autofocus - Focus measure - Local variance -->
+                                <div class="form-check form-check-inline">
+                                    {% if configuration.camera['autofocus']['measure_mode'] == 'local_variance' %}
+                                    <input class="form-check-input" type="checkbox" id="localVarianceMode" value="local_variance" onchange="updateSaveButton('autofocus', false)" onclick="applyFocusMeasureMode(this.value)" checked />
+                                    {% else %}
+                                    <input class="form-check-input" type="checkbox" id="localVarianceMode" value="local_variance" onchange="updateSaveButton('autofocus', false)" onclick="applyFocusMeasureMode(this.value)"/>
+                                    {% endif %}
+                                    <label class="form-check-label" for="localVarianceMode">Local variance</label>
+                                </div>
+                                <!-- Camera - Autofocus - Focus measure - Tenengrad -->
+                                <div class="form-check form-check-inline">
+                                    {% if configuration.camera['autofocus']['measure_mode'] == 'tenengrad' %}
+                                    <input class="form-check-input" type="checkbox" id="tenengradMode" value="tenengrad" onchange="updateSaveButton('autofocus', false)" onclick="applyFocusMeasureMode(this.value)" checked />
+                                    {% else %}
+                                    <input class="form-check-input" type="checkbox" id="tenengradMode" value="tenengrad" onchange="updateSaveButton('autofocus', false)" onclick="applyFocusMeasureMode(this.value)"/>
+                                    {% endif %}
+                                    <label class="form-check-label" for="tenengradMode">Tenengrad</label>
+                                </div>
+                                <!-- Camera - Autofocus - Focus measure - Brenner gradient -->
+                                <div class="form-check form-check-inline">
+                                    {% if configuration.camera['autofocus']['measure_mode'] == 'brenner_gradient' %}
+                                    <input class="form-check-input" type="checkbox" id="brennerGradientMode" value="brenner_gradient" onchange="updateSaveButton('autofocus', false)" onclick="applyFocusMeasureMode(this.value)" checked />
+                                    {% else %}
+                                    <input class="form-check-input" type="checkbox" id="brennerGradientMode" value="brenner_gradient" onchange="updateSaveButton('autofocus', false)" onclick="applyFocusMeasureMode(this.value)"/>
+                                    {% endif %}
+                                    <label class="form-check-label" for="brennerGradientMode">Brenner gradient</label>
+                                </div>
+                                <!-- Camera - Autofocus - Focus measure - Sobel variance -->
+                                <div class="form-check form-check-inline">
+                                    {% if configuration.camera['autofocus']['measure_mode'] == 'sobel_variance' %}
+                                    <input class="form-check-input" type="checkbox" id="sobelVarianceMode" value="sobel_variance" onchange="updateSaveButton('autofocus', false)" onclick="applyFocusMeasureMode(this.value)" checked />
+                                    {% else %}
+                                    <input class="form-check-input" type="checkbox" id="sobelVarianceMode" value="sobel_variance" onchange="updateSaveButton('autofocus', false)" onclick="applyFocusMeasureMode(this.value)"/>
+                                    {% endif %}
+                                    <label class="form-check-label" for="sobelVarianceMode">Sobel variance</label>
+                                </div>
+                                <!-- Camera - Autofocus - Focus measure  -->
+                                <div class="form-check form-check-inline">
+                                    {% if configuration.camera['autofocus']['measure_mode'] == 'laplacian' %}
+                                    <input class="form-check-input" type="checkbox" id="laplacianMode" value="laplacian" onchange="updateSaveButton('autofocus', false)" onclick="applyFocusMeasureMode(this.value)" checked />
+                                    {% else %}
+                                    <input class="form-check-input" type="checkbox" id="laplacianMode" value="laplacian" onchange="updateSaveButton('autofocus', false)" onclick="applyFocusMeasureMode(this.value)"/>
+                                    {% endif %}
+                                    <label class="form-check-label" for="laplacianMode">Laplacian</label>
+                                </div>
+                            </div>
                         </div>
                         <hr/>
                         <!-- Camera - Autofocus - Save -->
@@ -666,6 +740,20 @@
                                 <div class="input-group-text">seconds</div>
                             </div>
                         </div>
+                        <!-- LEDs - Always On -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="always_on" class="form-label">Always on</label></strong>
+                            </div>
+                            <div class="form-check form-switch">
+                                {% if configuration['leds']['always_on'] %}
+                                <input class="form-check-input" type="checkbox" role="switch" id="ledsAlwaysOnCheck" onchange="updateSaveButton('leds', false);setLedsAlwaysOn(this.checked)" checked />
+                                {% else  %}
+                                <input class="form-check-input" type="checkbox" role="switch" id="ledsAlwaysOnCheck" onchange="updateSaveButton('leds', false);setLedsAlwaysOn(this.checked)"/>
+                                {% endif  %}
+                                <label class="form-check-label" for="ledsAlwaysOn">Disabled/Enabled</label>
+                            </div>
+                        </div>
                         <hr/>
                         <!-- LEDs - Save -->
                         <div class="form-button-center">
@@ -742,7 +830,15 @@
     const manualFocusMinus = document.getElementById('manualFocusMinus');
     const manualFocusStep = document.getElementById('manualFocusStep');
     const manualFocusPlus = document.getElementById('manualFocusPlus');
+    const focusMeasureEnable = document.getElementById('focusMeasureEnable');
+    const localVarianceMode = document.getElementById('localVarianceMode');
+    const tenengradMode = document.getElementById('tenengradMode');
+    const brennerGradientMode = document.getElementById('brennerGradientMode');
+    const sobelVarianceMode = document.getElementById('sobelVarianceMode');
+    const laplacianMode = document.getElementById('laplacianMode');
     const autofocusSaveButton = document.getElementById('autofocusSaveButton');
+    const cameraAutofocusMeasureEnableConfigurationText = document.getElementById('cameraAutofocusMeasureEnableConfigurationText');
+    const cameraAutofocusMeasureModeConfigurationText = document.getElementById('cameraAutofocusMeasureModeConfigurationText');
 
     // Auto Exposure/Gain
     const aeAutoEnable = document.getElementById('aeAutoEnable');
@@ -803,8 +899,12 @@
     const ledsDelayOnNumber = document.getElementById('ledsDelayOnNumber');
     const ledsDelayOffNumber = document.getElementById('ledsDelayOffNumber');
 
+    const ledsAlwaysOnCheck = document.getElementById('ledsAlwaysOnCheck');
+
     const ledsDelayOnConfigurationText = document.getElementById('ledsDelayOnConfigurationText');
     const ledsDelayOffConfigurationText = document.getElementById('ledsDelayOffConfigurationText');
+
+    const ledsAlwaysOnConfigurationText = document.getElementById('ledsAlwaysOnConfigurationText');
 
     const ledsSaveButton = document.getElementById('ledsSaveButton');
 
@@ -838,8 +938,9 @@
             cropLimitsSaveButton.disabled = state
         } else if (settingId == 'auto_exposure_gain') {
             autoExposureGainSaveButton.disabled = state
+        } else if (settingId == 'autofocus') {
+            autofocusSaveButton.disabled = state
         }
-
     }
 
     function updateCameraLiveSettings(settingId) {
@@ -929,7 +1030,7 @@
                 settingValue = 'Continuous'
             }
 
-            autofocusSaveButton.disabled = false
+            updateSaveButton('autofocus', false)
         }
         else if (settingId == 'AwbMode') {
 
@@ -989,6 +1090,7 @@
 
                 if (settingId == 'AfMode' && settingValue == 'Manual') {
                     manualFocusRangeNumber.value = data.data.toFixed(3)
+                    manualFocusRange.value = data.data.toFixed(3)
                 }
             }
         })
@@ -1110,6 +1212,72 @@
 
     }
 
+    function applyFocusMeasureEnable(value) {
+
+        data = value
+
+        return fetch('/set_focus_measure_enable', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function applyFocusMeasureMode(value) {
+
+        localVarianceMode.checked = false
+        tenengradMode.checked = false
+        brennerGradientMode.checked = false
+        sobelVarianceMode.checked = false
+        laplacianMode.checked = false
+
+        if (value == 'local_variance') {
+            localVarianceMode.checked = true
+        } else if (value == 'tenengrad') {
+            tenengradMode.checked = true
+        } else if (value == 'brenner_gradient') {
+            brennerGradientMode.checked = true
+        } else if (value == 'sobel_variance') {
+            sobelVarianceMode.checked = true
+        } else if (value == 'laplacian') {
+            laplacianMode.checked = true
+        }
+
+        data = value
+
+        return fetch('/set_focus_measure_mode', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
     function selectAiModelFile(value) {
 
         data = aiDetectionFileSelect.options[aiDetectionFileSelect.selectedIndex].text
@@ -1144,9 +1312,8 @@
         if (settingId == 'camera_model') {
             cameraModelSaveButton.disabled = true
         } else if (settingId == 'autofocus') {
-            autofocusSaveButton.disabled = true
-        }
-        else if (settingId == 'auto_white_balance') {
+            updateSaveButton('autofocus', true)
+        } else if (settingId == 'auto_white_balance') {
             awbModeSaveButton.disabled = true
         } else if (settingId == 'image_adjustments') {
             imageAdjustmentsSaveButton.disabled = true
@@ -1195,6 +1362,19 @@
                         cameraAutofocusModeConfigurationText.innerText = 'Mode: Continuous'
                     }
                     cameraAutofocusLensPositionConfigurationText.innerText = 'Lens position: ' + manualFocusRange.value
+                    cameraAutofocusMeasureEnableConfigurationText.innerText = 'Focus measure enable: ' + String(focusMeasureEnable.checked).charAt(0).toUpperCase() + String(focusMeasureEnable.checked).slice(1)
+
+                    if (localVarianceMode.checked) {
+                        cameraAutofocusMeasureModeConfigurationText.innerText = 'Focus measure mode: local variance'
+                    } else if (tenengradMode.checked) {
+                        cameraAutofocusMeasureModeConfigurationText.innerText = 'Focus measure mode: tenengrad'
+                    } else if (brennerGradientMode.checked) {
+                        cameraAutofocusMeasureModeConfigurationText.innerText = 'Focus measure mode: brenner gradient'
+                    } else if (sobelVarianceMode.checked) {
+                        cameraAutofocusMeasureModeConfigurationText.innerText = 'Focus measure mode: sobel variance'
+                    } else if (laplacianMode.checked) {
+                        cameraAutofocusMeasureModeConfigurationText.innerText = 'Focus measure mode: laplacian'
+                    }
                 } else if (settingId == 'auto_exposure_gain') {
                     cameraAegExposureValueConfigurationText.innerText = 'Exposure value: ' + exposureValue.value
                     cameraAegAnalogueGainConfigurationText.innerText = 'Analogue gain: ' + analogueGain.value
@@ -1233,6 +1413,7 @@
                     }
                     ledsDelayOnConfigurationText.innerText = 'Delay on: ' + ledsDelayOnNumber.value + ' seconds'
                     ledsDelayOffConfigurationText.innerText = 'Delay off: ' + ledsDelayOffNumber.value + ' seconds'
+                    ledsAlwaysOnConfigurationText.innerText = 'Always on: ' + String(ledsAlwaysOnCheck.checked).charAt(0).toUpperCase() + String(ledsAlwaysOnCheck.checked).slice(1)
                 } else if (settingId == 'files') {
                     jpegQualityConfigurationText.innerText = 'JPEG quality: ' + jpegQualityNumber.value + ' %'
                 } else if (settingId == 'image_position') {
@@ -1591,6 +1772,31 @@
         console.error('Error updating settings:', error);
         throw error;  // Re-throw the error for the next catch
         });
+    }
+
+    function setLedsAlwaysOn(value) {
+
+        console.log(value)
+
+        return fetch('/set_leds_always_on', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(value),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Settings updated:', data);
+            if (data.success) {
+
+            }
+        })
+        .catch(error => {
+        console.error('Error updating settings:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
     }
 
     function setDetectionEnable(value) {

@@ -76,7 +76,7 @@ def main():
 
         logger.info(f'Detecting the microphone ({i}/{MICROPHONE_DETECTION_NUM_TRIES} tries)')
 
-        microphone = Microphone2()
+        microphone = Microphone2(configuration.microphone['sample_rate'], configuration.microphone['gain'])
 
         if microphone.available:
             break

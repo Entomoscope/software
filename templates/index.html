@@ -149,22 +149,26 @@
               </div>
             </div>
         </div>
-        <!-- WiFi -->
+        <!-- Firmware -->
         <div class="col-4">
             <div class="card mt-3">
-              <div class="card-body">
-                <h5 class="card-title">WiFi</h5>
-                <ul>
-                <li>SSID: {{ rpi.wifi_ssid }}</li>
-                <li>IP address: {{ rpi.ip_address }}</li>
-                <li>Hostname: {{ rpi.hostname }}</li>
-                {% if rpi.wifi_power_save %}
-                <li>Power save mode: yes</li>
-                {% else %}
-                <li>Power save mode: no</li>
-                {% endif %}
-                </ul>
-              </div>
+                <div class="card-body">
+                    <h5 class="card-title">Firmware</h5>
+                    {% if updates_available %}
+                        <p id="updateText" class="card-text">Updates available</p>
+                    {% else %}
+                        <p id="updateText" class="card-text">No updates available</p>
+                    {% endif %}
+                    <hr/>
+                    <div class="form-button-center">
+                        {% if updates_available %}
+                            <button type="submit" class="btn btn-primary" id="getUpdatesButton" onclick="getUpdates()">Update</button>
+                        {% else %}
+                            <button type="submit" class="btn btn-primary" id="getUpdatesButton" onclick="getUpdates()" disabled>Update</button>
+                        {% endif %}
+                        <button type="submit" class="btn btn-primary" id="checkUpdatesButton" onclick="checkUpdates()">Check</button>
+                    </div>
+                </div>
             </div>
         </div>
         <!-- Raspberry Pi -->
@@ -219,6 +223,76 @@
               </div>
             </div>
         </div>
+        <!-- WiFi -->
+        <div class="col-4">
+            <div class="card mt-3">
+              <div class="card-body">
+                <h5 class="card-title">WiFi</h5>
+                <h6 class="card-title">Current</h6>
+                <ul>
+                    <li>SSID: {{ rpi.wifi_ssid }}</li>
+                    <li>IP address: {{ rpi.ip_address }}</li>
+                </ul>
+                <hr>
+                <h6 class="card-title">Access Point</h6>
+                    <div class="input-group">
+                      <input type="text" class="form-control" aria-label="Text input with checkbox" id="wifiAPName" value="{{ wifi.ap_name }}" onChange="setNewNameWifiAP()" disabled=True>
+                    </div>
+                <hr>
+                {% if wifi.saved_names|length > 0 %}
+                <h6 class="card-title">Station saved</h6>
+                    {% for name in wifi.saved_names %}
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            {% if configuration.wifi['station_ssid'] == name %}
+                            <span class="input-group-text" id="wifiSelect{{ loop.index }}">&#9673;</span>
+                            {% else %}
+                            <span class="input-group-text" id="wifiSelect{{ loop.index }}">&#11096;</span>
+                            {% endif %}
+                        </div>
+                        <input type="text" class="form-control" aria-label="Text input with checkbox" value="{{ name }}" disabled=True>
+                      <div class="input-group-append" id="button-addon4">
+                          <button class="btn btn-primary" type="button" onclick="setWifi('{{ name }}')">Set</button>
+                        <button class="btn btn-primary" type="button" onclick="removeWifi('{{ name }}')">Remove</button>
+                      </div>
+                    </div>
+                    {% endfor %}
+                    <p class="d-none" style="font-weight: bold; color: red" id="warningWifiSetText">New Wifi station set. Restart the entomoscope</p>
+                 {% endif %}
+                 {% if wifi.available_names|length > 0 %}
+                  <h6 class="card-title">Station available</h6>
+                    {% for name in wifi.available_names %}
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text">{{ name }}</span>
+                        </div>
+                      <input type="password" class="form-control" placeholder="Password" aria-label="Recipient's username with two button addons" aria-describedby="button-addon4" id="password{{ loop.index }}">
+                      <div class="input-group-append" id="button-addon4">
+                        <button class="btn btn-primary" type="button" onclick="addWifi('{{ name }}', {{ loop.index }})">Add</button>
+                        <button class="btn btn-primary" type="button" onclick="showPassword({{ loop.index }})">Show password</button>
+                      </div>
+                    </div>
+                    {% endfor %}
+                  {% endif %}
+                <hr>
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                            <button class="btn btn-primary" type="button" id="testInternetButton" onclick="testInternetConnection()">Test internet connection</button>
+                    </div>
+                    <input type="text" class="form-control" aria-label="" aria-describedby="button-addon4" id="testInternetText" disabled>
+                </div>
+                <hr>
+                <h6 class="card-title">WiFi power save mode</h6>
+                <ul>
+                    {% if rpi.wifi_power_save %}
+                    <li>Yes</li>
+                    {% else %}
+                    <li>No</li>
+                    {% endif %}
+                </ul>
+              </div>
+            </div>
+        </div>
         <!-- Configuration File -->
         <div class="col-4">
             <div class="card mt-3">
@@ -240,28 +314,6 @@
                         <input type="file" name="file" id="ephemerisFileInput" accept=".csv"/>
                         <input type="submit" value="Send to Entomoscope">
                     </form>
-                </div>
-            </div>
-        </div>
-        <!-- Firmware -->
-        <div class="col-4">
-            <div class="card mt-3">
-                <div class="card-body">
-                    <h5 class="card-title">Firmware</h5>
-                    {% if updates_available %}
-                        <p id="updateText" class="card-text">Updates available</p>
-                    {% else %}
-                        <p id="updateText" class="card-text">No updates available</p>
-                    {% endif %}
-                    <hr/>
-                    <div class="form-button-center">
-                        {% if updates_available %}
-                            <button type="submit" class="btn btn-primary" id="getUpdatesButton" onclick="getUpdates()">Update</button>
-                        {% else %}
-                            <button type="submit" class="btn btn-primary" id="getUpdatesButton" onclick="getUpdates()" disabled>Update</button>
-                        {% endif %}
-                        <button type="submit" class="btn btn-primary" id="checkUpdatesButton" onclick="checkUpdates()">Check</button>
-                    </div>
                 </div>
             </div>
         </div>
@@ -313,6 +365,16 @@
     const updateText = document.getElementById('updateText')
     const getUpdatesButton = document.getElementById('getUpdatesButton')
     const checkUpdatesButton = document.getElementById('checkUpdatesButton')
+
+    const renameAPWifiButton = document.getElementById('renameAPWifiButton')
+    const wifiAPName = document.getElementById('wifiAPName')
+
+    const warningWifiSetText = document.getElementById('warningWifiSetText')
+
+    const testInternetButton = document.getElementById('testInternetButton')
+    const testInternetText = document.getElementById('testInternetText')
+
+    // const refreshWifiButton = document.getElementById('refreshWifiButton')
 
     const modalDialog = document.getElementById('modalDialog');
 
@@ -580,6 +642,132 @@
         })
         .catch(error => {
             gnssUpdateButton.disabled = false
+            console.error('Error updating settings:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function renameAPWifi() {
+
+        wifiAPName.disabled = false
+        renameAPWifiButton.disabled = true
+
+    }
+
+    function removeWifi(name) {
+
+        console.log(name)
+
+        return fetch('/remove_wifi', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(name),
+        })
+        .catch(error => {
+            console.error('Error updating settings:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function setWifi(name) {
+
+        console.log(name)
+
+        warningWifiSetText.classList.remove("d-none");
+        warningWifiSetText.innerText = 'New station set to ' + name + '. Restart the entomoscope.'
+
+        return fetch('/set_wifi', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(name),
+        })
+        .catch(error => {
+            console.error('Error updating settings:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function addWifi(name, value) {
+
+        var x = document.getElementById("password" + value);
+
+        console.log(name)
+        console.log(x.value)
+
+        return fetch('/add_wifi', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify([name, x.value]),
+        })
+        .catch(error => {
+            console.error('Error updating settings:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    //function refreshWifi() {
+
+        //refreshWifiButton.disabled = true
+
+        //return fetch('/refresh_wifi', {
+            //method: 'POST',
+            //headers: {
+                //'Content-Type': 'application/json',
+            //},
+            //body: '',
+        //})
+        ////.then(refreshWifiButton.disabled = false)
+        //.catch(error => {
+            //refreshWifiButton.disabled = false
+            //console.error('Error updating settings:', error);
+            //throw error;  // Re-throw the error for the next catch
+        //});
+
+    //}
+
+    function showPassword(value) {
+      var x = document.getElementById("password" + value);
+      if (x.type === "password") {
+        x.type = "text";
+      } else {
+        x.type = "password";
+      }
+    }
+
+    function testInternetConnection() {
+
+        testInternetButton.disabled = true
+        testInternetText.value = 'In progress...'
+
+        return fetch('/test_internet_connection', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                testInternetText.value = 'Available'
+            }
+            else {
+                testInternetText.value = 'Not available'
+            }
+            testInternetButton.disabled = false
+        })
+        .catch(error => {
+            testInternetButton.disabled = false
             console.error('Error updating settings:', error);
             throw error;  // Re-throw the error for the next catch
         });

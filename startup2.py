@@ -8,13 +8,15 @@ from subprocess import check_output
 
 import pigpio
 
-from peripherals.pinout2 import IMAGES_CAPTURE_ACTIVITY_PIN, SOUNDS_CAPTURE_ACTIVITY_PIN, SHUTDOWN_PIN, STARTUP_PIN
+from peripherals.pinout2 import IMAGES_CAPTURE_ACTIVITY_PIN, SOUNDS_CAPTURE_ACTIVITY_PIN, SHUTDOWN_PIN, STARTUP_PIN, TOGGLE_SWITCH_PIN_1, TOGGLE_SWITCH_PIN_2
 from peripherals.wittypi import WittyPi
 from peripherals.externaldisk import ExternalDisk
 from ephemeris import Ephemeris
 from date_time import DateTime
 
-from globals_parameters import LOGS_DESKTOP_FOLDER, TODAY, TODAY_NOW, TOMORROW, TOMORROW_NOW
+from globals_parameters import USER, LOGS_DESKTOP_FOLDER, TODAY, TODAY_NOW, TOMORROW, TOMORROW_NOW, MINUTES_OFFSET_FOR_STARTING_ON_TIME
+
+from crontab_management import CrontabManagement
 
 from configuration2 import Configuration2
 
@@ -22,6 +24,11 @@ pi = pigpio.pi()
 
 pi.write(SHUTDOWN_PIN, 0)
 pi.write(STARTUP_PIN, 0)
+
+pi.set_mode(TOGGLE_SWITCH_PIN_1, pigpio.INPUT)
+pi.set_pull_up_down(TOGGLE_SWITCH_PIN_1, pigpio.PUD_DOWN)
+pi.set_mode(TOGGLE_SWITCH_PIN_2, pigpio.INPUT)
+pi.set_pull_up_down(TOGGLE_SWITCH_PIN_2, pigpio.PUD_DOWN)
 
 def main():
 
@@ -97,7 +104,7 @@ def main():
 
                         configuration.save()
 
-                        next_startup = next_startup - timedelta(minutes=1)
+                        next_startup = next_startup - timedelta(minutes=MINUTES_OFFSET_FOR_STARTING_ON_TIME)
 
                         witty_pi.set_startup_alarm(next_startup.day, next_startup.hour, next_startup.minute)
 
@@ -132,7 +139,7 @@ def main():
 
                 logger.info(f"startup alarm shifted to {configuration.schedule['next_startup']} {datetime.now().astimezone().strftime('%Z')}")
 
-                next_startup = next_startup - timedelta(minutes=1)
+                next_startup = next_startup - timedelta(minutes=MINUTES_OFFSET_FOR_STARTING_ON_TIME)
 
                 witty_pi.set_startup_alarm(next_startup.day, next_startup.hour, next_startup.minute)
 
@@ -164,6 +171,8 @@ def main():
     else:
 
         logger.info('scheduler is disabled')
+
+    crontab_management = CrontabManagement(check_mandatory_service=True)
 
     external_disk = ExternalDisk()
 

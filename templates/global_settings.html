@@ -390,7 +390,7 @@
                                 <strong class="mb-1"><label for="brightness" class="form-label">CPU temperature check interval</label></strong>
                             </div>
                             <div class="input-group mb-1">
-                                <input type="number" id="cpuTempCheckIntervalNumber" class="form-control" min="0" max="15" value="{{ configuration['cooling_system']['cpu_temperature_check_interval'] }}" onchange="updateSaveButton('cooling_system', false)"/>
+                                <input type="number" id="cpuTempCheckIntervalNumber" class="form-control" min="1" max="15" value="{{ configuration['cooling_system']['cpu_temperature_check_interval'] }}" onchange="updateSaveButton('cooling_system', false)"/>
                                 <div class="input-group-text">minutes</div>
                             </div>
                         </div>
@@ -399,6 +399,53 @@
                     <!-- Cooling system  - Save -->
                     <div class="form-button-center">
                         <button type="submit" class="btn btn-primary" id="coolingSystemSaveButton" onclick="updateSettings('cooling_system')" disabled>Save</button>
+                    </div>
+                  </div>
+                </div>
+            </div>
+            <!-- Environement monitoring -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEnvironementmonitoring" aria-expanded="false" aria-controls="collapseEnvironementmonitoring">
+                    Environement monitoring
+                  </button>
+                </h2>
+                <div id="collapseEnvironementmonitoring" class="accordion-collapse collapse">
+                  <div class="accordion-body">
+                    <!-- Environement monitoring - Enable -->
+                    <div class="form-group">
+                        <div class="d-flex w-100 align-items-center justify-content-between">
+                            <strong class="mb-1"><label for="brightness" class="form-label">Enable</label></strong>
+                        </div>
+                        <div class="form-check form-switch">
+                            {% if configuration['environmental_monitoring']['enable'] %}
+                            <input class="form-check-input" type="checkbox" role="switch" id="environmentalMonitoringEnable" data-bs-toggle="collapse" href="#environmental_monitoring_settings" onchange="updateSaveButton('environmental_monitoring', false)" checked />
+                            {% else  %}
+                            <input class="form-check-input" type="checkbox" role="switch" id="environmentalMonitoringEnable" data-bs-toggle="collapse" href="#environmental_monitoring_settings" onchange="updateSaveButton('environmental_monitoring', false)"/>
+                            {% endif  %}
+                            <label class="form-check-label" for="environmentalMonitoringEnable">Disabled/Enabled</label>
+                        </div>
+                    </div>
+                    {% if configuration['environmental_monitoring']['enable'] %}
+                    <div class="collapse show p-2" id="environmental_monitoring_settings">
+                    {% else %}
+                    <div class="collapse p-2" id="environmental_monitoring_settings">
+                    {% endif %}
+                        <!-- Environmental monitoring  - Checking Interval -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">Checking interval</label></strong>
+                            </div>
+                            <div class="input-group mb-1">
+                                <input type="number" id="environmentalMonitoringCheckIntervalNumber" class="form-control" min="1" max="15" value="{{ configuration['environmental_monitoring']['time_step'] }}" onchange="updateSaveButton('environmental_monitoring', false)"/>
+                                <div class="input-group-text">minutes</div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr/>
+                    <!-- Environemntal monitoring  - Save -->
+                    <div class="form-button-center">
+                        <button type="submit" class="btn btn-primary" id="environmentalMonitoringSaveButton" onclick="updateSettings('environmental_monitoring')" disabled>Save</button>
                     </div>
                   </div>
                 </div>
@@ -461,6 +508,13 @@
     const coolingSystemFanSpeedLevelsConfigurationText = document.getElementById('coolingSystemFanSpeedLevelsConfigurationText');
     const coolingSystemCpuTemperatureCheckIntervalConfigurationText = document.getElementById('coolingSystemCpuTemperatureCheckIntervalConfigurationText');
 
+    const environmentalMonitoringSaveButton = document.getElementById('environmentalMonitoringSaveButton');
+
+    const environmentalMonitoringEnable = document.getElementById('environmentalMonitoringEnable');
+    const environmentalMonitoringCheckIntervalNumber = document.getElementById('environmentalMonitoringCheckIntervalNumber');
+    const environmentalMonitoringEnableConfigurationText = document.getElementById('environmentalMonitoringEnableConfigurationText');
+    const environmentalMonitoringCheckIntervalConfigurationText = document.getElementById('environmentalMonitoringCheckIntervalConfigurationText');
+
     function updateSaveButton(settingId, state) {
 
         if (settingId == 'site') {
@@ -481,7 +535,9 @@
         else if (settingId == 'cooling_system') {
             coolingSystemSaveButton.disabled = state
         }
-
+        else if (settingId == 'environmental_monitoring') {
+            environmentalMonitoringSaveButton.disabled = state
+        }
     }
 
     function updateSettings(settingId) {
@@ -519,6 +575,9 @@
 
             data = [settingId, {'enable': coolingSystemEnable.checked, 'cpu_temps': cpu_temps, 'fan_speeds': fan_speeds, 'cpu_temp_check_interval': cpu_temp_check_interval}]
 
+        }
+        else if (settingId == 'environmental_monitoring') {
+            data = [settingId, {'enable': environmentalMonitoringEnable.checked, 'time_step': environmentalMonitoringCheckIntervalNumber.value}]
         }
 
         return fetch('/update_settings', {
@@ -562,6 +621,9 @@
                     coolingSystemCpuTemperatureCheckIntervalConfigurationText.innerText = 'Cpu temperature check interval: ' + cpu_temp_check_interval + ' minutes'
                     coolingSystemCpuTemperatureLevelsConfigurationText.innerText = 'Cpu temperature levels: [' + cpu_temps + '] °C'
                     coolingSystemFanSpeedLevelsConfigurationText.innerText = 'Fan speed levels: [' + fan_speeds + '] %'
+                } else if (settingId == 'environmental_monitoring') {
+                    environmentalMonitoringEnableConfigurationText.innerText = 'Enable: ' + String(environmentalMonitoringEnable.checked).charAt(0).toUpperCase() + String(environmentalMonitoringEnable.checked).slice(1)
+                    environmentalMonitoringCheckIntervalConfigurationText.innerText = 'Check interval: ' + environmentalMonitoringCheckIntervalNumber.value + ' minutes'
                 }
 
             } else {

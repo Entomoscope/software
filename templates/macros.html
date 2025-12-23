@@ -21,6 +21,9 @@
     <p class="config_level_2" id="coolingSystemCpuTemperatureCheckIntervalConfigurationText">Cpu temperature check interval: {{ configuration['cooling_system']['cpu_temperature_check_interval'] }} minutes</p>
     <p class="config_level_2" id="coolingSystemCpuTemperatureLevelsConfigurationText">Cpu temperature levels: {{ configuration['cooling_system']['cpu_temperature_levels'] }} &deg;C</p>
     <p class="config_level_2" id="coolingSystemFanSpeedLevelsConfigurationText">Fan speed levels: {{ configuration['cooling_system']['fan_speed_levels'] }} %</p>
+    <p class="config_level_1">Environmental monitoring</p>
+    <p class="config_level_2" id="environmentalMonitoringEnableConfigurationText">Enable: {{ configuration['environmental_monitoring']['enable'] }}</p>
+    <p class="config_level_2" id="environmentalMonitoringCheckIntervalConfigurationText">Check interval: {{ configuration['environmental_monitoring']['time_step'] }} minutes</p>
 {% endmacro %}
 
 {% macro display_configuration_images_capture_settings(configuration, autofocus_available) %}
@@ -51,7 +54,9 @@
     <p class="config_level_3" id="cameraAutofocusEnableConfigurationText">Enable: {{ configuration['camera']['autofocus']['enable'] }}</p>
 -->
     <p class="config_level_2" id="cameraAutofocusModeConfigurationText">Mode: {{ configuration['camera']['autofocus']['mode'] }}</p>
-    <p class="config_level_2" id="cameraAutofocusLensPositionConfigurationText">Lens Position: {{ configuration['camera']['autofocus']['lens_position'] }}</p>
+    <p class="config_level_2" id="cameraAutofocusLensPositionConfigurationText">Lens position: {{ configuration['camera']['autofocus']['lens_position'] | round(3)}}</p>
+    <p class="config_level_2" id="cameraAutofocusMeasureEnableConfigurationText">Focus measure enable: {{ configuration['camera']['autofocus']['measure_enable'] }}</p>
+    <p class="config_level_2" id="cameraAutofocusMeasureModeConfigurationText">Focus measure mode: {{ configuration['camera']['autofocus']['measure_mode'] }}</p>
 <!--
     <p class="config_level_3" id="cameraAutofocusRangeConfigurationText">Range: {{ configuration['camera']['autofocus']['range'] }}</p>
     <p class="config_level_3" id="cameraAutofocusSpeedConfigurationText">Speed: {{ configuration['camera']['autofocus']['speed'] }}</p>
@@ -90,6 +95,7 @@
     {% endif %}
     <p class="config_level_2" id="ledsDelayOnConfigurationText">Delay on: {{ configuration['leds']['delay_on'] }} seconds</p>
     <p class="config_level_2" id="ledsDelayOffConfigurationText">Delay off: {{ configuration['leds']['delay_off'] }} seconds</p>
+    <p class="config_level_2" id="ledsAlwaysOnConfigurationText">Always on: {{ configuration['leds']['always_on'] }}</p>
     <!-- Files -->
     <p class="config_level_1">Files</p>
     <p class="config_level_2" id="jpegQualityConfigurationText">JPEG quality: {{ configuration['files']['jpeg_quality'] }} %</p>
@@ -105,5 +111,16 @@
 {% macro display_configuration_sounds_capture_settings(configuration) %}
     <!-- Microphone -->
     <p class="config_level_1">Microphone</p>
-    <p class="config_level_2" id="sampleRateText">Sample rate: {{ configuration['microphone']['sample_rate'] }} Hz</p>
+    <p class="config_level_2" id="sampleRateConfigurationText">Sample rate: {{ configuration['microphone']['sample_rate'] }} Hz</p>
+    {% if configuration['microphone']['gain'] == 0 %}
+        <p class="config_level_2" id="gainConfigurationText">Gain: low</p>
+    {% elif configuration['microphone']['gain'] == 1 %}
+        <p class="config_level_2" id="gainConfigurationText">Gain: low-medium</p>
+    {% elif configuration['microphone']['gain'] == 2 %}
+        <p class="config_level_2" id="gainConfigurationText">Gain: medium</p>
+    {% elif configuration['microphone']['gain'] == 3 %}
+        <p class="config_level_2" id="gainConfigurationText">Gain: medium-high</p>
+    {% elif configuration['microphone']['gain'] == 4 %}
+        <p class="config_level_2" id="gainConfigurationText">Gain: high</p>
+    {% endif %}
 {% endmacro %}

@@ -19,7 +19,7 @@ import base64
 
 import libcamera
 
-from crontab import CronTab
+from crontab_management import CrontabManagement
 
 from configuration2 import Configuration2
 
@@ -31,25 +31,19 @@ from peripherals.camera2 import Camera2
 from peripherals.gnss2 import Gnss2
 from peripherals.microphone2 import Microphone2
 from peripherals.wittypi import WittyPi
+from peripherals.wifi import Wifi
+
+from focus import Focus
 
 from ephemeris import Ephemeris
 
 from date_time import DateTime
 
-from globals_parameters import USER, TODAY_NOW, AI_MODEL_PATH, PYTHON_SCRIPTS_BASE_FOLDER, TMP_FOLDER, IMAGES_CAPTURE_FOLDER, SOUNDS_CAPTURE_FOLDER, TODAY, TOMORROW, LOGS_DESKTOP_FOLDER, WITTY_PI_FOLDER, DATA_FOLDER
+from globals_parameters import USER, SERVER_PORT, SERVER_DEBUG, SERVER_ALLOWED_EXTENSIONS, TODAY_NOW, AI_ENABLE, AI_MODEL_PATH, CAPTURE_AI_DETECTION, PYTHON_SCRIPTS_BASE_FOLDER, TMP_FOLDER, IMAGES_CAPTURE_FOLDER, SOUNDS_CAPTURE_FOLDER, TODAY, TOMORROW, LOGS_DESKTOP_FOLDER, WITTY_PI_FOLDER, DATA_FOLDER, MINUTES_OFFSET_FOR_STARTING_ON_TIME
 
 from updates import updates_check, updates_get
 
 import pigpio
-
-pi = pigpio.pi()
-
-SERVER_PORT = 7777
-DEBUG = True
-AI_ENABLE = True
-CAPTURE_DETECTION = True
-
-STARTUP_MINUTES_SHIFT = 1
 
 this_script = os.path.basename(__file__)[:-3]
 
@@ -63,6 +57,7 @@ f = logging.Formatter('%(asctime)s;%(levelname)s;%(filename)s;%(lineno)d;"%(mess
 h.setFormatter(f)
 
 app = Flask(__name__)
+# app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 app.logger.addHandler(h)
 app.logger.setLevel("DEBUG")
@@ -78,13 +73,15 @@ werkzeug_logger.setLevel("DEBUG")
 
 app.config['UPLOAD_FOLDER'] = PYTHON_SCRIPTS_BASE_FOLDER
 
+pi = pigpio.pi()
+
 while pi.read(STARTUP_PIN) == 0:
     sleep(0.5)
 
 app.logger.info('****************************')
 app.logger.info('server started')
 
-cron = CronTab(user=USER)
+crontab_management = CrontabManagement()
 
 if pi.read(SHUTDOWN_PIN) == 1:
 
@@ -152,13 +149,24 @@ leds_intensity = [configuration.leds['intensity_front'], configuration.leds['int
 capture_mode = configuration.mode['mode']
 
 autofocus = {'mode': configuration.camera['autofocus']['mode'], 'lens_position': configuration.camera['autofocus']['lens_position']}
+
 white_balance = {'enable': configuration.camera['auto_white_balance']['enable'], 'mode': configuration.camera['auto_white_balance']['mode']}
+
 jpeg_quality = configuration.files['jpeg_quality']
+
 crop_limits = configuration.camera['sensor']['crop_limits']
+
 leds_delays = [configuration.leds['delay_on'], configuration.leds['delay_off']]
+leds_always_on = configuration.leds['always_on']
+
 auto_exposure_gain = {'enable': configuration.camera['auto_exposure_gain']['enable'], 'mode': configuration.camera['auto_exposure_gain']['mode'], 'exposure_time': configuration.camera['auto_exposure_gain']['exposure_time'], 'exposure_value': configuration.camera['auto_exposure_gain']['exposure_value']}
 
 camera_model = configuration.camera['model']
+sensor_resolution = [configuration.camera['sensor']['width_max'], configuration.camera['sensor']['height_max']]
+sensor_mode = [configuration.camera['sensor']['preview_mode'], configuration.camera['sensor']['capture_mode']]
+
+focus_measure_enable = configuration.camera['autofocus']['measure_enable']
+focus_measure_mode = configuration.camera['autofocus']['measure_mode']
 
 server_settings = {'keep_image_center': configuration.server['image_constraints']['centered'], 'keep_image_square': configuration.server['image_constraints']['square'], 'preview_max_width': configuration.server['preview_size']['max_width']}
 
@@ -171,6 +179,8 @@ ai_detection = {'enable': configuration.ai_detection['enable'],
 ai_boxes_color = [(255,85,0), (255,170,0), (255,255,0), (170,255,85), (85,255,170), (0,255,255), (0,170,255), (0,85,255), (0,0,255), (0,0,170)]
 
 current_lens_position = 0.0
+
+focus = Focus()
 
 capture_next_image = False
 
@@ -186,7 +196,8 @@ logs_current_file = None
 show_preview_log = False
 log_data = None
 
-ALLOWED_EXTENSIONS = {'csv', 'json'}
+wifi = Wifi(rpi.uuid)
+wifi.list()
 
 camera = None
 microphone = None
@@ -200,7 +211,7 @@ app.logger.info(f'updates available? {updates_available}')
 @app.route('/')
 def index():
 
-    global camera, leds_front, leds_rear_deported_uv, images_capture_state, sounds_capture_state, gnss, microphone, sd_card, external_disk
+    global camera, leds_front, leds_rear_deported_uv, images_capture_state, sounds_capture_state, gnss, microphone, sd_card, external_disk, wifi
 
     if pi.read(SHUTDOWN_PIN) == 1:
 
@@ -249,6 +260,14 @@ def index():
 
     sd_card.get_data()
     external_disk.get_data()
+    app.logger.info('Storage updated')
+
+    rpi.wifi_ssid = rpi.get_wifi_ssid()
+    rpi.ip_address = rpi.get_ip_address()
+
+    wifi.show()
+    wifi.list()
+    app.logger.info('Wifi updated')
 
     dateTime.get_date_time_info()
 
@@ -261,12 +280,12 @@ def index():
 
     gnss = Gnss2()
 
-    return make_response(render_template('index.html', configuration=configuration, updates_available=updates_available, rpi=rpi, tzone=tzone, sd_card=sd_card, external_disk=external_disk, battery_level=battery_level, gnss=gnss, dateTime=dateTime, images_capture_state=images_capture_state, sounds_capture_state=sounds_capture_state))
+    return make_response(render_template('index.html', configuration=configuration, updates_available=updates_available, rpi=rpi, tzone=tzone, wifi=wifi, sd_card=sd_card, external_disk=external_disk, battery_level=battery_level, gnss=gnss, dateTime=dateTime, images_capture_state=images_capture_state, sounds_capture_state=sounds_capture_state))
 
 
 def allowed_file(filename):
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+           filename.rsplit('.', 1)[1].lower() in SERVER_ALLOWED_EXTENSIONS
 
 
 @app.route('/', methods=['POST'])
@@ -513,6 +532,10 @@ def images_capture_settings():
                     app.logger.warning('camera not started because model is not supported')
                     camera_supported = False
                     autofocus_available = False
+            else:
+                app.logger.info('camera already started')
+                camera_supported = camera.is_camera_supported
+                autofocus_available = camera.autofocus_available
 
             if not leds_rear_deported_uv:
                 leds_rear_deported_uv = Leds(LEDS_REAR_DEPORTED_UV_PIN)
@@ -579,7 +602,7 @@ def sounds_capture_settings():
                 microphone.stop()
                 microphone = None
                 app.logger.info('microphone stopped')
-            microphone = Microphone2()
+            microphone = Microphone2(configuration.microphone['sample_rate'], configuration.microphone['gain'])
             microphone_available = 1 if not microphone.available else 2
         else:
             microphone_available = 0
@@ -710,44 +733,56 @@ def sounds_capture_test():
 
         duration = int(duration)
 
+        file_path = ''
+
         if microphone.available:
 
-            microphone.start()
+            success = microphone.start()
 
-            if microphone.stream:
+            if success:
 
-                app.logger.info('microphone started')
+                if microphone.stream:
 
-                now_str = datetime.now().strftime('%Y%m%d%H%M%S')
-                file_path = os.path.join(SOUNDS_CAPTURE_FOLDER, now_str + '_test.wav')
+                    app.logger.info('microphone started')
 
-                total_samples = microphone.sample_rate * duration
+                    now_str = datetime.now().strftime('%Y%m%d%H%M%S')
+                    file_path = os.path.join(SOUNDS_CAPTURE_FOLDER, now_str + '_test.wav')
 
-                app.logger.info(f'starting recording {total_samples} samples at {microphone.sample_rate} Hz sample rate during {duration} seconds')
+                    total_samples = microphone.sample_rate * duration
 
-                data = []
-                while total_samples > 0:
+                    app.logger.info(f'starting recording {total_samples} samples at {microphone.sample_rate} Hz sample rate during {duration} seconds')
 
-                    samples = min(total_samples, microphone.CHUNK_SIZE)
-                    data.append(microphone.stream.read(samples, exception_on_overflow=False))
-                    total_samples -= samples
+                    data = []
+                    while total_samples > 0:
 
-                app.logger.info('stop recording')
+                        samples = min(total_samples, microphone.CHUNK_SIZE)
+                        data.append(microphone.stream.read(samples, exception_on_overflow=False))
+                        total_samples -= samples
 
-                microphone.save_recording(file_path, data)
+                    app.logger.info('stop recording')
 
-                app.logger.info('recording saved to ' + file_path)
+                    microphone.save_recording(file_path, data)
 
-            microphone.stop()
-            app.logger.info('microphone stopped')
+                    app.logger.info('recording saved to ' + file_path)
 
-        return jsonify(success=True, message="Settings updated successfully", data=file_path)
+                microphone.stop()
+                app.logger.info('microphone stopped')
+
+                return jsonify(success=True, message='', data=file_path)
+
+            else:
+
+                return jsonify(success=False, message='', data='')
+
+        else:
+
+            return jsonify(success=False, message='', data='')
 
     except BaseException as e:
 
         app.logger.error(str(e))
 
-        return jsonify(success=False, message="Settings updated successfully", data=str(e))
+        return jsonify(success=False, message='', data=str(e))
 
 
 @app.route('/video_feed')
@@ -757,6 +792,7 @@ def video_feed():
         return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
     else:
         return Response('')
+
 
 def generate_frames():
 
@@ -770,7 +806,8 @@ def generate_frames():
 
                 frame, metadata = camera.get_preview_frame()
 
-                current_lens_position = metadata['LensPosition']
+                if camera.autofocus_available:
+                    current_lens_position = metadata['LensPosition']
 
                 # print(current_lens_position)
 
@@ -778,11 +815,17 @@ def generate_frames():
 
                 # print(metadata, flush=True)
 
-                if AI_AVAILABLE and AI_ENABLE and configuration.ai_detection['enable']:
+                if (focus_measure_enable) or (AI_AVAILABLE and AI_ENABLE and configuration.ai_detection['enable']):
 
                     data = np.frombuffer(frame, dtype=np.uint8)
 
                     frame2 = cv2.imdecode(data, 1)
+
+                if AI_AVAILABLE and AI_ENABLE and configuration.ai_detection['enable']:
+
+                    #data = np.frombuffer(frame, dtype=np.uint8)
+
+                    # frame2 = cv2.imdecode(data, 1)
 
                     # print(f'frame2: {frame2.shape}\n', flush=True)
 
@@ -810,9 +853,12 @@ def generate_frames():
                                 if idx_color >= len(ai_boxes_color):
                                     idx_color = 0
 
+                        cv2.putText(frame2, f'Num: {len(prediction.boxes)}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                        cv2.putText(frame2, f'Speed: {speed:.0f} ms', (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
                         img_encode = cv2.imencode('.jpg', frame2)[1]
 
-                        if CAPTURE_DETECTION:
+                        if CAPTURE_AI_DETECTION:
 
                             now_str = datetime.now().strftime('%Y%m%d%H%M%S_%f')
 
@@ -823,6 +869,14 @@ def generate_frames():
 
                         data_encode = np.array(img_encode)
                         frame = data_encode.tobytes()
+
+                elif focus_measure_enable:
+
+                    focus_measure = focus.compute_focus(frame2, focus_measure_mode)
+                    cv2.putText(frame2, f'Focus value: {focus_measure:.3f}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                    img_encode = cv2.imencode('.jpg', frame2)[1]
+                    data_encode = np.array(img_encode)
+                    frame = data_encode.tobytes()
 
                 if capture_next_image:
 
@@ -837,12 +891,22 @@ def generate_frames():
 
                     jpeg_file_path, json_file_path = camera.save_capture(file_path + '_capture_test.jpg', save_metadata=False)
 
-                yield (b'--frame\r\n'
-                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                try:
+
+                    yield (b'--frame\r\n'
+                        b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+                except RuntimeError as e:
+
+                    app.logger.error(str(e))
+
+                    break
 
             except BaseException as e:
 
                 app.logger.error(str(e))
+
+                break
 
 
 @app.route('/manage_images_capture', methods=['POST'])
@@ -934,9 +998,15 @@ def save_configuration():
 
         if data == 'camera_model':
             configuration.camera['model'] = camera_model.lower()
-        if data == 'autofocus':
+            configuration.camera['sensor']['width_max'] = sensor_resolution[0]
+            configuration.camera['sensor']['height_max'] = sensor_resolution[1]
+            configuration.camera['sensor']['preview_mode'] = sensor_mode[0]
+            configuration.camera['sensor']['capture_mode'] = sensor_mode[1]
+        elif data == 'autofocus':
             configuration.camera['autofocus']['mode'] = autofocus['mode']
             configuration.camera['autofocus']['lens_position'] = autofocus['lens_position']
+            configuration.camera['autofocus']['measure_enable'] = focus_measure_enable
+            configuration.camera['autofocus']['measure_mode'] = focus_measure_mode
         elif data == 'image_adjustments':
             pass
         elif data == 'auto_exposure_gain':
@@ -955,6 +1025,7 @@ def save_configuration():
             configuration.leds['intensity_rear_deported_uv'] = leds_intensity[1]
             configuration.leds['delay_on'] = leds_delays[0]
             configuration.leds['delay_off'] = leds_delays[1]
+            configuration.leds['always_on'] = leds_always_on
         elif data == 'files':
             configuration.files['jpeg_quality'] = jpeg_quality
         elif data == 'image_position':
@@ -1024,7 +1095,7 @@ def update_settings():
                 startup_date = datetime(startup_date[0], startup_date[1], startup_date[2], startup_date[3], startup_date[4], 0, 0)
                 #startup_date = startup_date.astimezone()
 
-                startup_date = startup_date - timedelta(minutes=STARTUP_MINUTES_SHIFT)
+                startup_date = startup_date - timedelta(minutes=MINUTES_OFFSET_FOR_STARTING_ON_TIME)
 
                 # witty_pi.set_startup_alarm(startup_date[2], startup_date[3], startup_date[4])
                 witty_pi.set_startup_alarm(startup_date.day, startup_date.hour, startup_date.minute)
@@ -1042,20 +1113,20 @@ def update_settings():
 
             configuration.cooling_system['cpu_temperature_check_interval'] = cpu_temperature_check_interval
 
-            for job in cron:
-                #app.logger.info(job.comment)
-                if job.comment.startswith('Entomoscope - Fan management'):
-                    #app.logger.info('found')
-                    if configuration.cooling_system['enable']:
-                        job.enable()
-                        job.minute.every(cpu_temperature_check_interval)
-                        job.comment = f'Entomoscope - Fan management every {cpu_temperature_check_interval} minutes'
-                        #app.logger.info(job)
-                        #app.logger.info(str(job))
-                    else:
-                        job.comment = f'Entomoscope - Fan management disable'
-                        job.enable(False)
-                    cron.write()
+            if configuration.cooling_system['enable']:
+                crontab_management.enable_service('fan_management', cpu_temperature_check_interval)
+            else:
+                crontab_management.disable_service('fan_management')
+
+        elif data[0] == 'environmental_monitoring':
+
+            configuration.environmental_monitoring['enable'] = data[1]['enable']
+            configuration.environmental_monitoring['time_step'] = int(data[1]['time_step'])
+
+            if configuration.environmental_monitoring['enable']:
+                crontab_management.enable_service('environmental_monitoring', configuration.environmental_monitoring['time_step'])
+            else:
+                crontab_management.disable_service('environmental_monitoring')
 
         configuration.save()
 
@@ -1163,6 +1234,7 @@ def apply_camera_settings(settingId, settingValue):
                 camera.camera.set_controls({'AfMode': libcamera.controls.AfModeEnum.Manual, settingId: settingValue})
             elif settingId == 'AfMode' and settingValue == libcamera.controls.AfModeEnum.Manual:
                 # camera.camera.set_controls({settingId: settingValue, 'LensPosition': autofocus['lens_position']})
+                autofocus['lens_position'] = current_lens_position
                 camera.camera.set_controls({settingId: settingValue, 'LensPosition': current_lens_position})
             elif settingId == 'ScalerCrop':
                 camera.camera.configure(camera.camera_config)
@@ -1193,7 +1265,7 @@ def apply_camera_settings(settingId, settingValue):
 @app.route('/set_camera_model', methods=['POST'])
 def set_camera_model():
 
-    global camera_model
+    global camera_model, sensor_resolution, sensor_mode
 
     try:
 
@@ -1203,6 +1275,10 @@ def set_camera_model():
 
         app.logger.info(f'camera model set to {camera_model}')
 
+        sensor_resolution = camera.get_sensor_resolution(camera_model)
+
+        sensor_mode = camera.get_sensor_mode(camera_model)
+
         return jsonify(success=True, message='Camera model set successfully')
 
     except BaseException as e:
@@ -1211,6 +1287,49 @@ def set_camera_model():
 
         return jsonify(success=False, message=str(e))
 
+@app.route('/set_focus_measure_enable', methods=['POST'])
+def set_focus_measure_enable():
+
+    global focus_measure_enable
+
+    try:
+
+        focus_measure_enable = request.get_json()
+
+        app.logger.info('json: %s', request.get_json())
+
+        app.logger.info(f'focus measure enable set to {focus_measure_enable}')
+
+        return jsonify(success=True, message='Focus measure enable set successfully')
+
+    except BaseException as e:
+
+        app.logger.error(str(e))
+
+        return jsonify(success=False, message=str(e))
+
+
+
+@app.route('/set_focus_measure_mode', methods=['POST'])
+def set_focus_measure_mode():
+
+    global focus_measure_mode
+
+    try:
+
+        focus_measure_mode = request.get_json()
+
+        app.logger.info('json: %s', request.get_json())
+
+        app.logger.info(f'focus measure mode set to {focus_measure_mode}')
+
+        return jsonify(success=True, message='Focus measure mode set successfully')
+
+    except BaseException as e:
+
+        app.logger.error(str(e))
+
+        return jsonify(success=False, message=str(e))
 
 @app.route('/set_capture_mode', methods=['POST'])
 def set_capture_mode():
@@ -1253,6 +1372,30 @@ def set_leds_delay():
         app.logger.info(f'LEDs delay {data[0]} set to {data[1]} seconds')
 
         return jsonify(success=True, message='LEDs delay set successfully')
+
+    except BaseException as e:
+
+        app.logger.error(str(e))
+
+        return jsonify(success=False, message=str(e))
+
+
+@app.route('/set_leds_always_on', methods=['POST'])
+def set_leds_always_on():
+
+    global leds_always_on
+
+    try:
+
+        data = request.get_json()
+
+        app.logger.info('json: %s', request.get_json())
+
+        leds_always_on = data
+
+        app.logger.info(f'LEDs always on set to {data}')
+
+        return jsonify(success=True, message='LEDs always on set successfully')
 
     except BaseException as e:
 
@@ -1518,22 +1661,29 @@ def set_jpeg_quality():
         return jsonify(success=False, message=str(e))
 
 
-@app.route('/save_sample_rate', methods=['POST'])
-def save_sample_rate():
+@app.route('/save_microphone_settings', methods=['POST'])
+def save_microphone_settings():
 
     try:
 
-        sample_rate = request.get_json()
+        data = request.get_json()
 
         app.logger.info('json: %s', request.get_json())
 
-        configuration.microphone['sample_rate'] = sample_rate
+        configuration.microphone['sample_rate'] = data[0]
+        configuration.microphone['gain'] = data[1]
 
         configuration.save()
 
         app.logger.info(f"configuration for microphone sample rate ({configuration.microphone['sample_rate']}) saved")
+        app.logger.info(f"configuration for microphone gain ({configuration.microphone['gain']}) saved")
 
-        return jsonify(success=True, message='Microphone sample rate saved successfully', data=sample_rate)
+        if microphone.available:
+            microphone.set_settings(configuration.microphone['sample_rate'], configuration.microphone['gain'])
+
+            microphone.detect_microphone()
+
+        return jsonify(success=True, message='Microphone settings saved successfully', data=data)
 
     except BaseException as e:
 
@@ -1669,6 +1819,108 @@ def get_lepinoc_ephemeris():
 
         return jsonify(success=False, message=str(e))
 
+
+@app.route('/add_wifi', methods=['POST'])
+def add_wifi():
+
+    global wifi
+
+    data = request.get_json()
+
+    if data[1]:
+
+        success = wifi.add(data[0], data[1])
+
+        if success:
+            app.logger.info(f'Wifi {data[0]} added')
+        else:
+            app.logger.error(f'Wifi {data[0]} not added')
+
+    return redirect('/')
+
+
+# @app.route('/rename_wifi_ap', methods=['POST'])
+# def rename_wifi_ap():
+
+    # global wifi
+
+    # name = request.get_json()
+
+    # success = wifi.
+
+    # if success:
+        # app.logger.info(f'Wifi {name} removed')
+    # else:
+        # app.logger.error(f'Wifi {name} not removed')
+
+    # return redirect('/')
+
+
+@app.route('/remove_wifi', methods=['POST'])
+def remove_wifi():
+
+    global wifi
+
+    name = request.get_json()
+
+    success = wifi.remove(name)
+
+    if success:
+        app.logger.info(f'Wifi {name} removed')
+
+        if configuration.wifi['station_ssid'] == name:
+            configuration.wifi['station_ssid'] = ''
+            configuration.save()
+
+            app.logger.info(f'Wifi {name} removed from configuration file')
+
+    else:
+        app.logger.error(f'Wifi {name} not removed')
+
+    return redirect('/')
+
+
+@app.route('/set_wifi', methods=['POST'])
+def set_wifi():
+
+    name = request.get_json()
+
+    configuration.wifi['station_ssid'] = name
+    configuration.save()
+
+    app.logger.info(f'Wifi set to {name}')
+    app.logger.info('configuration saved')
+
+    return redirect('/')
+
+
+@app.route('/refresh_wifi', methods=['POST'])
+def refresh_wifi():
+
+    wifi.show()
+    wifi.list()
+
+    app.logger.info(f'Wifi connections refreshed')
+
+    return redirect('/')
+
+
+@app.route('/test_internet_connection', methods=['POST'])
+def test_internet_connection():
+
+    try:
+
+        success = wifi.test_internet_connection()
+
+        return jsonify(success=success)
+
+    except Exception as e:
+
+        app.logger.error('' + str(e))
+
+        return jsonify(success=False, message=str(e))
+
+
 @app.route('/get_cpu_temperature', methods=['POST'])
 def get_cpu_temperature():
 
@@ -1728,6 +1980,11 @@ def get_updates():
 
         return redirect('/')
 
+# @app.after_request
+# def add_header(response):
+    # response.cache_control.max_age = 5
+    # return response
+
 @app.before_request
 def log_request_info():
     if not request.path.startswith('/static/') and not request.path.startswith('/get_cpu_temperature'):
@@ -1747,4 +2004,4 @@ def page_not_found(error):
 
 if __name__ == '__main__':
 
-    app.run(host='0.0.0.0', debug=DEBUG, port=SERVER_PORT)
+    app.run(host='0.0.0.0', debug=SERVER_DEBUG, port=SERVER_PORT)

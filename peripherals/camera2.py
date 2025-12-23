@@ -526,6 +526,36 @@ class Camera2():
 
         return horizontal_size, vertical_size
 
+    def get_sensor_resolution(self, model):
+
+        if model.lower() == 'v3':
+            sensor_resolution = (4608, 2592)
+        elif model.lower() == 'v2':
+            sensor_resolution = (3280, 2464)
+        elif model.lower() == 'v1':
+            sensor_resolution = (2592, 1944)
+        elif model.lower() == 'hq':
+            sensor_resolution = (4056, 3040)
+
+        return sensor_resolution
+
+    def get_sensor_mode(self, model):
+
+        if model.lower() == 'v3':
+            preview_mode = 1
+            capture_mode = 2
+        elif model.lower() == 'v2':
+            preview_mode = 1
+            capture_mode = 2
+        elif model.lower() == 'v1':
+            preview_mode = 1
+            capture_mode = 2
+        elif model.lower() == 'hq':
+            preview_mode = 2
+            capture_mode = 3
+
+        return preview_mode, capture_mode
+
     def __str__(self):
 
         s = '\nCamera properties\n\n'

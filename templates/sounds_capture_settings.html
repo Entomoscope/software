@@ -102,79 +102,130 @@
                             <!-- Microphone - Sample rate - 8000 Hz -->
                             <div class="form-check">
                                 {% if configuration['microphone']['sample_rate'] == 8000 %}
-                                <input class="form-check-input" type="checkbox" id="sampleRate8000" value="8000" onclick="applySampleRate(8000)" checked />
+                                <input class="form-check-input" type="checkbox" id="sampleRate8000" value="8000" onclick="applySampleRate(this.value)" checked />
                                 {% else %}
-                                <input class="form-check-input" type="checkbox" id="sampleRate8000" value="8000" onclick="applySampleRate(8000)"/>
+                                <input class="form-check-input" type="checkbox" id="sampleRate8000" value="8000" onclick="applySampleRate(this.value)"/>
                                 {% endif %}
                                 <label class="form-check-label" for="sampleRate8000">8000 Hz</label>
                             </div>
                             <!-- Microphone - Sample rate - 16000 Hz -->
                             <div class="form-check">
                                 {% if configuration['microphone']['sample_rate'] == 16000 %}
-                                <input class="form-check-input" type="checkbox" id="sampleRate16000" value="16000" onclick="applySampleRate(16000)" checked />
+                                <input class="form-check-input" type="checkbox" id="sampleRate16000" value="16000" onclick="applySampleRate(this.value)" checked />
                                 {% else %}
-                                <input class="form-check-input" type="checkbox" id="sampleRate16000" value="16000" onclick="applySampleRate(16000)"/>
+                                <input class="form-check-input" type="checkbox" id="sampleRate16000" value="16000" onclick="applySampleRate(this.value)"/>
                                 {% endif %}
                                 <label class="form-check-label" for="sampleRate16000">16000 Hz</label>
                             </div>
                             <!-- Microphone - Sample rate - 32000 Hz -->
                             <div class="form-check">
                                 {% if configuration['microphone']['sample_rate'] == 32000 %}
-                                <input class="form-check-input" type="checkbox" id="sampleRate32000" value="32000" onclick="applySampleRate(32000)" checked />
+                                <input class="form-check-input" type="checkbox" id="sampleRate32000" value="32000" onclick="applySampleRate(this.value)" checked />
                                 {% else %}
-                                <input class="form-check-input" type="checkbox" id="sampleRate32000" value="32000" onclick="applySampleRate(32000)"/>
+                                <input class="form-check-input" type="checkbox" id="sampleRate32000" value="32000" onclick="applySampleRate(this.value)"/>
                                 {% endif %}
                                 <label class="form-check-label" for="sampleRate32000">32000 Hz</label>
                             </div>
                             <!-- Microphone - Sample rate - 48000 Hz -->
                             <div class="form-check">
                                 {% if configuration['microphone']['sample_rate'] == 48000 %}
-                                <input class="form-check-input" type="checkbox" id="sampleRate48000" value="48000" onclick="applySampleRate(48000)" checked />
+                                <input class="form-check-input" type="checkbox" id="sampleRate48000" value="48000" onclick="applySampleRate(this.value)" checked />
                                 {% else %}
-                                <input class="form-check-input" type="checkbox" id="sampleRate48000" value="48000" onclick="applySampleRate(48000)"/>
+                                <input class="form-check-input" type="checkbox" id="sampleRate48000" value="48000" onclick="applySampleRate(this.value)"/>
                                 {% endif %}
                                 <label class="form-check-label" for="sampleRate48000">48000 Hz</label>
                             </div>
                             <!-- Microphone - Sample rate - 96000 Hz -->
                             <div class="form-check">
                                 {% if configuration['microphone']['sample_rate'] == 96000 %}
-                                <input class="form-check-input" type="checkbox" id="sampleRate96000" value="96000" onclick="applySampleRate(96000)" checked />
+                                <input class="form-check-input" type="checkbox" id="sampleRate96000" value="96000" onclick="applySampleRate(this.value)" checked />
                                 {% else %}
-                                <input class="form-check-input" type="checkbox" id="sampleRate96000" value="96000" onclick="applySampleRate(96000)"/>
+                                <input class="form-check-input" type="checkbox" id="sampleRate96000" value="96000" onclick="applySampleRate(this.value)"/>
                                 {% endif %}
                                 <label class="form-check-label" for="sampleRate96000">96000 Hz</label>
                             </div>
                             <!-- Microphone - Sample rate - 192000 Hz -->
                             <div class="form-check">
                                 {% if configuration['microphone']['sample_rate'] == 192000 %}
-                                <input class="form-check-input" type="checkbox" id="sampleRate192000" value="192000" onclick="applySampleRate(192000)" checked />
+                                <input class="form-check-input" type="checkbox" id="sampleRate192000" value="192000" onclick="applySampleRate(this.value)" checked />
                                 {% else %}
-                                <input class="form-check-input" type="checkbox" id="sampleRate192000" value="192000" onclick="applySampleRate(192000)"/>
+                                <input class="form-check-input" type="checkbox" id="sampleRate192000" value="192000" onclick="applySampleRate(this.value)"/>
                                 {% endif %}
                                 <label class="form-check-label" for="sampleRate192000">192000 Hz</label>
                             </div>
                             <!-- Microphone - Sample rate - 250000 Hz -->
                             <div class="form-check">
                                 {% if configuration['microphone']['sample_rate'] == 250000 %}
-                                <input class="form-check-input" type="checkbox" id="sampleRate250000" value="250000" onclick="applySampleRate(250000)" checked />
+                                <input class="form-check-input" type="checkbox" id="sampleRate250000" value="250000" onclick="applySampleRate(this.value)" checked />
                                 {% else %}
-                                <input class="form-check-input" type="checkbox" id="sampleRate250000" value="250000" onclick="applySampleRate(250000)"/>
+                                <input class="form-check-input" type="checkbox" id="sampleRate250000" value="250000" onclick="applySampleRate(this.value)"/>
                                 {% endif %}
                                 <label class="form-check-label" for="sampleRate250000">250000 Hz</label>
                             </div>
                             <!-- Microphone - Sample rate - 384000 Hz -->
                             <div class="form-check">
                                 {% if configuration['microphone']['sample_rate'] == 384000 %}
-                                <input class="form-check-input" type="checkbox" id="sampleRate384000" value="384000" onclick="applySampleRate(384000)" checked />
+                                <input class="form-check-input" type="checkbox" id="sampleRate384000" value="384000" onclick="applySampleRate(this.value)" checked />
                                 {% else %}
-                                <input class="form-check-input" type="checkbox" id="sampleRate384000" value="384000" onclick="applySampleRate(384000)"/>
+                                <input class="form-check-input" type="checkbox" id="sampleRate384000" value="384000" onclick="applySampleRate(this.value)"/>
                                 {% endif %}
                                 <label class="form-check-label" for="sampleRate384000">384000 Hz</label>
                             </div>
                         </div>
+                        <!-- Microphone - Gain -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">Gain</label></strong>
+                            </div>
+                            <!-- Microphone - Gain - Low -->
+                            <div class="form-check">
+                                {% if configuration['microphone']['gain'] == 0 %}
+                                <input class="form-check-input" type="checkbox" id="gainLow" value="0" onclick="applyGain(this.value)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" id="gainLow" value="0" onclick="applyGain(this.value)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="gainLow">Low</label>
+                            </div>
+                            <!-- Microphone - Gain - Low-Medium -->
+                            <div class="form-check">
+                                {% if configuration['microphone']['gain'] == 1 %}
+                                <input class="form-check-input" type="checkbox" id="gainLowMedium" value="1" onclick="applyGain(this.value)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" id="gainLowMedium" value="1" onclick="applyGain(this.value)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="gainLowMedium">Low-Medium</label>
+                            </div>
+                            <!-- Microphone - Gain - Medium -->
+                            <div class="form-check">
+                                {% if configuration['microphone']['gain'] == 2 %}
+                                <input class="form-check-input" type="checkbox" id="gainMedium" value="2" onclick="applyGain(this.value)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" id="gainMedium" value="2" onclick="applyGain(this.value)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="gainMedium">Medium</label>
+                            </div>
+                            <!-- Microphone - Gain - Medium-High -->
+                            <div class="form-check">
+                                {% if configuration['microphone']['gain'] == 3 %}
+                                <input class="form-check-input" type="checkbox" id="gainMediumHigh" value="3" onclick="applyGain(this.value)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" id="gainMediumHigh" value="3" onclick="applyGain(this.value)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="gainMediumHigh">Medium-High</label>
+                            </div>
+                            <!-- Microphone - Gain - High -->
+                            <div class="form-check">
+                                {% if configuration['microphone']['gain'] == 4 %}
+                                <input class="form-check-input" type="checkbox" id="gainHigh" value="4" onclick="applyGain(this.value)" checked />
+                                {% else %}
+                                <input class="form-check-input" type="checkbox" id="gainHigh" value="4" onclick="applyGain(this.value)"/>
+                                {% endif %}
+                                <label class="form-check-label" for="gainHigh">High</label>
+                            </div>
+                        </div>
                         <hr/>
                         <div class="form-button-center">
-                            <button type="submit" class="btn btn-primary" id="sampleRateSaveButton" onclick="saveSampleRate()" disabled>Save</button>
+                            <button type="submit" class="btn btn-primary" id="microphoneSettingsSaveButton" onclick="saveMicrophoneSettings()" disabled>Save</button>
                         </div>
                       </div>
                     </div>
@@ -186,7 +237,7 @@
           {{ display_configuration_sounds_capture_settings(configuration) }}
         </div>
     </div>
-    <div class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" id="soundsCaptureModalDialog">
+    <div class="modal" data-bs-backdrop="static" data-bs-keyboard="false" id="soundsCaptureModalDialog">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
@@ -214,9 +265,16 @@
     const sampleRate250000 = document.getElementById('sampleRate250000');
     const sampleRate384000 = document.getElementById('sampleRate384000');
 
-    const sampleRateSaveButton = document.getElementById('sampleRateSaveButton');
+    const gainLow = document.getElementById('gainLow');
+    const gainLowMedium = document.getElementById('gainLowMedium');
+    const gainMedium = document.getElementById('gainMedium');
+    const gainMediumHigh = document.getElementById('gainMediumHigh');
+    const gainHigh = document.getElementById('gainHigh');
 
-    const sampleRateText = document.getElementById('sampleRateText');
+    const microphoneSettingsSaveButton = document.getElementById('microphoneSettingsSaveButton');
+
+    const sampleRateConfigurationText = document.getElementById('sampleRateConfigurationText');
+    const gainConfigurationText = document.getElementById('gainConfigurationText');
 
     const soundsCaptureModalDialog = document.getElementById('soundsCaptureModalDialog');
 
@@ -241,13 +299,14 @@
             })
             .then(response => response.json())
             .then(data => {
-                console.log('Settings updated:', data);
                 if (data.success) {
+                    console.log('Sound test captured', data);
                     saveSoundsPath.innerText = 'Sounds saved to ' + data.data
+                    myModal.hide()
                 } else {
-
+                    console.log('Sound test not captured', data);
+                    myModal.hide()
                 }
-                myModal.hide()
             })
             .catch(error => {
             console.error('Error updating settings:', error);
@@ -255,6 +314,30 @@
             });
 
         }
+
+    }
+
+    function applyGain(value) {
+
+        gainLow.checked = false
+        gainLowMedium.checked = false
+        gainMedium.checked = false
+        gainMediumHigh.checked = false
+        gainHigh.checked = false
+
+        if (value == 0) {
+            gainLow.checked = true
+        } else if (value == 1) {
+            gainLowMedium.checked = true
+        } else if (value == 2) {
+            gainMedium.checked = true
+        } else if (value == 3) {
+            gainMediumHigh.checked = true
+        } else if (value == 4) {
+            gainHigh.checked = true
+        }
+
+        microphoneSettingsSaveButton.disabled = false
 
     }
 
@@ -287,31 +370,47 @@
             sampleRate384000.checked = true
         }
 
-        sampleRateSaveButton.disabled = false
+        microphoneSettingsSaveButton.disabled = false
 
     }
 
-    function saveSampleRate() {
+    function saveMicrophoneSettings() {
+
+        microphoneSettingsSaveButton.disabled = true
 
         if (sampleRate8000.checked) {
-            data = 8000
+            sample_rate = 8000
         } else if (sampleRate16000.checked) {
-            data = 16000
+            sample_rate = 16000
         } else if (sampleRate32000.checked) {
-            data = 32000
+            sample_rate = 32000
         } else if (sampleRate48000.checked) {
-            data = 48000
+            sample_rate = 48000
         } else if (sampleRate96000.checked) {
-            data = 96000
+            sample_rate = 96000
         } else if (sampleRate192000.checked) {
-            data = 192000
+            sample_rate = 192000
         } else if (sampleRate250000.checked) {
-            data = 250000
+            sample_rate = 250000
         } else if (sampleRate384000.checked) {
-            data = 384000
+            sample_rate = 384000
         }
 
-        return fetch('/save_sample_rate', {
+        if (gainLow.checked) {
+            gain = 0
+        } else if (gainLowMedium.checked) {
+            gain = 1
+        } else if (gainMedium.checked) {
+            gain = 2
+        } else if (gainMediumHigh.checked) {
+            gain = 3
+        } else if (gainHigh.checked) {
+            gain = 4
+        }
+
+        data = [sample_rate, gain]
+
+        return fetch('/save_microphone_settings', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -322,10 +421,20 @@
         .then(data => {
             console.log('Settings updated:', data);
             if (data.success) {
-                sampleRateText.innerText = 'Sample rate: ' + data.data  + ' Hz'
-            } else {
-
+                sampleRateConfigurationText.innerText = 'Sample rate: ' + sample_rate  + ' Hz'
+                if (gain == 0) {
+                    gainConfigurationText.innerText = 'Gain: low'
+                } else if (gain == 1) {
+                    gainConfigurationText.innerText = 'Gain: low-medium'
+                } else if (gain == 2) {
+                    gainConfigurationText.innerText = 'Gain: medium'
+                } else if (gain == 3) {
+                    gainConfigurationText.innerText = 'Gain: medium-high'
+                } else if (gain == 4) {
+                    gainConfigurationText.innerText = 'Gain: high'
+                }
             }
+            microphoneSettingsSaveButton.disabled = false
         })
         .catch(error => {
         console.error('Error updating settings:', error);

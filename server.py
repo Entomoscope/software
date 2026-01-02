@@ -79,7 +79,8 @@ while pi.read(STARTUP_PIN) == 0:
     sleep(0.5)
 
 app.logger.info('****************************')
-app.logger.info('server started')
+
+app.logger.info(f'server script started with pid {os.getpid()}')
 
 crontab_management = CrontabManagement()
 
@@ -856,7 +857,7 @@ def generate_frames():
                         cv2.putText(frame2, f'Num: {len(prediction.boxes)}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                         cv2.putText(frame2, f'Speed: {speed:.0f} ms', (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
-                        img_encode = cv2.imencode('.jpg', frame2)[1]
+                        img_encode = cv2.imencode('.jpg', frame2, [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality])[1]
 
                         if CAPTURE_AI_DETECTION:
 
@@ -874,7 +875,7 @@ def generate_frames():
 
                     focus_measure = focus.compute_focus(frame2, focus_measure_mode)
                     cv2.putText(frame2, f'Focus value: {focus_measure:.3f}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                    img_encode = cv2.imencode('.jpg', frame2)[1]
+                    img_encode = cv2.imencode('.jpg', frame2, [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality])[1]
                     data_encode = np.array(img_encode)
                     frame = data_encode.tobytes()
 

@@ -61,7 +61,7 @@ class StreamingOutput(io.BufferedIOBase):
 
 class Camera2():
 
-    encode_param = [int(IMWRITE_JPEG_QUALITY), 90]
+    encode_param = [int(IMWRITE_JPEG_QUALITY), 100]
 
     def __init__(self, camera_number=0, configuration=None, mode='detection', verbose=False, perf=False):
 

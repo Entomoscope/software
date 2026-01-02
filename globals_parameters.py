@@ -117,7 +117,7 @@ logger.info('environment monitoring folder: ' + ENVIRONMENT_MONITORING_FOLDER)
 TMP_FOLDER = os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'tmp')
 logger.info('tmp folder: ' + TMP_FOLDER)
 
-AI_ENABLE = False
+AI_ENABLE = True
 logger.info(f'ai enable: {AI_ENABLE}')
 
 AI_MODEL_PATH = os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'ai_models')

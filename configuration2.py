@@ -105,7 +105,7 @@ class Configuration2():
                         })
 
         setattr(self, 'files', {
-                            'jpeg_quality': 95
+                            'jpeg_quality': 100
                         })
 
         setattr(self, 'gnss', {

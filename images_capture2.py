@@ -54,7 +54,7 @@ def main():
 
     logger.info('****************************')
 
-    logger.info('images capture script started')
+    logger.info(f'images capture script started with pid {os.getpid()}')
 
     # Vérification que le Raspberry Pi peut prendre en charge l'IA
     rpi = Rpi()

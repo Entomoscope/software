@@ -155,6 +155,6 @@ logger.info(f'wifi AP autoconnection set to: {WIFI_AUTOCONNECT_AP}')
 
 SERVER_PORT = 7777
 logger.info(f'server port: {SERVER_PORT}')
-SERVER_DEBUG = True
+SERVER_DEBUG = False
 logger.info(f'server debug mode: {SERVER_DEBUG}')
 SERVER_ALLOWED_EXTENSIONS = {'csv', 'json'}

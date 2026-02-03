@@ -97,7 +97,7 @@ class Configuration2():
 
         setattr(self, 'environmental_monitoring', {
                             'enable': True,
-                            'time_step': 300
+                            'time_step': 5
                         })
 
         setattr(self, 'ephemeris', {

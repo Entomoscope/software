@@ -101,7 +101,7 @@ class CrontabManagement():
             flask_server_service_found = False
             monitor_environment_service_found = False
             manage_fan_service_found = False
-            wifi_selection_service_found = False
+            # wifi_selection_service_found = False
             wifi_disable_power_safe_service_found = False
             disable_daily_auto_update_service_found = False
             disable_daily_auto_update_timer_service_found = False
@@ -117,8 +117,8 @@ class CrontabManagement():
                     sounds_capture_service_found = True
                 elif job.comment.startswith('Entomoscope - Run Flask server'):
                     flask_server_service_found = True
-                elif job.comment.startswith('Entomoscope - Run wifi selection'):
-                    wifi_selection_service_found = True
+                # elif job.comment.startswith('Entomoscope - Run wifi selection'):
+                    # wifi_selection_service_found = True
                 elif job.comment.startswith('Entomoscope - Monitor environment'):
                     monitor_environment_service_found = True
                 elif job.comment.startswith('Entomoscope - Manage fan'):
@@ -158,12 +158,12 @@ class CrontabManagement():
                 job.every_reboot()
                 cron_modified = True
                 logger.info('Flask service created')
-            if not wifi_selection_service_found:
-                logger.info('Wifi selection service not found')
-                job = self.cron.new(command='/usr/bin/python /home/entomoscope/Entomoscope/wifi_selection.py', comment='Entomoscope - Run wifi selection script at startup')
-                job.every_reboot()
-                cron_modified = True
-                logger.info('Wifi selection service created')
+            # if not wifi_selection_service_found:
+                # logger.info('Wifi selection service not found')
+                # job = self.cron.new(command='/usr/bin/python /home/entomoscope/Entomoscope/wifi_selection.py', comment='Entomoscope - Run wifi selection script at startup')
+                # job.every_reboot()
+                # cron_modified = True
+                # logger.info('Wifi selection service created')
             if not monitor_environment_service_found:
                 logger.info('Monitor environment service not found')
                 job = self.cron.new(command='/usr/bin/python /home/entomoscope/Entomoscope/environmental_monitoring.py', comment=f"Entomoscope - Monitor environment every {configuration.environmental_monitoring['time_step']} minutes")
@@ -222,33 +222,17 @@ if __name__ == '__main__':
 
     # crontab.enable_service('fan_management', 5)
 
+# @reboot /usr/bin/python /home/entomoscope/Entomoscope/startup2.py # Entomoscope - Run startup script at startup
+# @reboot /usr/bin/python /home/entomoscope/Entomoscope/images_capture2.py # Entomoscope - Run images capture script at startup
+# @reboot /usr/bin/python /home/entomoscope/Entomoscope/sounds_capture2.py # Entomoscope - Run sounds capture script at startup
+# @reboot /usr/bin/python /home/entomoscope/Entomoscope/server.py # Entomoscope - Run Flask server at startup
+# */5 * * * * /usr/bin/python /home/entomoscope/Entomoscope/environmental_monitoring.py # Entomoscope - Monitor environment every 5 minutes
+# */5 * * * * /usr/bin/python /home/entomoscope/Entomoscope/fan_management.py # Entomoscope - Manage fan every 5 minutes
 
-# # Disable daily auto update
-# @reboot sudo systemctl disable apt-daily.service
-# @reboot sudo systemctl disable apt-daily.timer
+# @reboot /usr/bin/python /home/entomoscope/Entomoscope/wifi_selection.py # Entomoscope - Run wifi selection script at startup
 
-# @reboot sudo systemctl disable apt-daily-upgrade.timer
-# @reboot sudo systemctl disable apt-daily-upgrade.service
-
-# # Disable WiFi power management
-# @reboot sudo /usr/sbin/iw wlan0 set power_save off >> /home/entomoscope/Desktop/Logs/crontab_wifi_pwr_sav.log 2>&1 | logger t entomo_wifi_pwr_sav
-
-# # Entomoscope - Run startup script at startup
-# @reboot /usr/bin/python /home/entomoscope/Entomoscope/startup2.py
-
-# # Entomoscope - Run images capture script at startup
-# @reboot /usr/bin/python /home/entomoscope/Entomoscope/images_capture2.py
-
-# # Entomoscope - Run sounds capture script at startup
-# @reboot /usr/bin/python /home/entomoscope/Entomoscope/sounds_capture2.py
-
-# # Entomoscope - Run Flask server at startup
-# @reboot /usr/bin/python /home/entomoscope/Entomoscope/server.py
-
-# # Entomoscope - Monitor environment every 15 minutes
-# */15 * * * * /usr/bin/python /home/entomoscope/Entomoscope/environmental_monitoring.py
-
-# # Entomoscope - Manage fan every 2 minutes
-# */2 * * * * /usr/bin/python /home/entomoscope/Entomoscope/fan_management.py
-
-
+# @reboot sudo /usr/sbin/iw wlan0 set power_save off >> /home/entomoscope/Desktop/Logs/crontab_wifi_pwr_sav.log 2>&1 | logger t entomo_wifi_pwr_sav # Entomoscope - Disable WiFi power management
+# @reboot sudo systemctl disable apt-daily.service # Entomoscope - Disable daily auto update service
+# @reboot sudo systemctl disable apt-daily.timer # Entomoscope - Disable daily auto update timer
+# @reboot sudo systemctl disable apt-daily-upgrade.service # Entomoscope - Disable daily auto upgrade service
+# @reboot sudo systemctl disable apt-daily-upgrade.timer # Entomoscope - Disable daily auto upgrade timer

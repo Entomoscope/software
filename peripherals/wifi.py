@@ -37,13 +37,18 @@ class Wifi():
 
         self.show()
 
-        if self.ap_name and self.ap_name.endswith('xxxxxxxx'):
-            logger.info('Remove default AP connection')
-            self.remove(self.ap_name)
-            self.ap_name = None
+        if self.ap_name:
+            if self.ap_name.endswith('xxxxxxxx'):
+                logger.info(f'Remove default AP connection {self.ap_name}')
+                self.remove(self.ap_name)
+                self.ap_name = None
+            elif not self.ap_name.endswith(uuid):
+                logger.info(f'Remove current AP connection with wrong UUID {self.ap_name}')
+                self.remove(self.ap_name)
+                self.ap_name = None
 
         if not self.ap_name:
-            logger.info('Create AP connection using RPi UUID')
+            logger.info(f'Create AP connection using RPi UUID {uuid}')
             self.create_ap_connection(uuid, autoconnect=WIFI_AUTOCONNECT_AP)
 
 
@@ -211,6 +216,7 @@ class Wifi():
             logger.info('AP wifi connection created')
             logger.info(f'SSID: {ssid}')
             logger.info(f'Password: {password}')
+            logger.info(f'Autoconnect: {autoconnect}')
 
             success = True
 

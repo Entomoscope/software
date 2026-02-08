@@ -28,11 +28,27 @@ li.data_file {
     list-style-image: url("/static/images/file.png");
 }
 
+li.data_conf {
+    list-style-image: url("/static/images/configuration.png");
+}
+
+li.data_image {
+    list-style-image: url("/static/images/image.png");
+}
+
 a.data_folder {
     text-decoration: none;
 }
 
 a.data_file {
+    text-decoration: none;
+}
+
+a.data_conf {
+    text-decoration: none;
+}
+
+a.data_image {
     text-decoration: none;
 }
 

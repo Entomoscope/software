@@ -9,6 +9,10 @@ from time import sleep
 from flask import Flask, make_response, render_template, Response, jsonify, request, redirect
 from werkzeug.utils import secure_filename
 
+import copy
+
+from json import load
+
 import numpy as np
 import cv2
 
@@ -122,6 +126,9 @@ if rpi.arch_version == '64-bit':
         elapsed_time = datetime.now() - start_time
         app.logger.info(f"AI model file loaded: {configuration.ai_detection['file']}")
         app.logger.info(f"AI model file loading time: {elapsed_time.seconds}.{elapsed_time.microseconds} seconds")
+        from ultralytics.utils.plotting import Annotator, colors
+        from ultralytics.utils.ops import xywhn2xyxy
+
     else:
         AI_AVAILABLE = False
         app.logger.info('64-bit arch => AI available but manualy disabled')
@@ -369,9 +376,13 @@ def data():
 
     isdirs = [os.path.isdir(os.path.join(data_current_directory, x)) for x in files]
 
+    isconfs = [x.startswith('configuration') for x in files]
+
+    isimages = [x.endswith('jpg') for x in files]
+
     istopdir = data_current_directory == DATA_FOLDER
 
-    return make_response(render_template('data.html', updates_available=updates_available, files=files, isdirs=isdirs, zip=zip, istopdir=istopdir, show_preview_file=show_preview_file, show_preview_image=show_preview_image, show_preview_sound=show_preview_sound, data_current_file=data_current_file, file_data=file_data, rpi=rpi, battery_level=battery_level))
+    return make_response(render_template('data.html', updates_available=updates_available, files=files, isdirs=isdirs, isconfs=isconfs, isimages=isimages, zip=zip, istopdir=istopdir, show_preview_file=show_preview_file, show_preview_image=show_preview_image, show_preview_sound=show_preview_sound, data_current_file=data_current_file, file_data=file_data, rpi=rpi, battery_level=battery_level))
 
 
 @app.route('/manage_data/<action>/<value>')
@@ -423,10 +434,72 @@ def manage_data(action, value):
 
             elif value.endswith('.jpg'):
 
-                with open(file_path, 'rb') as f:
-                    file_data = f.read()
+                json_file = file_path.replace('.jpg', '.json')
 
-                file_data = base64.b64encode(file_data).decode('utf-8')
+                if os.path.exists(json_file):
+
+                    json_file = file_path.replace('.jpg', '.json')
+
+                    with open(json_file, 'r') as f:
+                        json_data = load(f)
+
+                    if json_data['EntomoscopeAiPredictionNumBoxes'] > 0:
+
+                        frame = cv2.imread(file_path)
+
+                        ann = Annotator(
+                            frame,
+                            line_width=None,  # default auto-size
+                            font_size=None,  # default auto-size
+                            font="Arial.ttf",  # must be ImageFont compatible
+                            pil=False,  # use PIL, otherwise uses OpenCV
+                        )
+
+                        box_xyxyn = [0,0,0,0]
+                        box_xyxy = [0,0,0,0]
+
+                        for i in range(0, json_data['EntomoscopeAiPredictionNumBoxes']):
+
+                            box_xywhn = json_data['EntomoscopeAiPredictionBoxes'][i]
+                            label = json_data['EntomoscopeAiPredictionLabels'][i]
+                            conf = json_data['EntomoscopeAiPredictionConf'][i]
+
+                            box_xyxyn[0] = box_xywhn[0] - box_xywhn[2] / 2
+                            box_xyxyn[1] = box_xywhn[1] - box_xywhn[3] / 2
+                            box_xyxyn[2] = box_xywhn[0] + box_xywhn[2] / 2
+                            box_xyxyn[3] = box_xywhn[1] + box_xywhn[3] / 2
+
+                            box_xyxy[0] = box_xyxyn[0] * json_data['ScalerCrop'][2]
+                            box_xyxy[1] = box_xyxyn[1] * json_data['ScalerCrop'][3]
+                            box_xyxy[2] = box_xyxyn[2] * json_data['ScalerCrop'][2]
+                            box_xyxy[3] = box_xyxyn[3] * json_data['ScalerCrop'][3]
+
+                            # https://docs.ultralytics.com/reference/utils/ops/#ultralytics.utils.ops.xywhn2xyxy
+                            # def xywhn2xyxy(x, w: int = 640, h: int = 640, padw: int = 0, padh: int = 0)
+                            # x	np.ndarray | torch.Tensor
+                            # box_xyxy = xywhn2xyxy(box_xywhn, json_data['ScalerCrop'][2], json_data['ScalerCrop'][3])
+
+                            ann.box_label(box_xyxy, f'{label}: {conf:.2f}', color=colors(0, bgr=True))
+
+                        frame = ann.result()
+
+                        img_encode = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality])[1]
+
+                        file_data = base64.b64encode(img_encode).decode('utf-8')
+
+                    else:
+
+                        with open(file_path, 'rb') as f:
+                            file_data = f.read()
+
+                        file_data = base64.b64encode(file_data).decode('utf-8')
+
+                else:
+
+                    with open(file_path, 'rb') as f:
+                        file_data = f.read()
+
+                    file_data = base64.b64encode(file_data).decode('utf-8')
 
                 show_preview_file = False
                 show_preview_image = True
@@ -549,6 +622,12 @@ def images_capture_settings():
                 leds_front.turn_on()
 
             leds_available = True
+
+        elif images_capture_state == 'paused':
+
+            leds_available = True
+            camera_supported = False
+            autofocus_available = False
 
         else:
 
@@ -799,6 +878,38 @@ def generate_frames():
 
     global capture_next_image, current_lens_position
 
+    try:
+
+        extra_metadata = {'EntomoscopeSiteID': configuration.site['id'],
+                'EntomoscopeLatitude': configuration.gnss['latitude'],
+                'EntomoscopeLongitude': configuration.gnss['longitude'],
+                'EntomoscopeAltitude': configuration.gnss['altitude'],
+                'EntomoscopeLedsFrontIntensity': configuration.leds['intensity_front'],
+                'EntomoscopeLedsRearDeportedUvIntensity': configuration.leds['intensity_rear_deported_uv'],
+                'EntomoscopeLedsDelayOn': configuration.leds['delay_on'],
+                'EntomoscopeLedsDelayOff': configuration.leds['delay_off'],
+                'EntomoscopeAiAvailable': AI_AVAILABLE,
+                'EntomoscopeAiEnable': configuration.ai_detection['enable'],
+                'EntomoscopeAiModel': configuration.ai_detection['file'],
+                'EntomoscopeCameraModel': configuration.camera['model'],
+                'EntomoscopeFocusMode': configuration.camera['autofocus']['mode'],
+                'EntomoscopeRaspberryPiModel': rpi.model,
+                'EntomoscopeRaspberryPiMemory': rpi.memory,
+                'EntomoscopeRaspberryPiSerialNumber': rpi.serial,
+                'EntomoscopeAiPredictionNumBoxes': 0,
+                'EntomoscopeAiPredictionSpeed': 0,
+                'EntomoscopeAiPredictionBoxes': [],
+                'EntomoscopeAiPredictionLabels': [],
+                'EntomoscopeAiPredictionConf': [],
+                'EntomoscopeAiImageScale': configuration.ai_detection['image_scale'],
+                'EntomoscopeAiImageSize': [configuration.ai_detection['image_width'], configuration.ai_detection['image_height']]
+                }
+
+
+    except BaseException as e:
+
+        app.logger.error(str(e))
+
     while True:
 
         if camera:
@@ -835,27 +946,101 @@ def generate_frames():
 
                     frameDetect = cv2.resize(frame2, (configuration.ai_detection['image_width'], configuration.ai_detection['image_height']))
 
-                    prediction = ai_model.predict(frameDetect, imgsz=(frameDetect.shape[0], frameDetect.shape[1]), conf=configuration.ai_detection['min_confidence'], show=False, save=False, save_txt=False, verbose=False)[0]
+                    prediction = ai_model.predict(frameDetect,
+                                                    imgsz=(frameDetect.shape[0], frameDetect.shape[1]),
+                                                    conf=configuration.ai_detection['min_confidence'],
+                                                    show=False,
+                                                    save=False,
+                                                    save_txt=False,
+                                                    verbose=False)[0]
+
+                    # prediction = ai_model.track(frameDetect,
+                                                    # imgsz=(frameDetect.shape[0], frameDetect.shape[1]),
+                                                    # conf=configuration.ai_detection['min_confidence'],
+                                                    # show=False,
+                                                    # save=False,
+                                                    # save_txt=False,
+                                                    # verbose=False)[0]
 
                     insect_detected = len(prediction.boxes) > 0
 
                     if insect_detected is True:
 
                         speed = prediction.speed['preprocess'] + prediction.speed['inference'] + prediction.speed['postprocess']
-                        app.logger.info(f'Detection - Num box: {len(prediction.boxes)} - Speed: {speed:.0f} ms')
+                        num_boxes = len(prediction.boxes)
 
-                        idx_color = 0
+                        app.logger.info(f'Detection - Num box: {num_boxes} - Speed: {speed:.0f} ms')
+
+                        extra_metadata['EntomoscopeAiPredictionNumBoxes'] = num_boxes
+                        extra_metadata['EntomoscopeAiPredictionSpeed'] = f'{speed:.0f}'
+
+                        ann = Annotator(
+                            frame2,
+                            line_width=None,  # default auto-size
+                            font_size=None,  # default auto-size
+                            font="Arial.ttf",  # must be ImageFont compatible
+                            pil=False,  # use PIL, otherwise uses OpenCV
+                        )
+
+                        frame3 = copy.copy(frame2)
+
+                        nb = 0
+
+                        box_xyxy = [0,0,0,0]
+
+                        extra_metadata['EntomoscopeAiPredictionBoxes'].clear()
+                        extra_metadata['EntomoscopeAiPredictionConf'].clear()
+                        extra_metadata['EntomoscopeAiPredictionLabels'].clear()
+
                         for box in prediction.boxes:
-                            box_lists = box.xywhn.tolist()
-                            for box_list in box_lists:
-                                x, y, w, h = int(box_list[0] * image_width), int(box_list[1] * image_height), int(box_list[2] * image_width), int(box_list[3] * image_height)
-                                frame2 = cv2.rectangle(frame2, (int(x-w/2),int(y-h/2)), (int(x+w/2),int(y+h/2)), ai_boxes_color[idx_color], 2)
-                                idx_color += 1
-                                if idx_color >= len(ai_boxes_color):
-                                    idx_color = 0
 
-                        cv2.putText(frame2, f'Num: {len(prediction.boxes)}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                        cv2.putText(frame2, f'Speed: {speed:.0f} ms', (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                            box_xyxyn = box.xyxyn.tolist()
+                            if box.id:
+                                label = f"{box.id.item():.0f}: {box.conf.item():.2f}"
+                            else:
+                                label = f"{nb:02d}: {box.conf.item():.2f}"
+
+                            box_xyxy[0] = box_xyxyn[0][0] * image_width
+                            box_xyxy[1] = box_xyxyn[0][1] * image_height
+                            box_xyxy[2] = box_xyxyn[0][2] * image_width
+                            box_xyxy[3] = box_xyxyn[0][3] * image_height
+
+                            ann.box_label(box_xyxy, label, color=colors(0, bgr=True))
+
+                            box_xywhn = box.xywhn.tolist()
+
+                            extra_metadata['EntomoscopeAiPredictionBoxes'].append(box_xywhn[0])
+                            extra_metadata['EntomoscopeAiPredictionConf'].append(box.conf.item())
+                            if box.id:
+                                extra_metadata['EntomoscopeAiPredictionLabels'].append(box.id.item())
+                            else:
+                                extra_metadata['EntomoscopeAiPredictionLabels'].append(nb)
+
+                            nb += 1
+
+                        frame2 = ann.result()
+
+                        # idx_color = 0
+
+                        # for box in prediction.boxes:
+
+                            # # box_lists = box.xywhn.tolist()
+                            # # for box_list in box_lists:
+                                # # x, y, w, h = int(box_list[0] * image_width), int(box_list[1] * image_height), int(box_list[2] * image_width), int(box_list[3] * image_height)
+                                # # frame2 = cv2.rectangle(frame2, (int(x-w/2),int(y-h/2)), (int(x+w/2),int(y+h/2)), ai_boxes_color[idx_color], 2)
+                                # # idx_color += 1
+                                # # if idx_color >= len(ai_boxes_color):
+                                    # # idx_color = 0
+
+                        # cv2.putText(frame2, f'Num: {len(prediction.boxes)}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1.25, (0, 0, 255), 2)
+
+                        # t = f'Speed: {speed:.0f} ms'
+                        # text_size, _ = cv2.getTextSize(t, cv2.FONT_HERSHEY_SIMPLEX, 1.25, 2)
+                        # text_w, text_h = text_size
+                        # cv2.rectangle(frame2, (0,0), (10 + text_w, 60 + text_h), (255, 0, 0), -1)
+
+                        # cv2.putText(frame2, f'Speed: {speed:.0f} ms', (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1.25, (0, 0, 255), 2)
+                        # cv2.putText(frame2, t, (10, 60 + text_h + 1.25 - 1), cv2.FONT_HERSHEY_SIMPLEX, 1.25, (255, 255, 255), 2)
 
                         img_encode = cv2.imencode('.jpg', frame2, [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality])[1]
 
@@ -863,10 +1048,17 @@ def generate_frames():
 
                             now_str = datetime.now().strftime('%Y%m%d%H%M%S_%f')
 
+                            img_encode_3 = cv2.imencode('.jpg', frame3, [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality])[1]
+
                             file_path = os.path.join(IMAGES_CAPTURE_FOLDER, now_str + '_detection_test.jpg')
 
-                            camera.jpeg_data = img_encode.tobytes()
-                            camera.save_jpeg(file_path)
+                            camera.jpeg_data = img_encode_3.tobytes()
+                            camera.save_capture(file_path, save_metadata=True, extra_metadata=extra_metadata)
+
+                            # file_path = os.path.join(IMAGES_CAPTURE_FOLDER, now_str + '_detection_test_boxes.jpg')
+
+                            # camera.jpeg_data = img_encode.tobytes()
+                            # camera.save_capture(file_path, save_metadata=False)
 
                         data_encode = np.array(img_encode)
                         frame = data_encode.tobytes()

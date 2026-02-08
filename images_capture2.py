@@ -66,6 +66,7 @@ def main():
         from ultralytics import YOLO
         elapsed_time = datetime.now() - start_time
         logger.info(f"YOLO import time: {elapsed_time.seconds + 1} seconds")
+        from ultralytics.utils.plotting import Annotator, colors
     else:
         AI_AVAILABLE = False
         logger.info('32-bit arch => AI not available')
@@ -123,7 +124,7 @@ def main():
         logger.info('LEDs always on enabled')
     else:
         logger.info(f"delay LEDs on before image capture {configuration.leds['delay_on']} seconds")
-        logger.info(f"delay LEDs off after image capture {configuration.leds['delay_on']} seconds")
+        logger.info(f"delay LEDs off after image capture {configuration.leds['delay_off']} seconds")
 
     # Configuration des périodes d'alternance On/Off de capture d'images
     on_duration = configuration.schedule['on_duration']
@@ -202,7 +203,17 @@ def main():
                         'EntomoscopeAiEnable': configuration.ai_detection['enable'],
                         'EntomoscopeAiModel': configuration.ai_detection['file'],
                         'EntomoscopeCameraModel': configuration.camera['model'],
-                        'EntomoscopeFocusMode': configuration.camera['autofocus']['mode']
+                        'EntomoscopeFocusMode': configuration.camera['autofocus']['mode'],
+                        'EntomoscopeRaspberryPiModel': rpi.model,
+                        'EntomoscopeRaspberryPiMemory': rpi.memory,
+                        'EntomoscopeRaspberryPiSerialNumber': rpi.serial,
+                        'EntomoscopeAiPredictionNumBoxes': 0,
+                        'EntomoscopeAiPredictionSpeed': 0,
+                        'EntomoscopeAiPredictionBoxes': [],
+                        'EntomoscopeAiPredictionLabels': [],
+                        'EntomoscopeAiPredictionConf': [],
+                        'EntomoscopeAiImageScale': configuration.ai_detection['image_scale'],
+                        'EntomoscopeAiImageSize': [configuration.ai_detection['image_width'], configuration.ai_detection['image_height']]
                         }
 
     # Copie du fichier de configuration dans le dossier où les images sont enregistrées
@@ -214,18 +225,28 @@ def main():
 
     shutdown_signal_received = False
 
-    try:
-        now = datetime.now()
-        configuration_startup_hour = int(configuration.schedule['next_startup'][11:13])
-        configuration_startup_minute = int(configuration.schedule['next_startup'][14:16])
-        t = datetime(now.year, now.month, now.day, configuration_startup_hour, configuration_startup_minute, 0) - timedelta(seconds=configuration.leds['delay_on'])
-        delta = t - now
-        logger.info(f'wait {delta.seconds} seconds for full minute before capturing images')
-        while (now < t):
-            sleep(0.1)
-            now = datetime.now()
-    except BaseException as e:
-        logger.error(str(e))
+
+
+
+
+
+    # try:
+        # now = datetime.now()
+        # configuration_startup_hour = int(configuration.schedule['next_startup'][11:13])
+        # configuration_startup_minute = int(configuration.schedule['next_startup'][14:16])
+        # t = datetime(now.year, now.month, now.day, configuration_startup_hour, configuration_startup_minute, 0) - timedelta(seconds=configuration.leds['delay_on'])
+        # delta = t - now
+        # logger.info(f'wait {delta.seconds} seconds for full minute before capturing images')
+        # while (now < t):
+            # sleep(0.1)
+            # now = datetime.now()
+    # except BaseException as e:
+        # logger.error(str(e))
+
+
+
+
+
 
     # Forçage du système à démarrer en mode On avec capture d'image immédiate
     on = False
@@ -375,35 +396,91 @@ def main():
                                                 save_txt=False,
                                                 verbose=False)[0]
 
+                # prediction = ai_model.track(frameDetect,
+                                                # imgsz=(frameDetect.shape[0], frameDetect.shape[1]),
+                                                # conf=configuration.ai_detection['min_confidence'],
+                                                # show=False,
+                                                # save=False,
+                                                # save_txt=False,
+                                                # verbose=False)[0]
+
                 # Insecte détecté si au moins une boite dans prediction
                 insect_detected = len(prediction.boxes) > 0
 
                 # Si insecte(s) détecté(s)
                 if insect_detected is True:
 
-                    # Enregistrement du fichier résultat prediction
-                    # Nom du fichier YYYYMMDDHHMMSS_boxes_conf.txt
-                    prediction.save_txt(file_path + '_boxes_conf.txt', save_conf=True)
+                    # Vitesse de la détection en millisecondes
+                    speed = prediction.speed['preprocess'] + prediction.speed['inference'] + prediction.speed['postprocess']
 
-                    # Enregistrement de l'image (taille détection) avec les boites de détection
-                    # Nom du fichier YYYYMMDDHHMMSS_boxes_conf.jpg
-                    prediction.save(file_path + '_boxes_conf.jpg')
+                    # Nombre de boites détectées
+                    num_boxes = len(prediction.boxes)
 
-                    # Enregistrement de l'image entière et des metadata
-                    # Nom du fichier : YYYYMMDDHHMMSS_original.jpg et YYYYMMDDHHMMSS_original.json
-                    camera.frame_to_jpeg(stream='main')
-                    jpeg_file_path, json_file_path = camera.save_capture(file_path + '_original.jpg', save_metadata=True, extra_metadata=extra_metadata)
+                    logger.info(f'Detection - Num box: {num_boxes} - Speed: {speed:.0f} ms')
 
-                    # Enregistrement de chaque boite de détection dans une image
-                    # Nom du fichier : YYYYMMDDHHMMSS_box_N.jpg
-                    box_num = 0;
+                    extra_metadata['EntomoscopeAiPredictionNumBoxes'] = num_boxes
+                    extra_metadata['EntomoscopeAiPredictionSpeed'] = f'{speed:.0f}'
+
+                    # ann = Annotator(
+                        # frame2,
+                        # line_width=None,  # default auto-size
+                        # font_size=None,  # default auto-size
+                        # font="Arial.ttf",  # must be ImageFont compatible
+                        # pil=False,  # use PIL, otherwise uses OpenCV
+                    # )
+
+                    # Récupération dans les metadata des coordonnées et de l'indice de confiance de chaque boite
                     for box in prediction.boxes:
-                        box_lists = box.xywhn.tolist()
-                        for box_list in box_lists:
-                            x, y, w, h = int(box_list[0] * configuration.camera['image_width']), int(box_list[1] * configuration.camera['image_height']), int(box_list[2] * configuration.camera['image_width']), int(box_list[3] * configuration.camera['image_height'])
-                            camera.frame_to_jpeg(stream='main', crop=[int(y-h/2),int(y+h/2),int(x-w/2),int(x+w/2)])
-                            box_num += 1
-                            camera.save_jpeg(file_path + f'_box_{box_num}.jpg')
+
+                        # box_xyxyn = box.xyxyn.tolist()
+                        # label = f"{box.conf.item():.2f}"
+
+                        # box_xyxyn[0][0] *= image_width
+                        # box_xyxyn[0][1] *= image_height
+                        # box_xyxyn[0][2] *= image_width
+                        # box_xyxyn[0][3] *= image_height
+
+                        # ann.box_label(box_xyxyn[0], label, color=colors(0, bgr=True))
+
+                        box_xywhn = box.xywhn.tolist()
+
+                        extra_metadata['EntomoscopeAiPredictionBoxes'].append(box_xywhn[0])
+                        extra_metadata['EntomoscopeAiPredictionConf'].append(box.conf.item())
+
+                    # Enregistrement de l'image et des metadata
+                    # Nom du fichier : YYYYMMDDHHMMSS.jpg et YYYYMMDDHHMMSS.json
+                    camera.frame_to_jpeg(stream='main')
+                    jpeg_file_path, json_file_path = camera.save_capture(file_path, save_metadata=True, extra_metadata=extra_metadata)
+
+                    extra_metadata['EntomoscopeAiPredictionBoxes'].clear()
+                    extra_metadata['EntomoscopeAiPredictionConf'].clear()
+                    extra_metadata['EntomoscopeAiPredictionLabels'].clear()
+                    extra_metadata['EntomoscopeAiPredictionNumBoxes'] = 0
+                    extra_metadata['EntomoscopeAiPredictionSpeed'] = 0
+
+                    # # Enregistrement du fichier résultat prediction
+                    # # Nom du fichier YYYYMMDDHHMMSS_boxes_conf.txt
+                    # prediction.save_txt(file_path + '_boxes_conf.txt', save_conf=True)
+
+                    # # Enregistrement de l'image (taille détection) avec les boites de détection
+                    # # Nom du fichier YYYYMMDDHHMMSS_boxes_conf.jpg
+                    # prediction.save(file_path + '_boxes_conf.jpg')
+
+                    # # Enregistrement de l'image entière et des metadata
+                    # # Nom du fichier : YYYYMMDDHHMMSS_original.jpg et YYYYMMDDHHMMSS_original.json
+                    # camera.frame_to_jpeg(stream='main')
+                    # jpeg_file_path, json_file_path = camera.save_capture(file_path + '_original.jpg', save_metadata=True, extra_metadata=extra_metadata)
+
+                    # # Enregistrement de chaque boite de détection dans une image
+                    # # Nom du fichier : YYYYMMDDHHMMSS_box_N.jpg
+                    # box_num = 0;
+                    # for box in prediction.boxes:
+                        # box_lists = box.xywhn.tolist()
+                        # for box_list in box_lists:
+                            # x, y, w, h = int(box_list[0] * configuration.camera['image_width']), int(box_list[1] * configuration.camera['image_height']), int(box_list[2] * configuration.camera['image_width']), int(box_list[3] * configuration.camera['image_height'])
+                            # camera.frame_to_jpeg(stream='main', crop=[int(y-h/2),int(y+h/2),int(x-w/2),int(x+w/2)])
+                            # box_num += 1
+                            # camera.save_jpeg(file_path + f'_box_{box_num}.jpg')
 
                     # Réinitialisation du compteur de non détection à 0
                     no_detection_successive_counter = 0
@@ -519,16 +596,29 @@ def main():
 
                 # Définition des metadata complémentaires enregistrées pour chaque capture
                 extra_metadata = {'EntomoscopeSiteID': configuration.site['id'],
-                                'EntomoscopeLatitude': configuration.gnss['latitude'],
-                                'EntomoscopeLongitude': configuration.gnss['longitude'],
-                                'EntomoscopeAltitude': configuration.gnss['altitude'],
-                                'EntomoscopeLedsFrontIntensity': configuration.leds['intensity_front'],
-                                'EntomoscopeLedsRearDeportedUvIntensity': configuration.leds['intensity_rear_deported_uv'],
-                                'EntomoscopeLedsDelayOn': configuration.leds['delay_on'],
-                                'EntomoscopeLedsDelayOff': configuration.leds['delay_off'],
-                                'EntomoscopeAiAvailable': AI_AVAILABLE,
-                                'EntomoscopeAiEnable': configuration.ai_detection['enable'],
-                                'EntomoscopeAiModel': AI_MODEL_FILE}
+                        'EntomoscopeLatitude': configuration.gnss['latitude'],
+                        'EntomoscopeLongitude': configuration.gnss['longitude'],
+                        'EntomoscopeAltitude': configuration.gnss['altitude'],
+                        'EntomoscopeLedsFrontIntensity': configuration.leds['intensity_front'],
+                        'EntomoscopeLedsRearDeportedUvIntensity': configuration.leds['intensity_rear_deported_uv'],
+                        'EntomoscopeLedsDelayOn': configuration.leds['delay_on'],
+                        'EntomoscopeLedsDelayOff': configuration.leds['delay_off'],
+                        'EntomoscopeAiAvailable': AI_AVAILABLE,
+                        'EntomoscopeAiEnable': configuration.ai_detection['enable'],
+                        'EntomoscopeAiModel': configuration.ai_detection['file'],
+                        'EntomoscopeCameraModel': configuration.camera['model'],
+                        'EntomoscopeFocusMode': configuration.camera['autofocus']['mode'],
+                        'EntomoscopeRaspberryPiModel': rpi.model,
+                        'EntomoscopeRaspberryPiMemory': rpi.memory,
+                        'EntomoscopeRaspberryPiSerialNumber': rpi.serial,
+                        'EntomoscopeAiPredictionNumBoxes': 0,
+                        'EntomoscopeAiPredictionSpeed': 0,
+                        'EntomoscopeAiPredictionBoxes': [],
+                        'EntomoscopeAiPredictionLabels': [],
+                        'EntomoscopeAiPredictionConf': [],
+                        'EntomoscopeAiImageScale': configuration.ai_detection['image_scale'],
+                        'EntomoscopeAiImageSize': [configuration.ai_detection['image_width'], configuration.ai_detection['image_height']]
+                        }
 
                 logger.info(f"delay LEDs on before image capture {configuration.leds['delay_on']} seconds")
                 logger.info(f"delay LEDs off after image capture {configuration.leds['delay_on']} seconds")

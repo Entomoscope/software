@@ -28,6 +28,7 @@ class Rpi():
     def __init__(self):
 
         self.model = self.get_model()
+        self.memory = self.get_memory()
         self.revision = self.get_revision()
         self.serial = self.get_serial()
         if self.serial:
@@ -69,6 +70,39 @@ class Rpi():
             model = ''
 
         return model
+
+    def get_memory(self):
+
+        if self.model.startswith('Raspberry Pi 4'):
+
+            try:
+
+                ram = check_output('vcgencmd get_config total_mem', shell=True).decode('utf-8').split('=')[1].strip()
+                ram = int(ram)
+
+                if ram > 8000:
+                    memory = '8GB'
+                elif ram > 4000:
+                    memory = '4GB'
+                elif ram > 2000:
+                    memory = '2GB'
+                else:
+                    memory = '1GB'
+
+            except BaseException as e:
+
+                logger.error(str(e))
+                memory = '0GB'
+
+        elif self.model.startswith('Raspberry Pi 3'):
+
+            memory = '1GB'
+
+        else:
+
+            memory = '0GB'
+
+        return memory
 
     def get_serial(self):
 
@@ -218,6 +252,7 @@ class Rpi():
 
         s = 'Raspberry Pi\n'
         s += '  Model: ' + self.model + '\n'
+        s += '  Ram: ' + self.ram + '\n'
         s += '  Revision: ' + self.revision + '\n'
         s += '  Serial: ' + self.serial + '\n'
         s += '  UUID: ' + self.uuid + '\n'

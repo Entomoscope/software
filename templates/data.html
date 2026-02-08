@@ -57,14 +57,26 @@
         {% if istopdir == false %}
             <li class="data_levelup"><a href="/manage_data/chdir/up">..</a></li>
         {% endif %}
-        {% for file, isdir in zip(files, isdirs) %}
+        {% for file, isdir, isconf, isimage in zip(files, isdirs, isconfs, isimages) %}
             {% if isdir %}
                 <li class="data_folder"><a href="/manage_data/chdir/{{ file }}" class="data_folder">{{ file }}</a></li>
             {% else %}
                 {% if file == data_current_file %}
-                    <li class="data_file"><a href="/manage_data/show/{{ file }}" class="data_file" style="font-weight: bold">{{ file }}</a></li>
+                    {% if isconf %}
+                        <li class="data_conf"><a href="/manage_data/show/{{ file }}" class="data_file" style="font-weight: bold">{{ file }}</a></li>
+                    {% elif isimage %}
+                        <li class="data_image"><a href="/manage_data/show/{{ file }}" class="data_file" style="font-weight: bold">{{ file }}</a></li>
+                    {% else %}
+                        <li class="data_file"><a href="/manage_data/show/{{ file }}" class="data_file" style="font-weight: bold">{{ file }}</a></li>
+                    {% endif %}
                 {% else %}
-                    <li class="data_file"><a href="/manage_data/show/{{ file }}" class="data_file">{{ file }}</a></li>
+                    {% if isconf %}
+                        <li class="data_conf"><a href="/manage_data/show/{{ file }}" class="data_file">{{ file }}</a></li>
+                    {% elif isimage %}
+                        <li class="data_image"><a href="/manage_data/show/{{ file }}" class="data_file">{{ file }}</a></li>
+                    {% else %}
+                        <li class="data_file"><a href="/manage_data/show/{{ file }}" class="data_file">{{ file }}</a></li>
+                    {% endif %}
                 {% endif %}
             {% endif %}
         {% endfor %}
@@ -80,7 +92,7 @@
 <code>{{ file_data }}</code> <!-- Ne pas indenter -->
             </pre>
         {% elif show_preview_image %}
-            <img class="img-fluid mx-auto d-block" id="camera_preview" style="max-width: 800px;width: 100%;height: auto;" src="data:image/png;base64,{{file_data}}"/>
+            <img class="img-fluid mx-auto d-block" id="camera_preview" style="max-width: 1000px;width: 100%;height: auto;" src="data:image/png;base64,{{file_data}}"/>
         {% elif show_preview_sound %}
             <audio controls>
                <source src="{{ url_for('static', filename='tmp.wav') }}" type="audio/wav">

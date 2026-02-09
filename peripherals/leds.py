@@ -1,22 +1,5 @@
 from time import sleep, time
 
-# Ornithoscope board
-# LED 1 Blue    GPIO23
-# LED 1 Red     GPIO24
-# LED 1 Green   GPIO10
-# LED 2 Blue    GPIO09
-# LED 2 Red     GPIO25
-# LED 2 Green   GPIO11
-# LED 3 Blue    GPIO13
-# LED 3 Red     GPIO19
-# LED 3 Green   GPIO16
-# LED 4 Blue    GPIO26
-# LED 4 Red     GPIO20
-# LED 4 Green   GPIO21
-
-# from gpiozero.pins.pigpio import PiGPIOFactory
-# from gpiozero.pins.native import NativeFactory
-# from gpiozero import PWMLED, Device
 import pigpio
 
 from math import exp
@@ -29,23 +12,12 @@ from math import exp
 
 class Leds():
 
-    pwm_frequency = 5000
+    pwm_frequency = 20000
     num_dimming_levels = 256
     dimming_levels = list(range(0, num_dimming_levels))
     max_dimming_level = dimming_levels[-1]
 
-    # def __init__(self, pin, intensity=0, pigpio_supported=True):
     def __init__(self, pin, intensity=0):
-
-        # if pigpio_supported:
-            # try:
-                # Device.pin_factory = PiGPIOFactory()
-            # except OSError as e:
-                # Device.pin_factory = NativeFactory()
-                # print(e)
-        # else:
-            # Device.pin_factory = NativeFactory()
-            # print(f'pigpio not supported yet on {rpi_model}\nLEDs flickering may occured')
 
         self.pin = pin
 
@@ -54,8 +26,6 @@ class Leds():
         self.pi.set_PWM_range(self.pin, 100)
         self.pi.set_PWM_frequency(self.pin, self.pwm_frequency)
         self.pi.set_PWM_dutycycle(self.pin, 0)
-
-        # self.led = PWMLED(leds_pin, frequency=self.pwm_frequency)
 
         # linear_dimming_curve = [x/self.max_dimming_level for x in self.dimming_levels]
         # square_dimming_curve = [x*x/(self.max_dimming_level*self.max_dimming_level) for x in self.dimming_levels]

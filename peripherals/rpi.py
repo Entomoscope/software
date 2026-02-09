@@ -19,7 +19,7 @@ logger = logging.getLogger('entomoscope_rpi')
 filename = os.path.join(today_log_path, TODAY + '_' + this_script + '.log')
 file_handler = logging.FileHandler(filename, mode="a", encoding="utf-8")
 logger.addHandler(file_handler)
-formatter = logging.Formatter('%(asctime)s;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
+formatter = logging.Formatter('%(asctime)s.%(msecs)03d;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
 file_handler.setFormatter(formatter)
 logger.setLevel("DEBUG")
 

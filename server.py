@@ -57,7 +57,7 @@ if not os.path.exists(today_log_path):
 
 filename = os.path.join(today_log_path, TODAY + '_' + this_script + '.log')
 h = RotatingFileHandler(filename, mode="a", maxBytes=25000, backupCount=100, encoding="utf-8")
-f = logging.Formatter('%(asctime)s;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
+f = logging.Formatter('%(asctime)s.%(msecs)03d;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
 h.setFormatter(f)
 
 app = Flask(__name__)
@@ -70,7 +70,7 @@ werkzeug_logger = logging.getLogger("werkzeug")
 
 filename = os.path.join(today_log_path, TODAY + '_' + 'werkzeug.log')
 h = RotatingFileHandler(filename, mode="a", maxBytes=100000, backupCount=100, encoding="utf-8")
-f = logging.Formatter('%(asctime)s;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
+f = logging.Formatter('%(asctime)s.%(msecs)03d;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
 h.setFormatter(f)
 werkzeug_logger.addHandler(h)
 werkzeug_logger.setLevel("DEBUG")
@@ -997,12 +997,15 @@ def generate_frames():
 
                             box_xyxyn = box.xyxyn.tolist()
 
-
-
                             box_xyxy[0] = box_xyxyn[0][0] * image_width
                             box_xyxy[1] = box_xyxyn[0][1] * image_height
                             box_xyxy[2] = box_xyxyn[0][2] * image_width
                             box_xyxy[3] = box_xyxyn[0][3] * image_height
+
+                            if box.is_track:
+                                label = f'{box.id.item()} {box.conf.item():.2f}'
+                            else:
+                                label = f'{box.conf.item():.2f}'
 
                             ann.box_label(box_xyxy, label, color=colors(0, bgr=True))
 

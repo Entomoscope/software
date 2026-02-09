@@ -32,7 +32,7 @@ if not os.path.exists(today_log_path):
 picamera2_logger = logging.getLogger('picamera2')
 picamera2_logger.setLevel(logging.INFO)
 h = logging.FileHandler(os.path.join(today_log_path, TODAY + '_picamera2.log'))
-f = logging.Formatter('%(asctime)s;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
+f = logging.Formatter('%(asctime)s.%(msecs)03d;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
 h.setFormatter(f)
 picamera2_logger.addHandler(h)
 
@@ -42,7 +42,7 @@ os.environ['LIBCAMERA_LOG_LEVELS'] = '1'
 logger = logging.getLogger('entomoscope_camera_2')
 logger.setLevel(logging.INFO)
 h = logging.FileHandler(os.path.join(today_log_path, TODAY + '_' + this_script + '.log'))
-f = logging.Formatter('%(asctime)s;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
+f = logging.Formatter('%(asctime)s.%(msecs)03d;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
 h.setFormatter(f)
 logger.addHandler(h)
 
@@ -388,6 +388,7 @@ class Camera2():
     def capture(self, flush=True, to_jpeg=True, get_metadata=True):
 
         if self.started:
+
             if self.perf:
                 s = time.perf_counter_ns()
 
@@ -405,7 +406,7 @@ class Camera2():
             request.release()
 
             if self.perf:
-                print(f'Capture {(time.perf_counter_ns() - s)/1E9}')
+                logger.info(f'capture {(time.perf_counter_ns() - s)/1E9}')
 
     def get_frame(self, stream='main'):
 
@@ -431,7 +432,7 @@ class Camera2():
                 self.jpeg_data = imencode('.jpg', self.frame_data_main, self.encode_param)[1].tobytes()
 
         if self.perf:
-            print(f'Frame to JPEG {(time.perf_counter_ns() - s)/1E9}')
+            logger.info(f'frame to JPEG {(time.perf_counter_ns() - s)/1E9}')
 
     def save_capture(self, file_path, save_metadata=True, extra_metadata=None):
 

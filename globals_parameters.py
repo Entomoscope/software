@@ -52,7 +52,7 @@ logger = logging.getLogger('entomoscope_global_param')
 
 filename = os.path.join(today_log_path, TODAY + '_' + this_script + '.log')
 h = RotatingFileHandler(filename, mode="a", maxBytes=25000, backupCount=100, encoding="utf-8")
-f = logging.Formatter('%(asctime)s;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
+f = logging.Formatter('%(asctime)s.%(msecs)03d;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
 h.setFormatter(f)
 logger.addHandler(h)
 logger.setLevel("DEBUG")

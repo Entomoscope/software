@@ -43,7 +43,7 @@ def main():
     filename = os.path.join(today_log_path, TODAY + '_' + this_script + '.log')
     file_handler = RotatingFileHandler(filename, mode="a", maxBytes=10000, backupCount=100, encoding="utf-8")
     logger.addHandler(file_handler)
-    formatter = logging.Formatter('%(asctime)s;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
+    formatter = logging.Formatter('%(asctime)s.%(msecs)03d;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
     file_handler.setFormatter(formatter)
     logger.setLevel("DEBUG")
 
@@ -165,7 +165,7 @@ def main():
 
     # Initialisation de la caméra
     try:
-        camera = Camera2(configuration=configuration)
+        camera = Camera2(configuration=configuration, perf=True)
     except BaseException as e:
         logger.error('something bad happended with the camera')
         logger.error(str(e))
@@ -215,27 +215,47 @@ def main():
                         'EntomoscopeAiImageSize': [configuration.ai_detection['image_width'], configuration.ai_detection['image_height']]
                         }
 
+    # Si IA disponible et IA activée et mode différent de Lepinoc => faire une détection pour de faux car la première prend toujours plus de temps
+    if AI_AVAILABLE and configuration.ai_detection['enable'] and configuration.mode['mode'] != 'lepinoc' :
+
+        logger.info('dummy AI detection')
+
+        camera.capture(get_metadata=False)
+
+        # Exécution du script IA
+        prediction = ai_model.predict(camera.frame_data_lores,
+                                        imgsz=(configuration.ai_detection['image_width'], configuration.ai_detection['image_height']),
+                                        conf=configuration.ai_detection['min_confidence'],
+                                        show=False,
+                                        save=False,
+                                        save_txt=False,
+                                        verbose=False)[0]
+
+    shutdown_signal_received = False
+
+    try:
+        configuration_startup_hour = int(configuration.schedule['next_startup'][11:13])
+        configuration_startup_minute = int(configuration.schedule['next_startup'][14:16])
+        now = datetime.now()
+        t = datetime(now.year, now.month, now.day, configuration_startup_hour, configuration_startup_minute, 0) - timedelta(seconds=configuration.leds['delay_on'])
+        delta = t - now
+        logger.info(f'wait {delta.total_seconds()} seconds until {configuration.schedule["next_startup"][11:13]}:{configuration.schedule["next_startup"][14:16]} before capturing images')
+        while (now < t):
+            delta = t - now
+            if delta.total_seconds() > 0.1:
+                sleep(0.1)
+            else:
+                sleep(delta.total_seconds())
+            now = datetime.now()
+    except BaseException as e:
+        logger.error(str(e))
+
     # Copie du fichier de configuration dans le dossier où les images sont enregistrées
     # Nom du fichier : configuration_YYYYMMDDHHMMSS.json
     now_str = datetime.now().strftime('%Y%m%d%H%M%S')
     file_path = os.path.join(IMAGES_CAPTURE_FOLDER, 'configuration_' + now_str + '.json')
     configuration.copy_to(file_path)
     logger.info(f'configuration file saved to {file_path}')
-
-    shutdown_signal_received = False
-
-    try:
-        now = datetime.now()
-        configuration_startup_hour = int(configuration.schedule['next_startup'][11:13])
-        configuration_startup_minute = int(configuration.schedule['next_startup'][14:16])
-        t = datetime(now.year, now.month, now.day, configuration_startup_hour, configuration_startup_minute, 0) - timedelta(seconds=configuration.leds['delay_on'])
-        delta = t - now
-        logger.info(f'wait {delta.seconds} seconds for full minute before capturing images')
-        while (now < t):
-            sleep(0.1)
-            now = datetime.now()
-    except BaseException as e:
-        logger.error(str(e))
 
     # Forçage du système à démarrer en mode On avec capture d'image immédiate
     on = False
@@ -245,7 +265,11 @@ def main():
     previous_off_time = time()
     previous_capture_time = 0
 
-    insect_detected = False
+    images_capture_time_step = configuration.images_capture['time_step']
+
+    first_capture = True
+
+    arthropod_detected = False
 
     capture_every_second_activated = False
     no_detection_successive_counter = 0
@@ -261,7 +285,7 @@ def main():
             previous_off_time = time()
             on = False
             off = True
-            insect_detected = False
+            arthropod_detected = False
 
             # Si mode LEDs toujours allumées
             if configuration.leds['always_on']:
@@ -290,7 +314,7 @@ def main():
             on = True
             off = False
             force_on = False
-            insect_detected = False
+            arthropod_detected = False
 
             # Si mode LEDs toujours allumées
             if configuration.leds['always_on']:
@@ -312,9 +336,14 @@ def main():
             logger.info('images capture on')
 
         # Si On et période entre deux captures terminée => capture
-        if on and ( (time() - previous_capture_time > configuration.images_capture['time_step']) or (capture_every_second_activated and (time() - previous_capture_time > ONE_SECOND)) ):
+        if on and ( (time() - previous_capture_time > images_capture_time_step) or (capture_every_second_activated and (time() - previous_capture_time > ONE_SECOND)) ):
+
+            logger.info('TIC')
 
             previous_capture_time = time()
+
+            if first_capture:
+                first_capture = False
 
             # Si pas mode LEDs toujours allumées
             if not configuration.leds['always_on']:
@@ -345,6 +374,8 @@ def main():
 
             # Capture de l'image avec metadata
             camera.capture(get_metadata=True)
+
+            logger.info('image captured')
 
             # Si pas mode LEDs toujours allumées
             if not configuration.leds['always_on']:
@@ -393,11 +424,11 @@ def main():
                                                 # save_txt=False,
                                                 # verbose=False)[0]
 
-                # Insecte détecté si au moins une boite dans prediction
-                insect_detected = len(prediction.boxes) > 0
+                # Arthropode détecté si au moins une boite dans prediction
+                arthropod_detected = len(prediction.boxes) > 0
 
-                # Si insecte(s) détecté(s)
-                if insect_detected is True:
+                # Si arthropode(s) détecté(s)
+                if arthropod_detected is True:
 
                     # Vitesse de la détection en millisecondes
                     speed = prediction.speed['preprocess'] + prediction.speed['inference'] + prediction.speed['postprocess']
@@ -405,7 +436,7 @@ def main():
                     # Nombre de boites détectées
                     num_boxes = len(prediction.boxes)
 
-                    logger.info(f'Detection - Num box: {num_boxes} - Speed: {speed:.0f} ms')
+                    logger.info(f'{num_boxes} arthropods detected in {speed:.0f} ms')
 
                     extra_metadata['EntomoscopeAiPredictionNumBoxes'] = num_boxes
                     extra_metadata['EntomoscopeAiPredictionSpeed'] = f'{speed:.0f}'
@@ -421,6 +452,8 @@ def main():
                     # Nom du fichier : YYYYMMDDHHMMSS.jpg et YYYYMMDDHHMMSS.json
                     camera.frame_to_jpeg(stream='main')
                     jpeg_file_path, json_file_path = camera.save_capture(file_path, save_metadata=True, extra_metadata=extra_metadata)
+
+                    logger.info('detection data saved (jpeg + json)')
 
                     extra_metadata['EntomoscopeAiPredictionBoxes'].clear()
                     extra_metadata['EntomoscopeAiPredictionConf'].clear()
@@ -438,7 +471,7 @@ def main():
                         logger.info('capture every second enable')
                         logger.info('no detection counter reset')
 
-                # Si aucun insecte détecté
+                # Si aucun arthropode détecté
                 else:
 
                     # Si mode capture rapide et capture toutes les secondes activée
@@ -453,7 +486,8 @@ def main():
 
                             # Désactivation de capture toutes les secondes
                             capture_every_second_activated = False
-                            logger.info('capture every second disable')
+                            logger.info(f'max number of successive no detection reached ({no_detection_successive_counter_max})')
+                            logger.info('capture every second disabled')
 
                             # Extinction des LEDs en fonction du mode
                             if configuration.mode['mode'] == 'trap': # Front Off et Rear Off
@@ -469,13 +503,17 @@ def main():
                                 leds_front.turn_off()
                                 leds_rear_deported_uv.turn_off()
 
+                    else:
+
+                        logger.info('no arthropod detected')
+
             # Si laser et laser détecte quelque chose
             # elif laser and laser.detect_something():
             #
             #    # Enregistrement de l'image entière et des metadata
             #    # Nom du fichier : YYYYMMDDHHMMSS_original.jpg et YYYYMMDDHHMMSS_original.json
             #    camera.frame_to_jpeg(stream='main')
-            #    jpeg_file_path, json_file_path = camera.save_capture(file_path + '_original.jpg', save_metadata=True, extra_metadata=extra_metadata)
+            #    jpeg_file_path, json_file_path = camera.save_capture(file_path, save_metadata=True, extra_metadata=extra_metadata)
 
             # Si IA indisponible ou désactivée => mode timelapse => chaque capture est enregistrée
             else:
@@ -485,10 +523,15 @@ def main():
                 camera.frame_to_jpeg(stream='main')
                 jpeg_file_path, json_file_path = camera.save_capture(file_path + '_no_ai_detection.jpg', save_metadata=True, extra_metadata=extra_metadata)
 
+                logger.info('timelaps data saved (jpeg + json)')
+
+            logger.info('TOC')
+
         # Si la broche IMAGES_CAPTURE_ACTIVITY_PIN passe à l'état haut => capture d'image en pause
         if isSignalToStandByReceived():
 
-            logger.info('standby signal received. Images capture paused')
+            logger.info('standby signal received.mages capture paused')
+            logger.info('images capture paused')
 
             # Extinction des LEDs
             if configuration.mode['mode'] == 'trap' or configuration.mode['mode'] == 'lepinoc' or configuration.mode['mode'] == 'deported' or configuration.mode['mode'] == 'moth':
@@ -567,13 +610,16 @@ def main():
                         }
 
                 logger.info(f"delay LEDs on before image capture {configuration.leds['delay_on']} seconds")
-                logger.info(f"delay LEDs off after image capture {configuration.leds['delay_on']} seconds")
+                logger.info(f"delay LEDs off after image capture {configuration.leds['delay_off']} seconds")
 
                 # Configuration des périodes d'alternance On/Off de capture d'images
                 on_duration = configuration.schedule['on_duration']
                 logger.info(f"on duration: {configuration.schedule['on_duration']} seconds")
                 off_duration = configuration.schedule['off_duration']
                 logger.info(f"off duration: {configuration.schedule['off_duration']} seconds")
+
+                images_capture_time_step = configuration.images_capture['time_step']
+                first_capture = True
 
                 # Activation de l'IA si disponible et activée dans le fichier de configuration
                 if AI_AVAILABLE and configuration.ai_detection['enable']:
@@ -600,7 +646,7 @@ def main():
             logger.info('shutdown signal received')
             break
 
-        sleep(0.1)
+        sleep(0.05)
 
     logger.info('stop capturing images')
 

@@ -42,6 +42,8 @@ class Leds():
 
         self.is_on = False
 
+        self.pwm = 0
+
         self.intensity = intensity
 
         self.set_intensity(intensity)
@@ -56,18 +58,26 @@ class Leds():
 
             self.intensity = intensity
 
+            value = self.intensity  / 100 * self.max_dimming_level
+            for dimming_level in self.dimming_levels:
+                if dimming_level >= value:
+                    self.pwm = int(100*self.dimming_curve[dimming_level])
+                    break
+
             if self.is_on:
                 self.turn_on()
 
     def turn_on(self):
 
-        value = self.intensity  / 100 * self.max_dimming_level
+        # value = self.intensity  / 100 * self.max_dimming_level
 
-        for dimming_level in self.dimming_levels:
-            if dimming_level >= value:
-                pwm = self.dimming_curve[dimming_level]
-                self.pi.set_PWM_dutycycle(self.pin, int(100*pwm))
-                break
+        # for dimming_level in self.dimming_levels:
+            # if dimming_level >= value:
+                # pwm = self.dimming_curve[dimming_level]
+                # self.pi.set_PWM_dutycycle(self.pin, int(100*pwm))
+                # break
+
+        self.pi.set_PWM_dutycycle(self.pin, self.pwm)
 
         self.is_on = True
 

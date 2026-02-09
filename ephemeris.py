@@ -14,7 +14,7 @@ if not os.path.exists(today_log_path):
 logger = logging.getLogger('entomoscope_ephemeris')
 logger.setLevel(logging.INFO)
 h = logging.FileHandler(os.path.join(today_log_path, TODAY + '_' + this_script + '.log'))
-f = logging.Formatter('%(asctime)s;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
+f = logging.Formatter('%(asctime)s.%(msecs)03d;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
 h.setFormatter(f)
 logger.addHandler(h)
 

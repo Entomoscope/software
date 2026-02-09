@@ -40,7 +40,7 @@ def main():
     filename = os.path.join(today_log_path, TODAY + '_' + this_script + '.log')
     file_handler = RotatingFileHandler(filename, mode="a", maxBytes=10000, backupCount=100, encoding="utf-8")
     logger.addHandler(file_handler)
-    formatter = logging.Formatter('%(asctime)s;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
+    formatter = logging.Formatter('%(asctime)s.%(msecs)03d;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
     file_handler.setFormatter(formatter)
     logger.setLevel("DEBUG")
 
@@ -128,9 +128,13 @@ def main():
                 configuration_startup_minute = int(configuration.schedule['next_startup'][14:16])
                 t = datetime(now.year, now.month, now.day, configuration_startup_hour, configuration_startup_minute, 0)
                 delta = t-now
-                logger.info(f'wait {delta.seconds} seconds for full minute before capturing sounds')
+                logger.info(f'wait {delta.total_seconds()} seconds until {configuration.schedule["next_startup"][11:13]}:{configuration.schedule["next_startup"][14:16]} before capturing sounds')
                 while (now < t):
-                    sleep(0.1)
+                    delta = t - now
+                    if delta.total_seconds() > 0.1:
+                        sleep(0.1)
+                    else:
+                        sleep(delta.total_seconds())
                     now = datetime.now()
             except BaseException as e:
                 logger.error(str(e))
@@ -232,6 +236,8 @@ def main():
                     logger.error(str(e))
 
                     break
+
+                sleep(0.05)
 
         else:
 

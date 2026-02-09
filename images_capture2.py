@@ -66,7 +66,6 @@ def main():
         from ultralytics import YOLO
         elapsed_time = datetime.now() - start_time
         logger.info(f"YOLO import time: {elapsed_time.seconds + 1} seconds")
-        from ultralytics.utils.plotting import Annotator, colors
     else:
         AI_AVAILABLE = False
         logger.info('32-bit arch => AI not available')
@@ -225,28 +224,18 @@ def main():
 
     shutdown_signal_received = False
 
-
-
-
-
-
-    # try:
-        # now = datetime.now()
-        # configuration_startup_hour = int(configuration.schedule['next_startup'][11:13])
-        # configuration_startup_minute = int(configuration.schedule['next_startup'][14:16])
-        # t = datetime(now.year, now.month, now.day, configuration_startup_hour, configuration_startup_minute, 0) - timedelta(seconds=configuration.leds['delay_on'])
-        # delta = t - now
-        # logger.info(f'wait {delta.seconds} seconds for full minute before capturing images')
-        # while (now < t):
-            # sleep(0.1)
-            # now = datetime.now()
-    # except BaseException as e:
-        # logger.error(str(e))
-
-
-
-
-
+    try:
+        now = datetime.now()
+        configuration_startup_hour = int(configuration.schedule['next_startup'][11:13])
+        configuration_startup_minute = int(configuration.schedule['next_startup'][14:16])
+        t = datetime(now.year, now.month, now.day, configuration_startup_hour, configuration_startup_minute, 0) - timedelta(seconds=configuration.leds['delay_on'])
+        delta = t - now
+        logger.info(f'wait {delta.seconds} seconds for full minute before capturing images')
+        while (now < t):
+            sleep(0.1)
+            now = datetime.now()
+    except BaseException as e:
+        logger.error(str(e))
 
     # Forçage du système à démarrer en mode On avec capture d'image immédiate
     on = False
@@ -421,31 +410,12 @@ def main():
                     extra_metadata['EntomoscopeAiPredictionNumBoxes'] = num_boxes
                     extra_metadata['EntomoscopeAiPredictionSpeed'] = f'{speed:.0f}'
 
-                    # ann = Annotator(
-                        # frame2,
-                        # line_width=None,  # default auto-size
-                        # font_size=None,  # default auto-size
-                        # font="Arial.ttf",  # must be ImageFont compatible
-                        # pil=False,  # use PIL, otherwise uses OpenCV
-                    # )
-
                     # Récupération dans les metadata des coordonnées et de l'indice de confiance de chaque boite
                     for box in prediction.boxes:
-
-                        # box_xyxyn = box.xyxyn.tolist()
-                        # label = f"{box.conf.item():.2f}"
-
-                        # box_xyxyn[0][0] *= image_width
-                        # box_xyxyn[0][1] *= image_height
-                        # box_xyxyn[0][2] *= image_width
-                        # box_xyxyn[0][3] *= image_height
-
-                        # ann.box_label(box_xyxyn[0], label, color=colors(0, bgr=True))
-
-                        box_xywhn = box.xywhn.tolist()
-
-                        extra_metadata['EntomoscopeAiPredictionBoxes'].append(box_xywhn[0])
+                        extra_metadata['EntomoscopeAiPredictionBoxes'].append(box.xywhn.tolist()[0])
                         extra_metadata['EntomoscopeAiPredictionConf'].append(box.conf.item())
+                        if box.is_track:
+                            extra_metadata['EntomoscopeAiPredictionLabels'].append(box.id.item())
 
                     # Enregistrement de l'image et des metadata
                     # Nom du fichier : YYYYMMDDHHMMSS.jpg et YYYYMMDDHHMMSS.json
@@ -457,30 +427,6 @@ def main():
                     extra_metadata['EntomoscopeAiPredictionLabels'].clear()
                     extra_metadata['EntomoscopeAiPredictionNumBoxes'] = 0
                     extra_metadata['EntomoscopeAiPredictionSpeed'] = 0
-
-                    # # Enregistrement du fichier résultat prediction
-                    # # Nom du fichier YYYYMMDDHHMMSS_boxes_conf.txt
-                    # prediction.save_txt(file_path + '_boxes_conf.txt', save_conf=True)
-
-                    # # Enregistrement de l'image (taille détection) avec les boites de détection
-                    # # Nom du fichier YYYYMMDDHHMMSS_boxes_conf.jpg
-                    # prediction.save(file_path + '_boxes_conf.jpg')
-
-                    # # Enregistrement de l'image entière et des metadata
-                    # # Nom du fichier : YYYYMMDDHHMMSS_original.jpg et YYYYMMDDHHMMSS_original.json
-                    # camera.frame_to_jpeg(stream='main')
-                    # jpeg_file_path, json_file_path = camera.save_capture(file_path + '_original.jpg', save_metadata=True, extra_metadata=extra_metadata)
-
-                    # # Enregistrement de chaque boite de détection dans une image
-                    # # Nom du fichier : YYYYMMDDHHMMSS_box_N.jpg
-                    # box_num = 0;
-                    # for box in prediction.boxes:
-                        # box_lists = box.xywhn.tolist()
-                        # for box_list in box_lists:
-                            # x, y, w, h = int(box_list[0] * configuration.camera['image_width']), int(box_list[1] * configuration.camera['image_height']), int(box_list[2] * configuration.camera['image_width']), int(box_list[3] * configuration.camera['image_height'])
-                            # camera.frame_to_jpeg(stream='main', crop=[int(y-h/2),int(y+h/2),int(x-w/2),int(x+w/2)])
-                            # box_num += 1
-                            # camera.save_jpeg(file_path + f'_box_{box_num}.jpg')
 
                     # Réinitialisation du compteur de non détection à 0
                     no_detection_successive_counter = 0

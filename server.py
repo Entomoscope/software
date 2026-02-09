@@ -461,8 +461,11 @@ def manage_data(action, value):
                         for i in range(0, json_data['EntomoscopeAiPredictionNumBoxes']):
 
                             box_xywhn = json_data['EntomoscopeAiPredictionBoxes'][i]
-                            label = json_data['EntomoscopeAiPredictionLabels'][i]
                             conf = json_data['EntomoscopeAiPredictionConf'][i]
+                            if json_data['EntomoscopeAiPredictionLabels']:
+                                label = json_data['EntomoscopeAiPredictionLabels'][i]
+                            else:
+                                label = ''
 
                             box_xyxyn[0] = box_xywhn[0] - box_xywhn[2] / 2
                             box_xyxyn[1] = box_xywhn[1] - box_xywhn[3] / 2
@@ -479,7 +482,7 @@ def manage_data(action, value):
                             # x	np.ndarray | torch.Tensor
                             # box_xyxy = xywhn2xyxy(box_xywhn, json_data['ScalerCrop'][2], json_data['ScalerCrop'][3])
 
-                            ann.box_label(box_xyxy, f'{label}: {conf:.2f}', color=colors(0, bgr=True))
+                            ann.box_label(box_xyxy, f'{label} {conf:.2f}', color=colors(0, bgr=True))
 
                         frame = ann.result()
 
@@ -984,8 +987,6 @@ def generate_frames():
 
                         frame3 = copy.copy(frame2)
 
-                        nb = 0
-
                         box_xyxy = [0,0,0,0]
 
                         extra_metadata['EntomoscopeAiPredictionBoxes'].clear()
@@ -995,10 +996,8 @@ def generate_frames():
                         for box in prediction.boxes:
 
                             box_xyxyn = box.xyxyn.tolist()
-                            if box.id:
-                                label = f"{box.id.item():.0f}: {box.conf.item():.2f}"
-                            else:
-                                label = f"{nb:02d}: {box.conf.item():.2f}"
+
+
 
                             box_xyxy[0] = box_xyxyn[0][0] * image_width
                             box_xyxy[1] = box_xyxyn[0][1] * image_height
@@ -1011,12 +1010,8 @@ def generate_frames():
 
                             extra_metadata['EntomoscopeAiPredictionBoxes'].append(box_xywhn[0])
                             extra_metadata['EntomoscopeAiPredictionConf'].append(box.conf.item())
-                            if box.id:
+                            if box.is_track:
                                 extra_metadata['EntomoscopeAiPredictionLabels'].append(box.id.item())
-                            else:
-                                extra_metadata['EntomoscopeAiPredictionLabels'].append(nb)
-
-                            nb += 1
 
                         frame2 = ann.result()
 

@@ -521,7 +521,7 @@ def main():
                 # Enregistrement de l'image entière
                 # Nom du fichier : YYYYMMDDHHMMSS_no_ai_detection.jpg
                 camera.frame_to_jpeg(stream='main')
-                jpeg_file_path, json_file_path = camera.save_capture(file_path + '_no_ai_detection.jpg', save_metadata=True, extra_metadata=extra_metadata)
+                jpeg_file_path, json_file_path = camera.save_capture(file_path + '_timelapse_no_ai.jpg', save_metadata=True, extra_metadata=extra_metadata)
 
                 logger.info('timelaps data saved (jpeg + json)')
 

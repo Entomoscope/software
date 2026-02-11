@@ -256,7 +256,7 @@
                         <!-- Camera - Image Position - Image Width -->
                         <div class="form-group">
                             <div class="d-flex w-100 align-items-center justify-content-between">
-                                <strong class="mb-1"><label for="brightness" class="form-label">Width</label></strong>
+                                <strong class="mb-1"><label for="brightness" class="form-label">Width ({{ configuration['camera']['sensor']['width_max'] }} max)</label></strong>
                             </div>
                             <div class="input-group mb-1">
                                 <input type="number" id="cropLimitsWidthNumber" class="form-control" min="0" max="{{ configuration['camera']['sensor']['width_max'] }}" value="{{ configuration['camera']['sensor']['crop_limits'][2] }}" onchange="updateCameraPosition('width')"/>
@@ -271,7 +271,7 @@
                             <!-- Camera - Image Position - Image Height -->
                             <div class="form-group">
                                 <div class="d-flex w-100 align-items-center justify-content-between">
-                                    <strong class="mb-1"><label for="brightness" class="form-label">Height</label></strong>
+                                    <strong class="mb-1"><label for="brightness" class="form-label">Height ({{ configuration['camera']['sensor']['height_max'] }} max)</label></strong>
                                 </div>
                                 <div class="input-group mb-1">
                                     <input type="number" id="cropLimitsHeightNumber" class="form-control" min="0" max="{{ configuration['camera']['sensor']['height_max'] }}" value="{{ configuration['camera']['sensor']['crop_limits'][3] }}" onchange="updateCameraPosition('height')"/>

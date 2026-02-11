@@ -56,7 +56,7 @@ def main():
 
     dateTime = DateTime()
 
-    dateTime.set_time(witty_pi.year, witty_pi.month, witty_pi.day, witty_pi.hour, witty_pi.minute, witty_pi.second)
+    dateTime.set_date_time(witty_pi.year, witty_pi.month, witty_pi.day, witty_pi.hour, witty_pi.minute, witty_pi.second)
 
     formatter = logging.Formatter('%(asctime)s.%(msecs)03d;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
     file_handler.setFormatter(formatter)

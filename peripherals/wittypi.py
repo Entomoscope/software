@@ -132,6 +132,8 @@ class WittyPi():
 
         self.date = f'{self.year + 2000}-{self.month:02d}-{self.day:02d} {self.hour:02d}:{self.minute:02d}:{self.second:02d}'
 
+        logger.info(f'date : {self.date}')
+
     def get_firmware_id(self):
 
         try:
@@ -447,6 +449,8 @@ class WittyPi():
 def main():
 
     witty_pi = WittyPi()
+
+    witty_pi.get_info()
 
     # witty_pi.set_startup_alarm(14, 16, 39)
     # witty_pi.set_shutdown_alarm(14, 16, 37)

@@ -1997,7 +1997,7 @@ def set_date():
 
         app.logger.info('json: %s', request.get_json())
 
-        dateTime.set_time(data[0], data[1])
+        dateTime.set_date_time_2(data[0], data[1])
 
         dateTime.get_date_time_info()
 

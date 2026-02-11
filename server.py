@@ -281,6 +281,10 @@ def index():
 
     tzone = datetime.now().astimezone().strftime('%Z')
 
+    # today = '-'.join([TODAY[:4], TODAY[4:6], TODAY[6:]])
+    dateTime.get_date()
+    dateTime.get_time()
+
     if gnss:
         gnss.stop()
         gnss = None
@@ -568,7 +572,8 @@ def global_settings():
     startup_date = '-'.join([startup_date[:4], startup_date[5:7], startup_date[8:]])
     shutdown_date = '-'.join([shutdown_date[:4], shutdown_date[5:7], shutdown_date[8:]])
 
-    today = '-'.join([TODAY[:4], TODAY[4:6], TODAY[6:]])
+    # today = '-'.join([TODAY[:4], TODAY[4:6], TODAY[6:]])
+    today = dateTime.get_date()
 
     return make_response(render_template('global_settings.html', configuration=configuration, updates_available=updates_available, today=today, tzone=tzone, startup=(startup_date, startup_time), shutdown=(shutdown_date, shutdown_time), zip=zip, rpi=rpi, battery_level=battery_level))
 
@@ -1981,6 +1986,34 @@ def save_gnss_position():
         app.logger.error(str(e))
 
         return jsonify(success=False, message=str(e))
+
+
+@app.route('/set_date', methods=['POST'])
+def set_date():
+
+    try:
+
+        data = request.get_json()
+
+        app.logger.info('json: %s', request.get_json())
+
+        dateTime.set_time(data[0], data[1])
+
+        dateTime.get_date_time_info()
+
+        date = [int(x) for x in data[0].split('-')]
+        time = [int(x) for x in data[1].split(':')]
+
+        witty_pi.set_date(date[0], date[1], date[2], time[0], time[1], time[2])
+
+        return jsonify(success=True, message='Date set successfully', data=dateTime.date_time_info)
+
+    except BaseException as e:
+
+        app.logger.error(str(e))
+
+        return jsonify(success=False, message=str(e))
+
 
 @app.route('/get_lepinoc_ephemeris', methods=['POST'])
 def get_lepinoc_ephemeris():

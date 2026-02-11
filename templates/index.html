@@ -189,6 +189,20 @@
                 <li id="datetimeLocalText">{{ dateTime.date_time_info[0] }}</li>
                 <li id="datetimeTimeZoneText">{{ dateTime.date_time_info[1] }}</li>
                 </ul>
+                <hr/>
+                <div class="form-group">
+                    <div class="d-flex w-100 align-items-center justify-content-between">
+                        <label for="brightness" class="form-label">Date</label>
+                    </div>
+                    <div class="input-group mb-1">
+                        <input type="date" id="setDateNumber" class="form-control" value="{{ dateTime.date }}"/>
+                        <input type="time" id="setTimeNumber" class="form-control" value="{{ dateTime.time }}"/>
+                        <div class="input-group-text">{{ tzone }}</div>
+                    </div>
+                </div>
+                <div class="form-button-center">
+                    <button type="submit" class="btn btn-primary" id="dateSetButton" onclick="setDate()">Set</button>
+                </div>
               </div>
             </div>
         </div>
@@ -360,6 +374,9 @@
 
     const datetimeLocalText = document.getElementById('datetimeLocalText')
     const datetimeTimeZoneText = document.getElementById('datetimeTimeZoneText')
+    const setDateNumber = document.getElementById('setDateNumber');
+    const setTimeNumber = document.getElementById('setTimeNumber');
+    const dateSetButton = document.getElementById('dateSetButton');
 
     const configFileInput = document.getElementById('configFileInput')
 
@@ -645,6 +662,31 @@
             gnssUpdateButton.disabled = false
             console.error('Error updating settings:', error);
             throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function setDate() {
+
+        data = [setDateNumber.value, setTimeNumber.value]
+
+        return fetch('/set_date', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                datetimeLocalText.innerText = data.data[0]
+                datetimeTimeZoneText.innerText = data.data[1]
+            }
+        })
+        .catch(error => {
+        console.error('Error setting date:', error);
+        throw error;  // Re-throw the error for the next catch
         });
 
     }

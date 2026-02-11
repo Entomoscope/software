@@ -17,17 +17,17 @@ class DateTime():
 
     def get_date_time_info(self):
 
-        info = [x.strip() for x in check_output('timedatectl').decode('utf-8').split('\n')]
+        info = [x.strip() for x in check_output('timedatectl', shell=True).decode('utf-8').split('\n')]
 
         self.date_time_info = [info[0], info[3]]
 
     def get_date(self):
 
-        self.date = check_output('date "+%Y-%m-%d"').decode('utf-8').strip()
+        self.date = check_output('date "+%Y-%m-%d"', shell=True).decode('utf-8').strip()
 
     def get_time(self):
 
-        self.time = check_output('date "+%H:%M:%S"').decode('utf-8').strip()
+        self.time = check_output('date "+%H:%M:%S"', shell=True).decode('utf-8').strip()
 
     def set_time_utc(self, year, month, day, hours, minutes, seconds):
 

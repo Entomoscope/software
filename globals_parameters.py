@@ -138,6 +138,9 @@ SCHEDULE_FILE_PATH = os.path.join(WITTY_PI_FOLDER, 'schedule.wpi')
 MINUTES_OFFSET_FOR_STARTING_ON_TIME = 1
 logger.info(f'offset for starting on time: {MINUTES_OFFSET_FOR_STARTING_ON_TIME} minutes')
 
+CAMERA_PREVIEW_FPS = 25
+logger.info(f'camera preview fps: {CAMERA_PREVIEW_FPS}')
+
 DELAY_BEFORE_SHUTDOWN = 5 # seconds
 logger.info(f'delay before shutdown: {DELAY_BEFORE_SHUTDOWN} seconds')
 

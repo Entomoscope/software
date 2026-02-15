@@ -11,6 +11,7 @@ from globals_parameters import LOGS_DESKTOP_FOLDER, TODAY
 
 # https://opencv.org/blog/autofocus-using-opencv-a-comparative-study-of-focus-measures-for-sharpness-assessment/
 # https://blog.roboflow.com/computer-vision-camera-focus-guide/
+# https://github.com/GreenpantsDeveloper/focus-peaking/tree/development
 
 this_script = os.path.basename(__file__)[:-3]
 
@@ -27,6 +28,7 @@ file_handler.setFormatter(formatter)
 logger.setLevel("DEBUG")
 
 def compute_local_variance(gray, ksize=5):
+
     try:
         #gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         mean = cv2.blur(gray, (ksize, ksize))
@@ -38,6 +40,7 @@ def compute_local_variance(gray, ksize=5):
         return None
 
 def compute_tenengrad(gray):
+
     try:
         #gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)  # Convert to grayscale
         sobel_x = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)  # Sobel filter in X direction
@@ -49,6 +52,7 @@ def compute_tenengrad(gray):
         return None
 
 def compute_brenner_gradient(gray):
+
     try:
         #gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)  # Convert to grayscale
         shifted = np.roll(gray, -2, axis=1)  # Shift by 2 pixels horizontally
@@ -59,6 +63,7 @@ def compute_brenner_gradient(gray):
         return None
 
 def compute_sobel_variance(gray, ksize=3):
+
     try:
         #gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)  # Convert to grayscale
         sobel_x = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=ksize)  # Sobel X gradient
@@ -71,10 +76,30 @@ def compute_sobel_variance(gray, ksize=3):
         return None
 
 def compute_laplacian(gray, ksize=1):
+
     try:
         #gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)  # Convert to grayscale
         laplacian = cv2.Laplacian(gray, cv2.CV_64F, ksize=ksize)  # Apply Laplacian filter
         return np.var(laplacian)  # Compute variance of Laplacian
+    except BaseException as e:
+        logger.error(str(e))
+        return None
+
+def compute_focus_peaking(gray, threshold=100, ksize=5):
+
+    # https://github.com/GreenpantsDeveloper/focus-peaking/blob/development/focus_peaking.py
+    try:
+        # Apply Gaussian blur to the frame to reduce noise
+        blurred_img = cv2.GaussianBlur(gray, (ksize, ksize), 0)
+        # Calculate the gradient magnitude using Sobel operators
+        gradient_x = cv2.Sobel(blurred_img, cv2.CV_64F, 1, 0, ksize=3)
+        gradient_y = cv2.Sobel(blurred_img, cv2.CV_64F, 0, 1, ksize=3)
+        gradient_magnitude = np.sqrt(gradient_x ** 2 + gradient_y ** 2)
+        # Convert the gradient magnitude to 8-bit image
+        gradient_8bit = np.uint8(gradient_magnitude)
+        # Threshold the gradient magnitude to find edges
+        _, edges = cv2.threshold(gradient_8bit, threshold, 255, cv2.THRESH_BINARY)
+        return edges
     except BaseException as e:
         logger.error(str(e))
         return None
@@ -87,15 +112,17 @@ class Focus():
 
     def compute_focus(self, image, method):
 
-        if method == 'local_variance':
+        if method == 'focus_peaking':
+            focus_measure = compute_focus_peaking(image, ksize=5)
+        elif method == 'local_variance':
             focus_measure = compute_local_variance(image, ksize=5)
-        if method == 'tenengrad':
+        elif method == 'tenengrad':
             focus_measure = compute_tenengrad(image)
-        if method == 'brenner_gradient':
+        elif method == 'brenner_gradient':
             focus_measure = compute_brenner_gradient(image)
-        if method == 'sobel_variance':
+        elif method == 'sobel_variance':
             focus_measure = compute_sobel_variance(image)
-        if method == 'laplacian':
+        elif method == 'laplacian':
             focus_measure = compute_laplacian(image)
 
         return focus_measure

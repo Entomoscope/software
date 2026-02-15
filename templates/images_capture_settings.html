@@ -389,13 +389,13 @@
                         </div>
                         <!-- Camera - Autofocus - Lens Position -->
                         <div class="d-flex w-100 align-items-center justify-content-between">
-                        <strong class="mb-1">Lens Position</strong>
+                        <strong class="mb-1" id="lensPostion">Lens Position (&sime; {{ 100 / (configuration.camera['autofocus']['lens_position'] | int ) | round(2) }} cm)</strong>
                         </div>
                         <div class="form-check">
                             {% if configuration['camera']['autofocus']['mode'] == 'Manual' %}
-                            <input type="range" class="form-range" min="0" max="32" step="0.025" id="manualFocusRange" value="{{ configuration.camera['autofocus']['lens_position'] | round(3) }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
+                            <input type="range" class="form-range" min="0" max="16" step="0.025" id="manualFocusRange" value="{{ configuration.camera['autofocus']['lens_position'] | round(3) }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
                             <div class="input-group mb-1">
-                                <input type="number" id="manualFocusRangeNumber" class="form-control" min="0" step="0.025" max="32" value="{{ configuration.camera['autofocus']['lens_position'] | round(3) }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
+                                <input type="number" id="manualFocusRangeNumber" class="form-control" min="0" step="0.025" max="16" value="{{ configuration.camera['autofocus']['lens_position'] | round(3) }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
                                 <div class="input-group-text">dioptres</div>
                             </div>
                             <div class="form-button-center">
@@ -406,9 +406,9 @@
                                 </div>
                             </div>
                             {% else %}
-                            <input type="range" class="form-range" min="0" max="32" step="0.025" id="manualFocusRange" value="{{ configuration.camera['autofocus']['lens_position'] | round(3) }}" onchange="adjustSliderSetting('LensPosition', this.value)" disabled />
+                            <input type="range" class="form-range" min="0" max="16" step="0.025" id="manualFocusRange" value="{{ configuration.camera['autofocus']['lens_position'] | round(3) }}" onchange="adjustSliderSetting('LensPosition', this.value)" disabled />
                             <div class="input-group mb-1">
-                                <input type="number" id="manualFocusRangeNumber" class="form-control" min="0" step="0.025" max="32" value="{{ configuration.camera['autofocus']['lens_position'] | round(3) }}" onchange="adjustSliderSetting('LensPosition', this.value)" disabled />
+                                <input type="number" id="manualFocusRangeNumber" class="form-control" min="0" step="0.025" max="16" value="{{ configuration.camera['autofocus']['lens_position'] | round(3) }}" onchange="adjustSliderSetting('LensPosition', this.value)" disabled />
                                 <div class="input-group-text">dioptres</div>
                             </div>
                             <div class="form-button-center">
@@ -440,6 +440,15 @@
                         <div class="collapse p-2" id="focus_measure">
                         {% endif %}
                             <div class="form-group">
+                                <!-- Camera - Autofocus - Focus measure - Focus peaking -->
+                                <div class="form-check form-check-inline">
+                                    {% if configuration.camera['autofocus']['measure_mode'] == 'focus_peaking' %}
+                                    <input class="form-check-input" type="checkbox" id="focusPeakingMode" value="focus_peaking" onchange="updateSaveButton('autofocus', false)" onclick="applyFocusMeasureMode(this.value)" checked />
+                                    {% else %}
+                                    <input class="form-check-input" type="checkbox" id="focusPeakingMode" value="focus_peaking" onchange="updateSaveButton('autofocus', false)" onclick="applyFocusMeasureMode(this.value)"/>
+                                    {% endif %}
+                                    <label class="form-check-label" for="focusPeakingMode">Focus peaking</label>
+                                </div>
                                 <!-- Camera - Autofocus - Focus measure - Local variance -->
                                 <div class="form-check form-check-inline">
                                     {% if configuration.camera['autofocus']['measure_mode'] == 'local_variance' %}
@@ -831,6 +840,7 @@
     const manualFocusStep = document.getElementById('manualFocusStep');
     const manualFocusPlus = document.getElementById('manualFocusPlus');
     const focusMeasureEnable = document.getElementById('focusMeasureEnable');
+    const focusPeakingMode = document.getElementById('focusPeakingMode');
     const localVarianceMode = document.getElementById('localVarianceMode');
     const tenengradMode = document.getElementById('tenengradMode');
     const brennerGradientMode = document.getElementById('brennerGradientMode');
@@ -839,6 +849,7 @@
     const autofocusSaveButton = document.getElementById('autofocusSaveButton');
     const cameraAutofocusMeasureEnableConfigurationText = document.getElementById('cameraAutofocusMeasureEnableConfigurationText');
     const cameraAutofocusMeasureModeConfigurationText = document.getElementById('cameraAutofocusMeasureModeConfigurationText');
+    const lensPostion = document.getElementById('lensPostion');
 
     // Auto Exposure/Gain
     const aeAutoEnable = document.getElementById('aeAutoEnable');
@@ -1091,6 +1102,7 @@
                 if (settingId == 'AfMode' && settingValue == 'Manual') {
                     manualFocusRangeNumber.value = data.data.toFixed(3)
                     manualFocusRange.value = data.data.toFixed(3)
+                    lensPostion.innerText = 'Lens Position (\u2243 ' + (100 / data.data).toFixed(1) + ' cm )'
                 }
             }
         })
@@ -1173,6 +1185,7 @@
                 manualFocusRangeNumber.disabled = false
                 manualFocusMinus.disabled = false
                 manualFocusPlus.disabled = false
+                lensPostion.innerText = 'Lens Position (\u2243 ' + (100 / settingValue).toFixed(1) + ' cm )'
             }
         })
         .catch(error => {
@@ -1202,7 +1215,7 @@
         }
         else
         {
-            if ((32.0 - focus) > focus_step) {
+            if ((16.0 - focus) > focus_step) {
                 focus += focus_step
                 manualFocusRange.value = focus.toFixed(3)
                 manualFocusRangeNumber.value = focus.toFixed(3)
@@ -1238,13 +1251,16 @@
 
     function applyFocusMeasureMode(value) {
 
+        focusPeakingMode.checked = false
         localVarianceMode.checked = false
         tenengradMode.checked = false
         brennerGradientMode.checked = false
         sobelVarianceMode.checked = false
         laplacianMode.checked = false
 
-        if (value == 'local_variance') {
+        if (value == 'focus_peaking') {
+            focusPeakingMode.checked = true
+        } else if (value == 'local_variance') {
             localVarianceMode.checked = true
         } else if (value == 'tenengrad') {
             tenengradMode.checked = true

@@ -4,7 +4,7 @@ import os
 import shutil
 from datetime import datetime, timedelta, timezone
 
-from time import sleep
+from time import time, sleep
 
 from flask import Flask, make_response, render_template, Response, jsonify, request, redirect
 from werkzeug.utils import secure_filename
@@ -43,7 +43,7 @@ from ephemeris import Ephemeris
 
 from date_time import DateTime
 
-from globals_parameters import USER, SERVER_PORT, SERVER_DEBUG, SERVER_ALLOWED_EXTENSIONS, TODAY_NOW, AI_ENABLE, AI_MODEL_PATH, CAPTURE_AI_DETECTION, PYTHON_SCRIPTS_BASE_FOLDER, TMP_FOLDER, IMAGES_CAPTURE_FOLDER, SOUNDS_CAPTURE_FOLDER, TODAY, TOMORROW, LOGS_DESKTOP_FOLDER, WITTY_PI_FOLDER, DATA_FOLDER, MINUTES_OFFSET_FOR_STARTING_ON_TIME
+from globals_parameters import USER, SERVER_PORT, SERVER_DEBUG, SERVER_ALLOWED_EXTENSIONS, TODAY_NOW, AI_ENABLE, AI_MODEL_PATH, CAPTURE_AI_DETECTION, PYTHON_SCRIPTS_BASE_FOLDER, TMP_FOLDER, IMAGES_CAPTURE_FOLDER, SOUNDS_CAPTURE_FOLDER, TODAY, TOMORROW, LOGS_DESKTOP_FOLDER, WITTY_PI_FOLDER, DATA_FOLDER, MINUTES_OFFSET_FOR_STARTING_ON_TIME, CAMERA_PREVIEW_FPS
 
 from updates import updates_check, updates_get
 
@@ -476,10 +476,15 @@ def manage_data(action, value):
                             box_xyxyn[2] = box_xywhn[0] + box_xywhn[2] / 2
                             box_xyxyn[3] = box_xywhn[1] + box_xywhn[3] / 2
 
-                            box_xyxy[0] = box_xyxyn[0] * json_data['ScalerCrop'][2]
-                            box_xyxy[1] = box_xyxyn[1] * json_data['ScalerCrop'][3]
-                            box_xyxy[2] = box_xyxyn[2] * json_data['ScalerCrop'][2]
-                            box_xyxy[3] = box_xyxyn[3] * json_data['ScalerCrop'][3]
+                            # box_xyxy[0] = box_xyxyn[0] * json_data['ScalerCrop'][2]
+                            # box_xyxy[1] = box_xyxyn[1] * json_data['ScalerCrop'][3]
+                            # box_xyxy[2] = box_xyxyn[2] * json_data['ScalerCrop'][2]
+                            # box_xyxy[3] = box_xyxyn[3] * json_data['ScalerCrop'][3]
+
+                            box_xyxy[0] = box_xyxyn[0] * frame.shape[1]
+                            box_xyxy[1] = box_xyxyn[1] * frame.shape[0]
+                            box_xyxy[2] = box_xyxyn[2] * frame.shape[1]
+                            box_xyxy[3] = box_xyxyn[3] * frame.shape[0]
 
                             # https://docs.ultralytics.com/reference/utils/ops/#ultralytics.utils.ops.xywhn2xyxy
                             # def xywhn2xyxy(x, w: int = 640, h: int = 640, padw: int = 0, padh: int = 0)
@@ -918,191 +923,217 @@ def generate_frames():
 
         app.logger.error(str(e))
 
+    time_between_frame = 1 / CAMERA_PREVIEW_FPS
+
+    last_frame_time = time()
+
     while True:
 
         if camera:
 
-            try:
+            if time() - last_frame_time > time_between_frame:
 
-                frame, metadata = camera.get_preview_frame()
-
-                if camera.autofocus_available:
-                    current_lens_position = metadata['LensPosition']
-
-                # print(current_lens_position)
-
-                # print(f'frame: {frame.shape}', flush=True)
-
-                # print(metadata, flush=True)
-
-                if (focus_measure_enable) or (AI_AVAILABLE and AI_ENABLE and configuration.ai_detection['enable']):
-
-                    data = np.frombuffer(frame, dtype=np.uint8)
-
-                    frame2 = cv2.imdecode(data, 1)
-
-                if AI_AVAILABLE and AI_ENABLE and configuration.ai_detection['enable']:
-
-                    #data = np.frombuffer(frame, dtype=np.uint8)
-
-                    # frame2 = cv2.imdecode(data, 1)
-
-                    # print(f'frame2: {frame2.shape}\n', flush=True)
-
-                    image_width = frame2.shape[1]
-                    image_height = frame2.shape[0]
-
-                    frameDetect = cv2.resize(frame2, (configuration.ai_detection['image_width'], configuration.ai_detection['image_height']))
-
-                    prediction = ai_model.predict(frameDetect,
-                                                    imgsz=(frameDetect.shape[0], frameDetect.shape[1]),
-                                                    conf=configuration.ai_detection['min_confidence'],
-                                                    show=False,
-                                                    save=False,
-                                                    save_txt=False,
-                                                    verbose=False)[0]
-
-                    # prediction = ai_model.track(frameDetect,
-                                                    # imgsz=(frameDetect.shape[0], frameDetect.shape[1]),
-                                                    # conf=configuration.ai_detection['min_confidence'],
-                                                    # show=False,
-                                                    # save=False,
-                                                    # save_txt=False,
-                                                    # verbose=False)[0]
-
-                    insect_detected = len(prediction.boxes) > 0
-
-                    if insect_detected is True:
-
-                        speed = prediction.speed['preprocess'] + prediction.speed['inference'] + prediction.speed['postprocess']
-                        num_boxes = len(prediction.boxes)
-
-                        app.logger.info(f'Detection - Num box: {num_boxes} - Speed: {speed:.0f} ms')
-
-                        extra_metadata['EntomoscopeAiPredictionNumBoxes'] = num_boxes
-                        extra_metadata['EntomoscopeAiPredictionSpeed'] = f'{speed:.0f}'
-
-                        ann = Annotator(
-                            frame2,
-                            line_width=None,  # default auto-size
-                            font_size=None,  # default auto-size
-                            font="Arial.ttf",  # must be ImageFont compatible
-                            pil=False,  # use PIL, otherwise uses OpenCV
-                        )
-
-                        frame3 = copy.copy(frame2)
-
-                        box_xyxy = [0,0,0,0]
-
-                        extra_metadata['EntomoscopeAiPredictionBoxes'].clear()
-                        extra_metadata['EntomoscopeAiPredictionConf'].clear()
-                        extra_metadata['EntomoscopeAiPredictionLabels'].clear()
-
-                        for box in prediction.boxes:
-
-                            box_xyxyn = box.xyxyn.tolist()
-
-                            box_xyxy[0] = box_xyxyn[0][0] * image_width
-                            box_xyxy[1] = box_xyxyn[0][1] * image_height
-                            box_xyxy[2] = box_xyxyn[0][2] * image_width
-                            box_xyxy[3] = box_xyxyn[0][3] * image_height
-
-                            if box.is_track:
-                                label = f'{box.id.item()} {box.conf.item():.2f}'
-                            else:
-                                label = f'{box.conf.item():.2f}'
-
-                            ann.box_label(box_xyxy, label, color=colors(0, bgr=True))
-
-                            box_xywhn = box.xywhn.tolist()
-
-                            extra_metadata['EntomoscopeAiPredictionBoxes'].append(box_xywhn[0])
-                            extra_metadata['EntomoscopeAiPredictionConf'].append(box.conf.item())
-                            if box.is_track:
-                                extra_metadata['EntomoscopeAiPredictionLabels'].append(box.id.item())
-
-                        frame2 = ann.result()
-
-                        # idx_color = 0
-
-                        # for box in prediction.boxes:
-
-                            # # box_lists = box.xywhn.tolist()
-                            # # for box_list in box_lists:
-                                # # x, y, w, h = int(box_list[0] * image_width), int(box_list[1] * image_height), int(box_list[2] * image_width), int(box_list[3] * image_height)
-                                # # frame2 = cv2.rectangle(frame2, (int(x-w/2),int(y-h/2)), (int(x+w/2),int(y+h/2)), ai_boxes_color[idx_color], 2)
-                                # # idx_color += 1
-                                # # if idx_color >= len(ai_boxes_color):
-                                    # # idx_color = 0
-
-                        # cv2.putText(frame2, f'Num: {len(prediction.boxes)}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1.25, (0, 0, 255), 2)
-
-                        # t = f'Speed: {speed:.0f} ms'
-                        # text_size, _ = cv2.getTextSize(t, cv2.FONT_HERSHEY_SIMPLEX, 1.25, 2)
-                        # text_w, text_h = text_size
-                        # cv2.rectangle(frame2, (0,0), (10 + text_w, 60 + text_h), (255, 0, 0), -1)
-
-                        # cv2.putText(frame2, f'Speed: {speed:.0f} ms', (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1.25, (0, 0, 255), 2)
-                        # cv2.putText(frame2, t, (10, 60 + text_h + 1.25 - 1), cv2.FONT_HERSHEY_SIMPLEX, 1.25, (255, 255, 255), 2)
-
-                        img_encode = cv2.imencode('.jpg', frame2, [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality])[1]
-
-                        if CAPTURE_AI_DETECTION:
-
-                            now_str = datetime.now().strftime('%Y%m%d%H%M%S_%f')
-
-                            img_encode_3 = cv2.imencode('.jpg', frame3, [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality])[1]
-
-                            file_path = os.path.join(IMAGES_CAPTURE_FOLDER, now_str + '_detection_test.jpg')
-
-                            camera.jpeg_data = img_encode_3.tobytes()
-                            camera.save_capture(file_path, save_metadata=True, extra_metadata=extra_metadata)
-
-                            # file_path = os.path.join(IMAGES_CAPTURE_FOLDER, now_str + '_detection_test_boxes.jpg')
-
-                            # camera.jpeg_data = img_encode.tobytes()
-                            # camera.save_capture(file_path, save_metadata=False)
-
-                        data_encode = np.array(img_encode)
-                        frame = data_encode.tobytes()
-
-                elif focus_measure_enable:
-
-                    focus_measure = focus.compute_focus(frame2, focus_measure_mode)
-                    cv2.putText(frame2, f'Focus value: {focus_measure:.3f}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                    img_encode = cv2.imencode('.jpg', frame2, [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality])[1]
-                    data_encode = np.array(img_encode)
-                    frame = data_encode.tobytes()
-
-                if capture_next_image:
-
-                    capture_next_image = False
-
-                    now_str = datetime.now().strftime('%Y%m%d%H%M%S_%f')
-
-                    file_path = os.path.join(IMAGES_CAPTURE_FOLDER, now_str)
-
-                    camera.capture()
-                    camera.frame_to_jpeg(stream='main')
-
-                    jpeg_file_path, json_file_path = camera.save_capture(file_path + '_capture_test.jpg', save_metadata=False)
+                last_frame_time = time()
 
                 try:
 
-                    yield (b'--frame\r\n'
-                        b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                    # Récupération de la cpature image et metadat de la caméra
+                    # frame : tableau de bytes depuis le stream MJPEG
+                    # metadata : dictionaire
+                    frame, metadata = camera.get_preview_frame()
 
-                except RuntimeError as e:
+                    if camera.autofocus_available:
+                        current_lens_position = metadata['LensPosition']
+
+                    if AI_AVAILABLE and AI_ENABLE and configuration.ai_detection['enable']:
+
+                        # Conversion du buffer frame vers un tableau numpy
+                        data = np.frombuffer(frame, dtype=np.uint8)
+
+                        # Décodage du buffer JPEG vers un tableau de bytes (image)
+                        frame2 = cv2.imdecode(data, cv2.IMREAD_COLOR )
+
+                        # Redimensionnement de l'image pour la détection par IA
+                        frameDetect = cv2.resize(frame2, (configuration.ai_detection['image_width'], configuration.ai_detection['image_height']))
+
+                        # Exécution du script IA
+                        prediction = ai_model.predict(frameDetect,
+                                                        imgsz=(frameDetect.shape[0], frameDetect.shape[1]),
+                                                        conf=configuration.ai_detection['min_confidence'],
+                                                        show=False,
+                                                        save=False,
+                                                        save_txt=False,
+                                                        verbose=False)[0]
+
+                        # prediction = ai_model.track(frameDetect,
+                                                        # imgsz=(frameDetect.shape[0], frameDetect.shape[1]),
+                                                        # conf=configuration.ai_detection['min_confidence'],
+                                                        # show=False,
+                                                        # save=False,
+                                                        # save_txt=False,
+                                                        # verbose=False)[0]
+
+                        # Arthropode détecté si au moins une boite dans prediction
+                        arthropod_detected = len(prediction.boxes) > 0
+
+                        # Si arthropode(s) détecté(s)
+                        if arthropod_detected is True:
+
+                            # Vitesse de la détection en millisecondes
+                            speed = prediction.speed['preprocess'] + prediction.speed['inference'] + prediction.speed['postprocess']
+
+                            # Nombre de boites détectées
+                            num_boxes = len(prediction.boxes)
+
+                            app.logger.info(f'{num_boxes} arthropods detected in {speed:.0f} ms')
+
+                            extra_metadata['EntomoscopeAiPredictionNumBoxes'] = num_boxes
+                            extra_metadata['EntomoscopeAiPredictionSpeed'] = f'{speed:.0f}'
+
+                            ann = Annotator(
+                                frame2,
+                                line_width=None,  # default auto-size
+                                font_size=None,  # default auto-size
+                                font="Arial.ttf",  # must be ImageFont compatible
+                                pil=False,  # use PIL, otherwise uses OpenCV
+                            )
+
+                            frame3 = copy.copy(frame2)
+
+                            box_xyxy = [0,0,0,0]
+
+                            extra_metadata['EntomoscopeAiPredictionBoxes'].clear()
+                            extra_metadata['EntomoscopeAiPredictionConf'].clear()
+                            extra_metadata['EntomoscopeAiPredictionLabels'].clear()
+
+                            image_width = frame2.shape[1]
+                            image_height = frame2.shape[0]
+
+                            for box in prediction.boxes:
+
+                                box_xyxyn = box.xyxyn.tolist()
+
+                                box_xyxy[0] = box_xyxyn[0][0] * image_width
+                                box_xyxy[1] = box_xyxyn[0][1] * image_height
+                                box_xyxy[2] = box_xyxyn[0][2] * image_width
+                                box_xyxy[3] = box_xyxyn[0][3] * image_height
+
+                                if box.is_track:
+                                    label = f'{box.id.item()} {box.conf.item():.2f}'
+                                else:
+                                    label = f'{box.conf.item():.2f}'
+
+                                ann.box_label(box_xyxy, label, color=colors(0, bgr=True))
+
+                                box_xywhn = box.xywhn.tolist()
+
+                                extra_metadata['EntomoscopeAiPredictionBoxes'].append(box_xywhn[0])
+                                extra_metadata['EntomoscopeAiPredictionConf'].append(box.conf.item())
+                                if box.is_track:
+                                    extra_metadata['EntomoscopeAiPredictionLabels'].append(box.id.item())
+
+                            frame2 = ann.result()
+
+                            text = f'Speed: {speed:.0f} ms'
+                            x, y = (0, 0)
+                            text_size, _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 1.25, 2)
+                            text_w, text_h = text_size
+
+                            text_w += 10
+                            text_h += 15
+
+                            cv2.rectangle(frame2, (x, y), (x + text_w, y + text_h), (0, 0, 0), -1)
+                            cv2.putText(frame2, text, (x + 5, y + text_h - 5), cv2.FONT_HERSHEY_SIMPLEX, 1.25, (0, 255, 0), 2)
+
+                            # cv2.putText(frame2, f'Speed: {speed:.0f} ms', (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1.25, (0, 0, 255), 2)
+                            # cv2.putText(frame2, t, (10, 60 + text_h + 1.25 - 1), cv2.FONT_HERSHEY_SIMPLEX, 1.25, (255, 255, 255), 2)
+
+                            img_encode = cv2.imencode('.jpg', frame2, [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality])[1]
+
+                            if CAPTURE_AI_DETECTION:
+
+                                now_str = datetime.now().strftime('%Y%m%d%H%M%S_%f')
+
+                                img_encode_3 = cv2.imencode('.jpg', frame3, [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality])[1]
+
+                                file_path = os.path.join(IMAGES_CAPTURE_FOLDER, now_str + '_detection_test.jpg')
+
+                                camera.jpeg_data = img_encode_3.tobytes()
+                                camera.save_capture(file_path, save_metadata=True, extra_metadata=extra_metadata)
+
+                                # file_path = os.path.join(IMAGES_CAPTURE_FOLDER, now_str + '_detection_test_boxes.jpg')
+
+                                # camera.jpeg_data = img_encode.tobytes()
+                                # camera.save_capture(file_path, save_metadata=False)
+
+                            data_encode = np.array(img_encode)
+                            frame = data_encode.tobytes()
+
+                    elif focus_measure_enable:
+
+                        # Conversion du buffer frame vers un tableau numpy
+                        data = np.frombuffer(frame, dtype=np.uint8)
+
+                        # Décodage du buffer JPEG vers un tableau de bytes
+                        frame2 = cv2.imdecode(data, cv2.IMREAD_COLOR)
+
+                        if focus_measure_mode == 'focus_peaking':
+
+                            gray = frame2[..., :3] @ [0.299, 0.587, 0.114]
+                            edges = focus.compute_focus(gray, focus_measure_mode)
+
+                            if edges.any():
+                                # Apply the red color to in-focus pixels
+                                frame2[edges > 0] = [0, 0, 255]
+
+                        else:
+
+                            focus_measure = focus.compute_focus(frame2, focus_measure_mode)
+
+                            text = f'Focus value: {focus_measure:.3f}'
+                            x, y = (0, 0)
+                            text_size, _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 1.25, 2)
+                            text_w, text_h = text_size
+
+                            text_w += 10
+                            text_h += 15
+
+                            cv2.rectangle(frame2, (x, y), (x + text_w, y + text_h), (0, 0, 0), -1)
+                            cv2.putText(frame2, text, (x + 5, y + text_h - 5), cv2.FONT_HERSHEY_SIMPLEX, 1.25, (0, 255, 0), 2)
+
+                        img_encode = cv2.imencode('.jpg', frame2, [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality])[1]
+                        data_encode = np.array(img_encode)
+                        frame = data_encode.tobytes()
+
+                    if capture_next_image:
+
+                        capture_next_image = False
+
+                        now_str = datetime.now().strftime('%Y%m%d%H%M%S_%f')
+
+                        file_path = os.path.join(IMAGES_CAPTURE_FOLDER, now_str)
+
+                        camera.capture()
+                        camera.frame_to_jpeg(stream='main')
+
+                        jpeg_file_path, json_file_path = camera.save_capture(file_path + '_capture_test.jpg', save_metadata=False)
+
+                    try:
+
+                        yield (b'--frame\r\n'
+                            b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+                    except RuntimeError as e:
+
+                        app.logger.error(str(e))
+
+                        break
+
+                except BaseException as e:
 
                     app.logger.error(str(e))
 
                     break
-
-            except BaseException as e:
-
-                app.logger.error(str(e))
-
-                break
 
 
 @app.route('/manage_images_capture', methods=['POST'])

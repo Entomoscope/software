@@ -1380,7 +1380,10 @@
                     cameraAutofocusLensPositionConfigurationText.innerText = 'Lens position: ' + manualFocusRange.value
                     cameraAutofocusMeasureEnableConfigurationText.innerText = 'Focus measure enable: ' + String(focusMeasureEnable.checked).charAt(0).toUpperCase() + String(focusMeasureEnable.checked).slice(1)
 
-                    if (localVarianceMode.checked) {
+
+                    if (focusPeakingMode.checked) {
+                        cameraAutofocusMeasureModeConfigurationText.innerText = 'Focus measure mode: focus peaking'
+                    } else if (localVarianceMode.checked) {
                         cameraAutofocusMeasureModeConfigurationText.innerText = 'Focus measure mode: local variance'
                     } else if (tenengradMode.checked) {
                         cameraAutofocusMeasureModeConfigurationText.innerText = 'Focus measure mode: tenengrad'

@@ -56,7 +56,7 @@
     <p class="config_level_2" id="cameraAutofocusModeConfigurationText">Mode: {{ configuration['camera']['autofocus']['mode'] }}</p>
     <p class="config_level_2" id="cameraAutofocusLensPositionConfigurationText">Lens position: {{ configuration['camera']['autofocus']['lens_position'] | round(3)}}</p>
     <p class="config_level_2" id="cameraAutofocusMeasureEnableConfigurationText">Focus measure enable: {{ configuration['camera']['autofocus']['measure_enable'] }}</p>
-    <p class="config_level_2" id="cameraAutofocusMeasureModeConfigurationText">Focus measure mode: {{ configuration['camera']['autofocus']['measure_mode'] }}</p>
+    <p class="config_level_2" id="cameraAutofocusMeasureModeConfigurationText">Focus measure mode: {{ configuration['camera']['autofocus']['measure_mode'] | replace('_', ' ') }}</p>
 <!--
     <p class="config_level_3" id="cameraAutofocusRangeConfigurationText">Range: {{ configuration['camera']['autofocus']['range'] }}</p>
     <p class="config_level_3" id="cameraAutofocusSpeedConfigurationText">Speed: {{ configuration['camera']['autofocus']['speed'] }}</p>

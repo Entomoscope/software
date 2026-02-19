@@ -62,6 +62,7 @@ h.setFormatter(f)
 
 app = Flask(__name__)
 # app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+# app.config['SERVER_NAME'] = 'entomoscope:7777'
 
 app.logger.addHandler(h)
 app.logger.setLevel("DEBUG")
@@ -176,6 +177,9 @@ sensor_mode = [configuration.camera['sensor']['preview_mode'], configuration.cam
 focus_measure_enable = configuration.camera['autofocus']['measure_enable']
 focus_measure_mode = configuration.camera['autofocus']['measure_mode']
 
+multifocus_mode = configuration.images_capture['multifocus']['enable']
+lens_position_offset = configuration.images_capture['multifocus']['lens_position_offset']
+
 server_settings = {'keep_image_center': configuration.server['image_constraints']['centered'], 'keep_image_square': configuration.server['image_constraints']['square'], 'preview_max_width': configuration.server['preview_size']['max_width']}
 
 ai_detection = {'enable': configuration.ai_detection['enable'],
@@ -274,7 +278,7 @@ def index():
     rpi.ip_address = rpi.get_ip_address()
 
     wifi.show()
-    wifi.list()
+    # wifi.list()
     app.logger.info('Wifi updated')
 
     dateTime.get_date_time_info()
@@ -702,10 +706,17 @@ def sounds_capture_settings():
 
         if microphone_available == 0:
             app.logger.warning('microphone not available because sounds capture is running')
+            microphone_id = ''
+            microphone_firmware = ''
         elif microphone_available == 1:
             app.logger.error('microphone not found')
+            microphone_id = ''
+            microphone_firmware = ''
+        else:
+            microphone_id = microphone.id
+            microphone_firmware = microphone.firmware
 
-        return make_response(render_template('sounds_capture_settings.html', updates_available=updates_available, microphone_available=microphone_available, configuration=configuration, rpi=rpi, battery_level=battery_level))
+        return make_response(render_template('sounds_capture_settings.html', updates_available=updates_available, microphone_available=microphone_available, microphone_id=microphone_id, microphone_firmware=microphone_firmware, configuration=configuration, rpi=rpi, battery_level=battery_level))
 
     except BaseException as e:
 
@@ -937,7 +948,7 @@ def generate_frames():
 
                 try:
 
-                    # Récupération de la cpature image et metadat de la caméra
+                    # Récupération de la capture image et metadata de la caméra
                     # frame : tableau de bytes depuis le stream MJPEG
                     # metadata : dictionaire
                     frame, metadata = camera.get_preview_frame()
@@ -1302,6 +1313,8 @@ def update_settings():
             configuration.images_capture['enable'] = data[1]['enable']
             configuration.images_capture['fast_mode'] = data[1]['fast_mode']
             configuration.images_capture['time_step'] = int(data[1]['time_step'])
+            configuration.images_capture['multifocus']['enable'] = data[1]['multifocus']
+            configuration.images_capture['multifocus']['lens_position_offset'] = float(data[1]['lens_position_offset'])
             data = None
         elif data[0] == 'sounds_capture':
             configuration.sounds_capture['enable'] = data[1]['enable']
@@ -1505,6 +1518,8 @@ def set_camera_model():
         sensor_resolution = camera.get_sensor_resolution(camera_model)
 
         sensor_mode = camera.get_sensor_mode(camera_model)
+
+        # autofocus_available = camera.get_autofocus_available(camera_model)
 
         return jsonify(success=True, message='Camera model set successfully')
 
@@ -1905,9 +1920,9 @@ def save_microphone_settings():
         app.logger.info(f"configuration for microphone sample rate ({configuration.microphone['sample_rate']}) saved")
         app.logger.info(f"configuration for microphone gain ({configuration.microphone['gain']}) saved")
 
-        if microphone.available:
-            microphone.set_settings(configuration.microphone['sample_rate'], configuration.microphone['gain'])
+        if microphone and microphone.available:
 
+            microphone.set_settings(configuration.microphone['sample_rate'], configuration.microphone['gain'])
             microphone.detect_microphone()
 
         return jsonify(success=True, message='Microphone settings saved successfully', data=data)

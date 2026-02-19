@@ -389,32 +389,32 @@
                         </div>
                         <!-- Camera - Autofocus - Lens Position -->
                         <div class="d-flex w-100 align-items-center justify-content-between">
-                        <strong class="mb-1" id="lensPostion">Lens Position (&sime; {{ 100 / (configuration.camera['autofocus']['lens_position'] | int ) | round(2) }} cm)</strong>
+                        <strong class="mb-1" id="lensPostion">Lens Position (&sime; {{ 100 / (configuration.camera['autofocus']['lens_position'] | int ) | round(4) }} cm)</strong>
                         </div>
                         <div class="form-check">
                             {% if configuration['camera']['autofocus']['mode'] == 'Manual' %}
-                            <input type="range" class="form-range" min="0" max="16" step="0.025" id="manualFocusRange" value="{{ configuration.camera['autofocus']['lens_position'] | round(3) }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
+                            <input type="range" class="form-range" min="0" max="16" step="0.01" id="manualFocusRange" value="{{ configuration.camera['autofocus']['lens_position'] | round(3) }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
                             <div class="input-group mb-1">
-                                <input type="number" id="manualFocusRangeNumber" class="form-control" min="0" step="0.025" max="16" value="{{ configuration.camera['autofocus']['lens_position'] | round(3) }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
+                                <input type="number" id="manualFocusRangeNumber" class="form-control" min="0" step="0.01" max="16" value="{{ configuration.camera['autofocus']['lens_position'] | round(3) }}" onchange="adjustSliderSetting('LensPosition', this.value)"/>
                                 <div class="input-group-text">dioptres</div>
                             </div>
                             <div class="form-button-center">
                                 <div class="btn-group mt-2" role="group" aria-label="Standard Button Group">
                                     <button type="submit" class="btn btn-primary" id="manualFocusPlus" onclick="manualFocus('minus')">-</button>
-                                    <input type="number" id="manualFocusStep" class="form-control" min="0.025" step="0.025" max="1" value="0.025" onchange=""/>
+                                    <input type="number" id="manualFocusStep" class="form-control" min="0.01" step="0.01" max="1" value="0.01" onchange=""/>
                                     <button type="submit" class="btn btn-primary" id="manualFocusMinus" onclick="manualFocus('plus')">+</button>
                                 </div>
                             </div>
                             {% else %}
-                            <input type="range" class="form-range" min="0" max="16" step="0.025" id="manualFocusRange" value="{{ configuration.camera['autofocus']['lens_position'] | round(3) }}" onchange="adjustSliderSetting('LensPosition', this.value)" disabled />
+                            <input type="range" class="form-range" min="0" max="16" step="0.01" id="manualFocusRange" value="{{ configuration.camera['autofocus']['lens_position'] | round(3) }}" onchange="adjustSliderSetting('LensPosition', this.value)" disabled />
                             <div class="input-group mb-1">
-                                <input type="number" id="manualFocusRangeNumber" class="form-control" min="0" step="0.025" max="16" value="{{ configuration.camera['autofocus']['lens_position'] | round(3) }}" onchange="adjustSliderSetting('LensPosition', this.value)" disabled />
+                                <input type="number" id="manualFocusRangeNumber" class="form-control" min="0" step="0.01" max="16" value="{{ configuration.camera['autofocus']['lens_position'] | round(3) }}" onchange="adjustSliderSetting('LensPosition', this.value)" disabled />
                                 <div class="input-group-text">dioptres</div>
                             </div>
                             <div class="form-button-center">
                                 <div class="btn-group mt-2" role="group" aria-label="Standard Button Group">
                                     <button type="submit" class="btn btn-primary" id="manualFocusPlus" onclick="manualFocus('minus')" disabled >-</button>
-                                    <input type="number" id="manualFocusStep" class="form-control" min="0.025" step="0.025" max="1" value="0.025" onchange="" disabled />
+                                    <input type="number" id="manualFocusStep" class="form-control" min="0.01" step="0.01" max="1" value="0.01" onchange="" disabled />
                                     <button type="submit" class="btn btn-primary" id="manualFocusMinus" onclick="manualFocus('plus')" disabled >+</button>
                                 </div>
                             </div>
@@ -1185,7 +1185,7 @@
                 manualFocusRangeNumber.disabled = false
                 manualFocusMinus.disabled = false
                 manualFocusPlus.disabled = false
-                lensPostion.innerText = 'Lens Position (\u2243 ' + (100 / settingValue).toFixed(1) + ' cm )'
+                lensPostion.innerText = 'Lens Position (\u2243 ' + (100 / settingValue).toFixed(2) + ' cm )'
             }
         })
         .catch(error => {

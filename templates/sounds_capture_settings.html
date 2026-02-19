@@ -85,6 +85,36 @@
         <!-- Sounds Capture Settings -->
         <div class="col-3">
             <div class="accordion" id="accordion">
+                <!-- Microphone - Info -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cameraInfoCollapse" aria-expanded="false" aria-controls="collapseFour">
+                        Microphone info
+                        </button>
+                    </h2>
+                    <div id="cameraInfoCollapse" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <!-- Microphone - Info  - ID -->
+                            <div class="form-group">
+                                <div class="d-flex w-100 align-items-center justify-content-between">
+                                    <strong class="mb-1"><label for="brightness" class="form-label">ID</label></strong>
+                                </div>
+                                <div class="input-group">
+                                  <input type="text" class="form-control" value="{{ microphone_id }}" disabled=True>
+                                </div>
+                            </div>
+                            <!-- Microphone - Info  - Firmware -->
+                            <div class="form-group">
+                                <div class="d-flex w-100 align-items-center justify-content-between">
+                                    <strong class="mb-1"><label for="brightness" class="form-label">Firmware</label></strong>
+                                </div>
+                                <div class="input-group">
+                                  <input type="text" class="form-control" value="{{ microphone_firmware }}" disabled=True>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <!-- Microphone Settings-->
                 <div class="accordion-item">
                     <h2 class="accordion-header">

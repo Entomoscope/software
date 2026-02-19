@@ -122,6 +122,10 @@ class Configuration2():
         setattr(self, 'images_capture', {
                             'enable': False,
                             'fast_mode': False,
+                            'multifocus': {
+                                'enable': False,
+                                'lens_position_offset': 0
+                            },
                             'time_step': 5
                         })
 

@@ -47,6 +47,8 @@ def main():
     file_handler.setFormatter(formatter)
     logger.setLevel("DEBUG")
 
+    # Attente du signal de démarrage complet du sytème
+    # La broche STARTUP_PIN doit passer à l'état haut
     while not isStartupCompleted():
         if isSignalToShutdownReceived():
             exit()
@@ -163,6 +165,10 @@ def main():
     ONE_SECOND = 1.0
     no_detection_successive_counter_max = 3
 
+    multifocus_mode = configuration.images_capture['multifocus']['enable']
+    lens_position_offset_mm = configuration.images_capture['multifocus']['lens_position_offset']
+    lens_position_offset_dioptre = configuration.images_capture['multifocus']['lens_position_offset']
+
     # Initialisation de la caméra
     try:
         camera = Camera2(configuration=configuration, perf=True)
@@ -233,6 +239,7 @@ def main():
 
     shutdown_signal_received = False
 
+    # Attente pour démarrer la capture d'image pile à l'heure fixée dans le fichier de configuration
     try:
         configuration_startup_hour = int(configuration.schedule['next_startup'][11:13])
         configuration_startup_minute = int(configuration.schedule['next_startup'][14:16])
@@ -274,7 +281,7 @@ def main():
     capture_every_second_activated = False
     no_detection_successive_counter = 0
 
-    # Démarrage du code de capture
+    # Démarrage du code de capture d'images
     logger.info('start capturing images')
 
     while True:
@@ -338,7 +345,7 @@ def main():
         # Si On et période entre deux captures terminée => capture
         if on and ( (time() - previous_capture_time > images_capture_time_step) or (capture_every_second_activated and (time() - previous_capture_time > ONE_SECOND)) ):
 
-            logger.info('TIC')
+            # logger.info('TIC')
 
             previous_capture_time = time()
 
@@ -525,7 +532,7 @@ def main():
 
                 logger.info('timelaps data saved (jpeg + json)')
 
-            logger.info('TOC')
+            # logger.info('TOC')
 
         # Si la broche IMAGES_CAPTURE_ACTIVITY_PIN passe à l'état haut => capture d'image en pause
         if isSignalToStandByReceived():

@@ -67,6 +67,9 @@ class Camera2():
 
         try:
 
+            logger.info('***************')
+            logger.info('initialising camera')
+
             self.camera = Picamera2(camera_number)
             self.camera_number = camera_number
             self.camera_config = None
@@ -539,6 +542,19 @@ class Camera2():
             sensor_resolution = (4056, 3040)
 
         return sensor_resolution
+
+    def get_autofocus_available(self, model):
+
+        if model.lower() == 'v3':
+            autofocus_available = False
+        elif model.lower() == 'v2':
+            autofocus_available = False
+        elif model.lower() == 'v1':
+            autofocus_available = False
+        elif model.lower() == 'hq':
+            autofocus_available = False
+
+        return autofocus_available
 
     def get_sensor_mode(self, model):
 

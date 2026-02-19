@@ -8,7 +8,7 @@ from time import sleep
 import logging
 from logging.handlers import RotatingFileHandler
 
-from subprocess import check_output
+from subprocess import check_output, CalledProcessError
 
 sys.path.append('..')
 
@@ -66,10 +66,12 @@ class Microphone2():
     NUMBER_OF_CHANNELS = 1
     CHUNK_SIZE = 2048
 
-    def __init__(self, sample_rate, gain):
+    SAMPLE_RATES = [8000, 16000, 32000, 48000, 96000, 192000, 250000, 384000]
+    GAINS = ['low', 'low-medium', 'medium', 'medium-high', 'high']
+
+    def __init__(self, sample_rate=None, gain=None):
 
         logger.info('***************')
-        logger.info('Init microphone')
 
         self.device_index = None
         self.audio = None
@@ -78,19 +80,28 @@ class Microphone2():
         self.id = None
         self.sample_rate = None
         self.gain = None
-        # self.firmware = None
+        self.firmware = None
 
         self.detect_microphone()
 
-        self.set_settings(sample_rate, gain)
+        if self.available:
 
-        sleep(1)
+            logger.info('initializing microphone')
 
-        self.read_configuration()
+            if sample_rate or gain:
+                self.set_settings(sample_rate, gain)
 
-        # self.get_firmware()
+            self.read_configuration()
 
-        logger.info(str(self).replace('\n', ';').replace('  ', ' ').replace('Microphone; ', ''))
+            self.get_firmware()
+
+            logger.info(str(self).replace('\n', ';').replace('  ', ' ').replace('Microphone; ', ''))
+
+            logger.info('microphone initialised')
+
+        else:
+
+            logger.warning('microphone not available')
 
     def detect_microphone(self):
 
@@ -98,7 +109,9 @@ class Microphone2():
 
             self.available = False
 
-            output = check_output(['/usr/local/bin/AudioMoth-USB-Microphone', 'list']).decode('utf-8').split('\n')
+            cmd = ['/usr/local/bin/AudioMoth-USB-Microphone', 'list']
+
+            output = check_output(cmd).decode('utf-8').split('\n')
             for out in output:
                 if out:
                     logger.info(out)
@@ -115,13 +128,17 @@ class Microphone2():
 
                 self.available = True
 
-                logger.info(f'AudioMoth {self.id} found')
+                logger.info(f'audiomoth {self.id} found')
 
             else:
 
                 self.available = False
 
-                logger.error('AudioMoth not found')
+                logger.error('audioMoth not found')
+
+        except CalledProcessError as e:
+
+            logger.error(f"wrong command : {' '.join(cmd)}")
 
         except BaseException as e:
 
@@ -134,23 +151,33 @@ class Microphone2():
 
         if self.available:
 
+            logger.info('starting microphone')
+
             audimoth_found = False
 
             try:
 
                 self.audio = pyaudio.PyAudio()
 
+                sleep(2) # Utile ?
+
+                logger.info(f'{self.audio.get_device_count()} audio devices found')
+
+                devices_names = []
+
                 for i in range(self.audio.get_device_count()):
 
-                    # logger.info(f'{i} ' + self.audio.get_device_info_by_index(i).get('name'))
+                    devices_names.append(self.audio.get_device_info_by_index(i).get('name'))
 
                     if 'AudioMoth' in self.audio.get_device_info_by_index(i).get('name'):
                         self.device_index = i
                         audimoth_found = True
-                        logger.info(f'Audiomoth {self.id} found with audio device index {i}')
-                        break
 
                 if audimoth_found:
+
+                    logger.info(f'audiomoth {self.id} found with audio device index {self.device_index}')
+
+                    sleep(2) # Utile ?
 
                     # Create pyaudio stream
                     self.stream = self.audio.open(format=self.AUDIO_FORMAT,
@@ -162,11 +189,14 @@ class Microphone2():
 
                     logger.info('audio stream opened')
 
+                    logger.info('microphone started')
+
                     success = True
 
                 else:
 
-                    logger.error('Audiomoth device not found. Audio stream not opened')
+                    logger.error('audiomoth device not found')
+                    logger.info(f'devices available : {devices_names}')
 
                     success = False
 
@@ -174,7 +204,7 @@ class Microphone2():
 
                 self.stream = None
 
-                logger.error('Audio stream not opened')
+                logger.error('audio stream not opened')
                 logger.error(str(e))
 
                 success = False
@@ -185,168 +215,122 @@ class Microphone2():
 
         if self.available:
 
+            logger.info('stopping microphone')
+
             # Stop the stream, close it, and terminate the pyaudio instance
             if self.stream:
                 self.stream.stop_stream()
                 self.stream.close()
-                logger.info('Audio stream closed')
+                logger.info('audio stream closed')
 
             if self.audio:
                 self.audio.terminate()
+                logger.info('audio terminated')
 
-    def set_settings(self, sample_rate, gain):
+            logger.info('microphone stopped')
+
+    def set_settings(self, sample_rate=None, gain=None):
 
         if self.available:
 
             try:
 
-                logger.info('Set settings')
+                if sample_rate and gain:
+                    if sample_rate in self.SAMPLE_RATES and gain in self.GAINS:
+                        cmd = ['/usr/local/bin/AudioMoth-USB-Microphone', 'config', str(sample_rate), 'gain', str(gain), str(self.id)]
+                    else:
+                        logger.error(f'sample rate {sample_rate} Hz and gain {gain} not set')
+                        logger.error(f'must be one of {self.SAMPLE_RATES} and one of {list(range(0, len(self.GAINS)))}')
+                        cmd = None
+                elif sample_rate:
+                    if sample_rate in self.SAMPLE_RATES:
+                        cmd = ['/usr/local/bin/AudioMoth-USB-Microphone', 'config', str(sample_rate), str(self.id)]
+                    else:
+                        logger.error(f'sample rate {sample_rate} Hz not set')
+                        logger.error(f'must be one of {self.SAMPLE_RATES}')
+                        cmd = None
+                elif gain:
+                    if gain in self.GAINS:
+                        cmd = ['/usr/local/bin/AudioMoth-USB-Microphone', 'config', 'gain', str(gain), str(self.id)]
+                    else:
+                        logger.error(f'gain {gain} not set')
+                        logger.error(f'must be one of {list(range(0, len(self.GAINS)))}')
+                        cmd = None
 
-                output = check_output(['/usr/local/bin/AudioMoth-USB-Microphone', 'config', str(sample_rate), 'gain', str(gain), str(self.id)]).decode('utf-8').split('\n')
+                if cmd:
+
+                    try:
+
+                        logger.info(f"send command: {' '.join(cmd)}")
+
+                        output = check_output(cmd).decode('utf-8').split('\n')
+
+                        for out in output:
+                            if out:
+                                logger.info(out)
+
+                        sleep(2)
+
+                        output = check_output(['/usr/local/bin/AudioMoth-USB-Microphone', 'persist']).decode('utf-8').split('\n')
+                        for out in output:
+                            if out:
+                                logger.info(out)
+
+                        sleep(2)
+
+                        if sample_rate:
+                            self.sample_rate = sample_rate
+                            logger.info(f'sample rate set to {sample_rate} Hz')
+
+                        if gain:
+
+                            self.gain = gain
+
+                            logger.info(f'gain set to {self.GAINS[gain]}')
+
+                    except CalledProcessError as e:
+
+                        logger.error(f"wrong command : {' '.join(cmd)}")
+
+            except BaseException as e:
+
+                logger.error(str(e))
+
+    def get_firmware(self):
+
+        if self.available:
+
+            try:
+
+                cmd = ['/usr/local/bin/AudioMoth-USB-Microphone', 'firmware']
+
+                output = check_output(cmd).decode('utf-8').split('\n')
                 for out in output:
                     if out:
                         logger.info(out)
 
                 sleep(2)
 
-                output = check_output(['/usr/local/bin/AudioMoth-USB-Microphone', 'persist']).decode('utf-8').split('\n')
-                for out in output:
-                    if out:
-                        logger.info(out)
+                if output[-1] == '':
+                    output.pop(-1)
 
-                self.sample_rate = sample_rate
-                self.gain = gain
+                if output[0].startswith('AudioMoth-USB-Microphone'):
+                    output.pop(0)
 
-                logger.info(f'Sample rate set to {sample_rate} Hz')
+                output = output[0].replace(' - ', ' ').split()
 
-                if gain == 0:
-                    logger.info(f'Gain set to low')
-                elif gain == 1:
-                    logger.info(f'Gain set to low-medium')
-                elif gain == 2:
-                    logger.info(f'Gain set to medium')
-                elif gain == 3:
-                    logger.info(f'Gain set to medium-high')
-                elif gain == 4:
-                    logger.info(f'Gain set to high')
+                self.firmware = output[2].replace('(', '').replace(')', '')
+
+                logger.info(f'firmware read : {self.firmware}')
+
+            except CalledProcessError as e:
+
+                logger.error(f"wrong command : {' '.join(cmd)}")
 
             except BaseException as e:
 
-                logger.error('Settings not set')
+                logger.error('firmware not read')
                 logger.error(str(e))
-
-    # def set_sample_rate(self, sample_rate):
-
-        # if self.available:
-
-            # try:
-
-                # logger.info('Set sample rate')
-
-                # output = check_output(['/usr/local/bin/AudioMoth-USB-Microphone', 'config', str(sample_rate), 'gain', str(self.gain), str(self.id)]).decode('utf-8').split('\n')
-                # for out in output:
-                    # if out:
-                        # logger.info(out)
-
-                # output = check_output(['/usr/local/bin/AudioMoth-USB-Microphone', 'persist']).decode('utf-8').split('\n')
-                # for out in output:
-                    # if out:
-                        # logger.info(out)
-
-                # self.sample_rate = sample_rate
-
-                # logger.info(f'Sample rate set to {sample_rate} Hz')
-
-            # except BaseException as e:
-
-                # logger.error('Sample rate not set')
-                # logger.error(str(e))
-
-    # def set_gain(self, gain):
-
-        # if self.available:
-
-            # try:
-
-                # logger.info('Set gain')
-
-                # print(['/usr/local/bin/AudioMoth-USB-Microphone', 'config', str(self.sample_rate), 'gain', str(gain), str(self.id)])
-
-                # output = check_output(['/usr/local/bin/AudioMoth-USB-Microphone', 'config', str(self.sample_rate), 'gain', str(gain), str(self.id)]).decode('utf-8').split('\n')
-                # for out in output:
-                    # if out:
-                        # logger.info(out)
-
-                # output = check_output(['/usr/local/bin/AudioMoth-USB-Microphone', 'persist']).decode('utf-8').split('\n')
-                # for out in output:
-                    # if out:
-                        # logger.info(out)
-
-                # self.gain = gain
-
-                # if gain == 0:
-                    # logger.info(f'Gain set to low')
-                # elif gain == 1:
-                    # logger.info(f'Gain set to low-medium')
-                # elif gain == 2:
-                    # logger.info(f'Gain set to medium')
-                # elif gain == 3:
-                    # logger.info(f'Gain set to medium-high')
-                # elif gain == 4:
-                    # logger.info(f'Gain set to high')
-
-            # except BaseException as e:
-
-                # logger.error('Gain not set')
-                # logger.error(str(e))
-
-    # def get_id(self):
-
-        # if self.available:
-
-            # try:
-
-                # output = check_output(['/usr/local/bin/AudioMoth-USB-Microphone', 'read']).decode('utf-8').split('\n')
-                # for out in output:
-                    # if out:
-                        # logger.info(out)
-
-                # self.id = output[1].split(' ')[0]
-
-                # logger.info(f'Microphone ID read: {self.id}')
-
-            # except BaseException as e:
-
-                # logger.error('Microphone ID not read')
-                # logger.error(str(e))
-
-    # def get_firmware(self):
-
-        # if self.available:
-
-            # try:
-
-                # output = check_output(['/usr/local/bin/AudioMoth-USB-Microphone', 'firmware']).decode('utf-8').split('\n')
-                # for out in output:
-                    # if out:
-                        # logger.info(out)
-
-                # if output[-1] == '':
-                    # output.pop(-1)
-
-                # if output[0].startswith('AudioMoth-USB-Microphone'):
-                    # output.pop(0)
-
-                # output = output[0].replace(' - ', ' ').split()
-
-                # self.firmware = output[2].replace('(', '').replace(')', '')
-
-                # logger.info(f'Microphone firmware read: {self.firmware}')
-
-            # except BaseException as e:
-
-                # logger.error('Microphone firmware not read')
-                # logger.error(str(e))
 
     def read_configuration(self):
 
@@ -354,7 +338,9 @@ class Microphone2():
 
             try:
 
-                output = check_output(['/usr/local/bin/AudioMoth-USB-Microphone', 'read']).decode('utf-8').split('\n')
+                cmd = ['/usr/local/bin/AudioMoth-USB-Microphone', 'read']
+
+                output = check_output(cmd).decode('utf-8').split('\n')
                 for out in output:
                     if out:
                         logger.info(out)
@@ -371,14 +357,15 @@ class Microphone2():
                 self.sample_rate = int(output[1])
                 self.gain = int(output[3])
 
-                logger.info(f'Microphone configuration read')
-                logger.info(f'  ID: {self.id}')
-                logger.info(f'  Sample rate: {self.sample_rate}')
-                logger.info(f'  Gain: {self.gain}')
+                logger.info(f'microphone configuration read : {self.id} - {self.sample_rate} Hz - {self.gain}')
+
+            except CalledProcessError as e:
+
+                logger.error(f"wrong command : {' '.join(cmd)}")
 
             except BaseException as e:
 
-                logger.error('Microphone configuration not read')
+                logger.error('microphone configuration not read')
                 logger.error(str(e))
 
     def save_recording(self, file_path, data):
@@ -392,7 +379,7 @@ class Microphone2():
             wavefile.writeframes(b''.join(data))
             wavefile.close()
 
-            logger.info('Recording saved to ' + file_path)
+            logger.info('recording saved to ' + file_path)
 
         except BaseException as e:
 
@@ -407,13 +394,13 @@ class Microphone2():
         s += f'  Audio format: {self.AUDIO_FORMAT}\n'
         s += f'  Number of channels: {self.NUMBER_OF_CHANNELS}\n'
         s += f'  Chunk size: {self.CHUNK_SIZE}\n'
-        # s += f'  Firmware: {self.firmware}\n'
+        s += f'  Firmware: {self.firmware}\n'
 
         return s
 
 if __name__ == '__main__':
 
-    microphone = Microphone2()
+    microphone = Microphone2(8000, 0)
 
     if microphone.available:
 

@@ -280,6 +280,36 @@
                                 <label class="form-check-label" for="imagesCaptureFastMode">Disabled/Enabled</label>
                             </div>
                         </div>
+                        <!-- Images capture - Multifocus -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">Multifocus</label></strong>
+                            </div>
+                            <div class="form-check form-switch">
+                                {% if configuration['images_capture']['multifocus']['enable'] %}
+                                <input class="form-check-input" type="checkbox" role="switch" id="imagesCaptureMultifocusEnable" data-bs-toggle="collapse" href="#image_capture_multifocus" onchange="updateSaveButton('images_capture', false)" checked />
+                                {% else  %}
+                                <input class="form-check-input" type="checkbox" role="switch" id="imagesCaptureMultifocusEnable" data-bs-toggle="collapse" href="#image_capture_multifocus" onchange="updateSaveButton('images_capture', false)"/>
+                                {% endif  %}
+                                <label class="form-check-label" for="imagesCaptureMultifocusEnable">Disabled/Enabled</label>
+                            </div>
+                        </div>
+                        {% if configuration['images_capture']['multifocus']['enable'] %}
+                        <div class="collapse show p-2" id="image_capture_multifocus">
+                        {% else %}
+                        <div class="collapse p-2" id="image_capture_multifocus">
+                        {% endif %}
+                            <!-- Images capture - Multifocus - Lens position offset -->
+                            <div class="form-group">
+                                <div class="d-flex w-100 align-items-center justify-content-between">
+                                    <strong class="mb-1"><label for="brightness" class="form-label">Lens position offset</label></strong>
+                                </div>
+                                <div class="input-group mb-1">
+                                    <input type="number" id="imagesCaptureMultifocusOffsetNumber" class="form-control" min="0" step="0.1" value="{{ configuration['images_capture']['multifocus']['lens_position_offset'] }}" onchange="updateSaveButton('images_capture', false)"/>
+                                    <div class="input-group-text">millimeters</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <hr/>
                     <!-- Images capture - Save -->
@@ -468,6 +498,8 @@
     const imagesCaptureEnable = document.getElementById('imagesCaptureEnable');
     const imagesCaptureFastMode = document.getElementById('imagesCaptureFastMode');
     const imagesCaptureTimeStepNumber = document.getElementById('imagesCaptureTimeStepNumber');
+    const imagesCaptureMultifocusEnable = document.getElementById('imagesCaptureMultifocusEnable');
+    const imagesCaptureMultifocusOffsetNumber = document.getElementById('imagesCaptureMultifocusOffsetNumber');
     const imagesCaptureSaveButton = document.getElementById('imagesCaptureSaveButton');
 
     const soundsCaptureEnable = document.getElementById('soundsCaptureEnable');
@@ -552,7 +584,13 @@
             if (captureLepinocMode.checked) {
                 updateSettings('schedule')
             }
-            data = [settingId, {'enable': imagesCaptureEnable.checked, 'fast_mode': imagesCaptureFastMode.checked, 'time_step': imagesCaptureTimeStepNumber.value}]
+
+            data = [settingId, {'enable': imagesCaptureEnable.checked,
+                'fast_mode': imagesCaptureFastMode.checked,
+                'multifocus': imagesCaptureMultifocusEnable.checked,
+                'lens_position_offset': imagesCaptureMultifocusOffsetNumber.value,
+                'time_step': imagesCaptureTimeStepNumber.value}]
+
         } else if (settingId == 'sounds_capture') {
             data = [settingId, {'enable': soundsCaptureEnable.checked, 'duration': soundsCaptureDurationNumber.value}]
         } else if (settingId == 'schedule') {
@@ -607,6 +645,8 @@
                     imagesCaptureEnableConfigurationText.innerText = 'Enable: ' + String(imagesCaptureEnable.checked).charAt(0).toUpperCase() + String(imagesCaptureEnable.checked).slice(1)
                     imagesCaptureFastModeConfigurationText.innerText = 'Fast mode: ' + String(imagesCaptureFastMode.checked).charAt(0).toUpperCase() + String(imagesCaptureFastMode.checked).slice(1)
                     imagesCaptureTimeStepConfigurationText.innerText = 'Time step: ' + imagesCaptureTimeStepNumber.value + ' seconds'
+                    imagesCaptureMultifocusEnableConfigurationText.innerText = 'Multifocus enable: ' + String(imagesCaptureMultifocusEnable.checked).charAt(0).toUpperCase() + String(imagesCaptureMultifocusEnable.checked).slice(1)
+                    imagesCaptureMultifocusOffsetConfigurationText.innerText = 'Multifocus offset: ' + imagesCaptureMultifocusOffsetNumber.value + ' mm'
                 } else if (settingId == 'sounds_capture') {
                     soundsCaptureEnableConfigurationText.innerText = 'Enable: ' + String(soundsCaptureEnable.checked).charAt(0).toUpperCase() + String(soundsCaptureEnable.checked).slice(1)
                     soundsCaptureDurationConfigurationText.innerText = 'Duration: ' + soundsCaptureDurationNumber.value + ' seconds'

@@ -80,7 +80,20 @@ app.config['UPLOAD_FOLDER'] = PYTHON_SCRIPTS_BASE_FOLDER
 
 pi = pigpio.pi()
 
-while pi.read(STARTUP_PIN) == 0:
+def isStartupCompleted():
+
+    return pi.read(STARTUP_PIN)
+
+def isSignalToShutdownReceived():
+
+    return pi.read(SHUTDOWN_PIN)
+
+while not isStartupCompleted():
+    # Si la broche SHUTDOWN_PIN passe à l'état haut => arret capture d'image
+    if isSignalToShutdownReceived():
+        logger.info('shutdown signal received')
+        logger.info('images capture stopped')
+        exit()
     sleep(0.5)
 
 app.logger.info('****************************')
@@ -113,29 +126,54 @@ app.logger.info('configuration read')
 
 rpi = Rpi()
 
-if rpi.arch_version == '64-bit':
-    if AI_ENABLE:
-        AI_AVAILABLE = True
-        app.logger.info('64-bit arch => AI available')
-        start_time = datetime.now()
-        from ultralytics import YOLO
-        elapsed_time = datetime.now() - start_time
-        app.logger.info(f"YOLO import time: {elapsed_time.seconds + 1} seconds")
-        ai_model_file = os.path.join(AI_MODEL_PATH, configuration.ai_detection['file'])
-        start_time = datetime.now()
-        ai_model = YOLO(ai_model_file)
-        elapsed_time = datetime.now() - start_time
-        app.logger.info(f"AI model file loaded: {configuration.ai_detection['file']}")
-        app.logger.info(f"AI model file loading time: {elapsed_time.seconds}.{elapsed_time.microseconds} seconds")
-        from ultralytics.utils.plotting import Annotator, colors
-        from ultralytics.utils.ops import xywhn2xyxy
+try:
 
+    if rpi.arch_version == '64-bit':
+        if AI_ENABLE:
+
+            app.logger.info('64-bit arch => AI available')
+
+            if configuration.ai_detection['file']:
+                ai_model_file = os.path.join(AI_MODEL_PATH, configuration.ai_detection['file'])
+            else:
+                ai_model_files = os.listdir(AI_MODEL_PATH)
+                if len(ai_model_files) > 0:
+                    ai_model_file = os.path.join(AI_MODEL_PATH, ai_model_files[0])
+                    app.logger.warning(f'No AI model file in config file')
+                    app.logger.warning(f'Use {ai_model_files[0]} by default')
+                    configuration.ai_detection['file'] = ai_model_files[0]
+                    configuration.save()
+                else:
+                  ai_model_file = None
+                  AI_AVAILABLE = False
+                  app.logger.warning(f'No AI model file found in {AI_MODEL_PATH}')
+                  app.logger.warning(f'AI disabled')
+
+            if ai_model_file:
+
+                AI_AVAILABLE = True
+                start_time = datetime.now()
+                from ultralytics import YOLO
+                elapsed_time = datetime.now() - start_time
+                app.logger.info(f"YOLO import time: {elapsed_time.seconds + 1} seconds")
+                start_time = datetime.now()
+                ai_model = YOLO(ai_model_file)
+                elapsed_time = datetime.now() - start_time
+                app.logger.info(f"AI model file loaded: {configuration.ai_detection['file']}")
+                app.logger.info(f"AI model file loading time: {elapsed_time.seconds}.{elapsed_time.microseconds} seconds")
+                from ultralytics.utils.plotting import Annotator, colors
+                from ultralytics.utils.ops import xywhn2xyxy
+
+        else:
+            AI_AVAILABLE = False
+            app.logger.info('64-bit arch => AI available but manualy disabled')
     else:
         AI_AVAILABLE = False
-        app.logger.info('64-bit arch => AI available but manualy disabled')
-else:
-    AI_AVAILABLE = False
-    app.logger.info('32-bit arch => AI not available')
+        app.logger.info('32-bit arch => AI not available')
+
+except BaseException as e:
+
+    logger.error(str(e))
 
 sd_card = Storage('sd')
 

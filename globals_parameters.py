@@ -135,7 +135,7 @@ logger.info('witty pi folder: ' + WITTY_PI_FOLDER)
 SCHEDULE_SCRIPT_PATH = os.path.join(WITTY_PI_FOLDER, 'runScript.sh')
 SCHEDULE_FILE_PATH = os.path.join(WITTY_PI_FOLDER, 'schedule.wpi')
 
-MINUTES_OFFSET_FOR_STARTING_ON_TIME = 1
+MINUTES_OFFSET_FOR_STARTING_ON_TIME = 1 # minutes
 logger.info(f'offset for starting on time: {MINUTES_OFFSET_FOR_STARTING_ON_TIME} minutes')
 
 CAMERA_PREVIEW_FPS = 25
@@ -148,8 +148,8 @@ MICROPHONE_DETECTION_INTERVAL = 5 # seconds
 logger.info(f'microphone detection interval: {MICROPHONE_DETECTION_INTERVAL} seconds')
 MICROPHONE_DETECTION_NUM_TRIES = 15
 logger.info(f'microphone detection number of tries: {MICROPHONE_DETECTION_NUM_TRIES}')
-MICROPHONE_STARTUP_DELAY_BEFORE_FIST_CAPTURE = 10
-logger.info(f'microphone startup dealy before first capture: {MICROPHONE_STARTUP_DELAY_BEFORE_FIST_CAPTURE} seconds')
+MICROPHONE_STARTUP_DELAY_BEFORE_FIST_CAPTURE = 10 # seconds
+logger.info(f'microphone startup delay before first capture: {MICROPHONE_STARTUP_DELAY_BEFORE_FIST_CAPTURE} seconds')
 
 WIFI_CONNECTION_TRY_DURATION = 5 # seconds
 logger.info(f'wifi connection try duration: {WIFI_CONNECTION_TRY_DURATION} seconds')

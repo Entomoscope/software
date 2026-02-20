@@ -25,16 +25,28 @@ class Configuration2():
 
     def read(self):
 
-        with open(self.configuration_file, 'r') as f:
-            self.configuration = load(f)
+        try:
 
-        for attr in self._attributes:
-            setattr(self, attr, self.configuration[attr])
+            with open(self.configuration_file, 'r') as f:
+                self.configuration = load(f)
+
+            for attr in self._attributes:
+                setattr(self, attr, self.configuration[attr])
+
+        except BaseException as e:
+
+            logger.error(str(e))
 
     def save(self):
 
-        with open(self.configuration_file, 'w') as f:
-            dump(self.configuration, f, indent=4, sort_keys=True, separators=(',', ': '))
+        try:
+
+            with open(self.configuration_file, 'w') as f:
+                dump(self.configuration, f, indent=4, sort_keys=True, separators=(',', ': '))
+
+        except BaseException as e:
+
+            logger.error(str(e))
 
     def create_configuration_file(self):
 

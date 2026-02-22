@@ -113,14 +113,17 @@ def main():
             now = datetime.now()
             t = datetime(now.year, now.month, now.day, configuration_startup_hour, configuration_startup_minute, 0) - timedelta(seconds=MICROPHONE_STARTUP_DELAY_BEFORE_FIST_CAPTURE)
             delta = t - now
-            logger.info(f'wait {delta.total_seconds()} seconds until {configuration.schedule["next_startup"][11:13]}:{configuration.schedule["next_startup"][14:16]} before starting microphone')
-            while (now < t):
-                delta = t - now
-                if delta.total_seconds() > 0.1:
-                    sleep(0.1)
-                else:
-                    sleep(delta.total_seconds())
-                now = datetime.now()
+            if delta > 0:
+                logger.info(f'wait {delta.total_seconds()} seconds until {configuration.schedule["next_startup"][11:13]}:{configuration.schedule["next_startup"][14:16]} before starting microphone')
+                while (now < t):
+                    delta = t - now
+                    if delta.total_seconds() > 0.1:
+                        sleep(0.1)
+                    else:
+                        sleep(delta.total_seconds())
+                    now = datetime.now()
+            else:
+                logger.warning(f'too late to start the microphone correctly ({-delta} seconds)')
         except BaseException as e:
             logger.error(str(e))
 
@@ -149,14 +152,17 @@ def main():
                 now = datetime.now()
                 t = datetime(now.year, now.month, now.day, configuration_startup_hour, configuration_startup_minute, 0)
                 delta = t - now
-                logger.info(f'wait {delta.total_seconds()} seconds until {configuration.schedule["next_startup"][11:13]}:{configuration.schedule["next_startup"][14:16]} before capturing sounds')
-                while (now < t):
-                    delta = t - now
-                    if delta.total_seconds() > 0.1:
-                        sleep(0.1)
-                    else:
-                        sleep(delta.total_seconds())
-                    now = datetime.now()
+                if delta > 0:
+                    logger.info(f'wait {delta.total_seconds()} seconds until {configuration.schedule["next_startup"][11:13]}:{configuration.schedule["next_startup"][14:16]} before capturing sounds')
+                    while (now < t):
+                        delta = t - now
+                        if delta.total_seconds() > 0.1:
+                            sleep(0.1)
+                        else:
+                            sleep(delta.total_seconds())
+                        now = datetime.now()
+                else:
+                    logger.info(f'too late to start capture on time ({-delta} seconds)')
             except BaseException as e:
                 logger.error(str(e))
 

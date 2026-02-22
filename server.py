@@ -128,7 +128,9 @@ rpi = Rpi()
 
 try:
 
+    # IA seulement disponible sur OS 64-bit
     if rpi.arch_version == '64-bit':
+
         if AI_ENABLE:
 
             app.logger.info('64-bit arch => AI available')
@@ -165,14 +167,19 @@ try:
                 from ultralytics.utils.ops import xywhn2xyxy
 
         else:
+
             AI_AVAILABLE = False
             app.logger.info('64-bit arch => AI available but manualy disabled')
+
     else:
+
         AI_AVAILABLE = False
         app.logger.info('32-bit arch => AI not available')
 
 except BaseException as e:
 
+    AI_AVAILABLE = False
+    app.logger.info('Unable to manage AI => AI not available')
     logger.error(str(e))
 
 sd_card = Storage('sd')
@@ -263,22 +270,24 @@ def index():
 
     global camera, leds_front, leds_rear_deported_uv, images_capture_state, sounds_capture_state, gnss, microphone, sd_card, external_disk, wifi
 
-    if pi.read(SHUTDOWN_PIN) == 1:
+    get_captures_state()
 
-        images_capture_state = 'stopped'
-        sounds_capture_state = 'stopped'
+    # if pi.read(SHUTDOWN_PIN) == 1:
 
-    else:
+        # images_capture_state = 'stopped'
+        # sounds_capture_state = 'stopped'
 
-        if pi.read(IMAGES_CAPTURE_ACTIVITY_PIN) == 0:
-            images_capture_state = 'running'
-        else:
-            images_capture_state = 'paused'
+    # else:
 
-        if pi.read(SOUNDS_CAPTURE_ACTIVITY_PIN) == 0:
-            sounds_capture_state = 'running'
-        else:
-            sounds_capture_state = 'paused'
+        # if pi.read(IMAGES_CAPTURE_ACTIVITY_PIN) == 0:
+            # images_capture_state = 'running'
+        # else:
+            # images_capture_state = 'paused'
+
+        # if pi.read(SOUNDS_CAPTURE_ACTIVITY_PIN) == 0:
+            # sounds_capture_state = 'running'
+        # else:
+            # sounds_capture_state = 'paused'
 
     configuration.read()
     app.logger.info('configuration read')
@@ -290,6 +299,18 @@ def index():
             camera.camera.close()
             camera = None
             app.logger.info('camera stopped')
+
+        if leds_front:
+            leds_front.turn_off()
+            leds_front = None
+            app.logger.info('LEDs front stopped')
+
+        if leds_rear_deported_uv:
+            leds_rear_deported_uv.turn_off()
+            leds_rear_deported_uv = None
+            app.logger.info('LEDs rear/UV/deported stopped')
+
+    elif images_capture_state == 'paused':
 
         if leds_front:
             leds_front.turn_off()
@@ -388,6 +409,8 @@ def data():
 
     global camera, leds_front, leds_rear_deported_uv, gnss, microphone, data_current_directory, data_current_file, show_preview_file, show_preview_image, show_preview_sound, file_data
 
+    get_captures_state()
+
     if images_capture_state == 'stopped':
 
         if camera:
@@ -395,6 +418,18 @@ def data():
             camera.camera.close()
             camera = None
             app.logger.info('camera stopped')
+
+        if leds_front:
+            leds_front.turn_off()
+            leds_front = None
+            app.logger.info('LEDs front stopped')
+
+        if leds_rear_deported_uv:
+            leds_rear_deported_uv.turn_off()
+            leds_rear_deported_uv = None
+            app.logger.info('LEDs rear/UV/deported stopped')
+
+    elif images_capture_state == 'paused':
 
         if leds_front:
             leds_front.turn_off()
@@ -579,6 +614,8 @@ def global_settings():
 
     global camera, leds_front, leds_rear_deported_uv, gnss, microphone
 
+    get_captures_state()
+
     if images_capture_state == 'stopped':
 
         if camera:
@@ -586,6 +623,18 @@ def global_settings():
             camera.camera.close()
             camera = None
             app.logger.info('camera stopped')
+
+        if leds_front:
+            leds_front.turn_off()
+            leds_front = None
+            app.logger.info('LEDs front stopped')
+
+        if leds_rear_deported_uv:
+            leds_rear_deported_uv.turn_off()
+            leds_rear_deported_uv = None
+            app.logger.info('LEDs rear/UV/deported stopped')
+
+    elif images_capture_state == 'paused':
 
         if leds_front:
             leds_front.turn_off()
@@ -641,6 +690,8 @@ def images_capture_settings():
             gnss = None
             app.logger.info('GNSS stopped')
 
+        get_captures_state()
+
         if sounds_capture_state == 'stopped':
 
             if microphone:
@@ -680,6 +731,16 @@ def images_capture_settings():
 
         elif images_capture_state == 'paused':
 
+            if not leds_rear_deported_uv:
+                leds_rear_deported_uv = Leds(LEDS_REAR_DEPORTED_UV_PIN)
+                leds_rear_deported_uv.set_intensity(configuration.leds['intensity_rear_deported_uv'])
+                leds_rear_deported_uv.turn_on()
+
+            if not leds_front:
+                leds_front = Leds(LEDS_FRONT_PIN)
+                leds_front.set_intensity(configuration.leds['intensity_front'])
+                leds_front.turn_on()
+
             leds_available = True
             camera_supported = False
             autofocus_available = False
@@ -714,6 +775,8 @@ def sounds_capture_settings():
             gnss = None
             app.logger.info('GNSS stopped')
 
+        get_captures_state()
+
         if images_capture_state == 'stopped':
 
             if camera:
@@ -721,6 +784,18 @@ def sounds_capture_settings():
                 camera.camera.close()
                 camera = None
                 app.logger.info('camera stopped')
+
+            if leds_front:
+                leds_front.turn_off()
+                leds_front = None
+                app.logger.info('LEDs front stopped')
+
+            if leds_rear_deported_uv:
+                leds_rear_deported_uv.turn_off()
+                leds_rear_deported_uv = None
+                app.logger.info('LEDs rear/UV/deported stopped')
+
+        elif images_capture_state == 'paused':
 
             if leds_front:
                 leds_front.turn_off()
@@ -740,7 +815,10 @@ def sounds_capture_settings():
             microphone = Microphone2(configuration.microphone['sample_rate'], configuration.microphone['gain'])
             microphone_available = 1 if not microphone.available else 2
         else:
-            microphone_available = 0
+            if microphone:
+                microphone_available = 1 if not microphone.available else 2
+            else:
+                microphone_available = 0
 
         if microphone_available == 0:
             app.logger.warning('microphone not available because sounds capture is running')
@@ -767,6 +845,8 @@ def logs():
 
     global camera, leds_front, leds_rear_deported_uv, gnss, microphone, logs_current_directory, logs_current_file, show_preview_log, log_data
 
+    get_captures_state()
+
     if images_capture_state == 'stopped':
 
         if camera:
@@ -774,6 +854,18 @@ def logs():
             camera.camera.close()
             camera = None
             app.logger.info('camera stopped')
+
+        if leds_front:
+            leds_front.turn_off()
+            leds_front = None
+            app.logger.info('LEDs front stopped')
+
+        if leds_rear_deported_uv:
+            leds_rear_deported_uv.turn_off()
+            leds_rear_deported_uv = None
+            app.logger.info('LEDs rear/UV/deported stopped')
+
+    elif images_capture_state == 'paused':
 
         if leds_front:
             leds_front.turn_off()
@@ -797,13 +889,13 @@ def logs():
             microphone = None
             app.logger.info('microphone stopped')
 
-    files = sorted(os.listdir(logs_current_directory), reverse=False)
+    istopdir = logs_current_directory == LOGS_DESKTOP_FOLDER
+
+    files = sorted(os.listdir(logs_current_directory), reverse=istopdir)
 
     files = [x for x in files if not x.endswith('.zip')]
 
     isdirs = [os.path.isdir(os.path.join(logs_current_directory, x)) for x in files]
-
-    istopdir = logs_current_directory == LOGS_DESKTOP_FOLDER
 
     return make_response(render_template('logs.html', updates_available=updates_available, files=files, isdirs=isdirs, zip=zip, istopdir=istopdir, show_preview_log=show_preview_log, logs_current_file=logs_current_file, log_data=log_data, rpi=rpi, battery_level=battery_level))
 
@@ -1930,6 +2022,9 @@ def set_jpeg_quality():
 
         jpeg_quality = int(jpeg_quality)
 
+        if camera:
+            camera.set_encode_parameter(jpeg_quality)
+
         app.logger.info(f'JPEG quality set to {jpeg_quality} %')
 
         return jsonify(success=True, message="Settings updated successfully")
@@ -2288,6 +2383,38 @@ def get_updates():
 
         return redirect('/')
 
+@app.route('/reboot', methods=['POST'])
+def reboot():
+
+    try:
+
+        os.system('python ' + os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'shutdown.py'))
+        os.system('sudo shutdown -r now')
+
+        return jsonify(success=False, message='Success')
+
+    except Exception as e:
+
+        app.logger.error('' + str(e))
+
+        return jsonify(success=False, message=str(e), updates_done=False)
+
+@app.route('/shutdown', methods=['POST'])
+def shutdown():
+
+    try:
+
+        os.system('python ' + os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'shutdown.py'))
+        os.system('sudo shutdown now')
+
+        return jsonify(success=False, message='Success')
+
+    except Exception as e:
+
+        app.logger.error('' + str(e))
+
+        return jsonify(success=False, message=str(e), updates_done=False)
+
 # @app.after_request
 # def add_header(response):
     # response.cache_control.max_age = 5
@@ -2309,6 +2436,28 @@ def server_error(error):
 def page_not_found(error):
     app.logger.error(error)
     return render_template('404.html', rpi=rpi, battery_level=battery_level)
+
+
+def get_captures_state():
+
+    global images_capture_state, sounds_capture_state
+
+    if pi.read(SHUTDOWN_PIN) == 1:
+
+        images_capture_state = 'stopped'
+        sounds_capture_state = 'stopped'
+
+    else:
+
+        if pi.read(IMAGES_CAPTURE_ACTIVITY_PIN) == 0:
+            images_capture_state = 'running'
+        else:
+            images_capture_state = 'paused'
+
+        if pi.read(SOUNDS_CAPTURE_ACTIVITY_PIN) == 0:
+            sounds_capture_state = 'running'
+        else:
+            sounds_capture_state = 'paused'
 
 if __name__ == '__main__':
 

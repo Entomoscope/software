@@ -208,7 +208,7 @@ class Camera2():
                                                                         buffer_count=4, # speed up capture_array()
                                                                         controls=controls)
 
-                self.encode_param[1] = configuration.files['jpeg_quality']
+                self.set_encode_parameter(configuration.files['jpeg_quality'])
 
                 try:
 
@@ -255,6 +255,8 @@ class Camera2():
                     self.encoder.output = [self.streamOut2]
 
                     self.configured = True
+
+                    self.set_encode_parameter(configuration.files['jpeg_quality'])
 
                     logger.info('camera configured for preview')
                     logger.info(f'main format {main_format}')
@@ -498,6 +500,7 @@ class Camera2():
     def set_encode_parameter(self, param_value):
 
         self.encode_param[1] = param_value
+        logger.info(f'JPEG quality set to {self.encode_param[1] } %')
 
     def set_auto_white_balance(self, awb_enable, awb_mode='Auto'):
 

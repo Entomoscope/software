@@ -17,7 +17,7 @@ from peripherals.laser import Laser
 from peripherals.pinout2 import IMAGES_CAPTURE_ACTIVITY_PIN, SHUTDOWN_PIN, STARTUP_PIN, LEDS_REAR_DEPORTED_UV_PIN, LEDS_FRONT_PIN
 from peripherals.rpi import Rpi
 
-from globals_parameters import IMAGES_CAPTURE_FOLDER, AI_MODEL_PATH, LOGS_DESKTOP_FOLDER, TODAY
+from globals_parameters import IMAGES_CAPTURE_FOLDER, AI_MODEL_PATH, AI_ENABLE, LOGS_DESKTOP_FOLDER, TODAY
 
 this_script = os.path.basename(__file__)[:-3]
 
@@ -61,16 +61,34 @@ def main():
     # Vérification que le Raspberry Pi peut prendre en charge l'IA
     rpi = Rpi()
 
-    if rpi.arch_version == '64-bit':
-        AI_AVAILABLE = True
-        logger.info('64-bit arch => AI available')
-        start_time = datetime.now()
-        from ultralytics import YOLO
-        elapsed_time = datetime.now() - start_time
-        logger.info(f"YOLO import time: {elapsed_time.seconds + 1} seconds")
-    else:
+    try:
+
+        # IA seulement disponible sur OS 64-bit
+        if rpi.arch_version == '64-bit':
+
+            if AI_ENABLE:
+
+                AI_AVAILABLE = True
+                logger.info('64-bit arch => AI available')
+                start_time = datetime.now()
+                from ultralytics import YOLO
+                elapsed_time = datetime.now() - start_time
+                logger.info(f"YOLO import time: {elapsed_time.seconds + 1} seconds")
+
+            else:
+
+                AI_AVAILABLE = False
+                app.logger.info('64-bit arch => AI available but manualy disabled')
+
+        else:
+            AI_AVAILABLE = False
+            logger.info('32-bit arch => AI not available')
+
+    except BaseException as e:
+
         AI_AVAILABLE = False
-        logger.info('32-bit arch => AI not available')
+        app.logger.info('Unable to manage AI => AI not available')
+        logger.error(str(e))
 
     logger.info(f'images capture folder: {IMAGES_CAPTURE_FOLDER}')
 
@@ -140,19 +158,36 @@ def main():
 
             logger.info('AI enabled')
 
-            ai_model_file = os.path.join(AI_MODEL_PATH, configuration.ai_detection['file'])
-            start_time = datetime.now()
-            ai_model = YOLO(ai_model_file)
-            elapsed_time = datetime.now() - start_time
-            logger.info(f"AI model file loaded: {configuration.ai_detection['file']}")
-            logger.info(f"AI model file loading time: {elapsed_time.seconds}.{elapsed_time.microseconds} seconds")
+            if configuration.ai_detection['file']:
+                ai_model_file = os.path.join(AI_MODEL_PATH, configuration.ai_detection['file'])
+            else:
+                ai_model_files = os.listdir(AI_MODEL_PATH)
+                if len(ai_model_files) > 0:
+                    ai_model_file = os.path.join(AI_MODEL_PATH, ai_model_files[0])
+                    app.logger.warning(f'No AI model file in config file')
+                    app.logger.warning(f'Use {ai_model_files[0]} by default')
+                    configuration.ai_detection['file'] = ai_model_files[0]
+                    configuration.save()
+                else:
+                  ai_model_file = None
+                  AI_AVAILABLE = False
+                  app.logger.warning(f'No AI model file found in {AI_MODEL_PATH}')
+                  app.logger.warning(f'AI disabled')
 
-            logger.info(f"detection using images of size {configuration.ai_detection['image_width']}x{configuration.ai_detection['image_height']}")
-            logger.info(f"detection using minimal confidence of {configuration.ai_detection['min_confidence']}")
+            if ai_model_file:
+
+                AI_AVAILABLE = True
+                start_time = datetime.now()
+                ai_model = YOLO(ai_model_file)
+                elapsed_time = datetime.now() - start_time
+                app.logger.info(f"AI model file loaded: {configuration.ai_detection['file']}")
+                app.logger.info(f"AI model file loading time: {elapsed_time.seconds}.{elapsed_time.microseconds} seconds")
+
+                logger.info(f"detection using images of size {configuration.ai_detection['image_width']}x{configuration.ai_detection['image_height']}")
+                logger.info(f"detection using minimal confidence of {configuration.ai_detection['min_confidence']}")
 
         else:
 
-            ai_model = None
             logger.info('AI disabled')
 
     # Configuration du laser
@@ -246,14 +281,17 @@ def main():
         now = datetime.now()
         t = datetime(now.year, now.month, now.day, configuration_startup_hour, configuration_startup_minute, 0) - timedelta(seconds=configuration.leds['delay_on'])
         delta = t - now
-        logger.info(f'wait {delta.total_seconds()} seconds until {configuration.schedule["next_startup"][11:13]}:{configuration.schedule["next_startup"][14:16]} before capturing images')
-        while (now < t):
-            delta = t - now
-            if delta.total_seconds() > 0.1:
-                sleep(0.1)
-            else:
-                sleep(delta.total_seconds())
-            now = datetime.now()
+        if delta > 0
+            logger.info(f'wait {delta.total_seconds()} seconds until {configuration.schedule["next_startup"][11:13]}:{configuration.schedule["next_startup"][14:16]} before capturing images')
+            while (now < t):
+                delta = t - now
+                if delta.total_seconds() > 0.1:
+                    sleep(0.1)
+                else:
+                    sleep(delta.total_seconds())
+                now = datetime.now()
+        else:
+            logger.info(f'too late to start capture on time ({-delta} seconds)')
     except BaseException as e:
         logger.error(str(e))
 
@@ -273,8 +311,6 @@ def main():
     previous_capture_time = 0
 
     images_capture_time_step = configuration.images_capture['time_step']
-
-    first_capture = True
 
     arthropod_detected = False
 
@@ -348,9 +384,6 @@ def main():
             # logger.info('TIC')
 
             previous_capture_time = time()
-
-            if first_capture:
-                first_capture = False
 
             # Si pas mode LEDs toujours allumées
             if not configuration.leds['always_on']:
@@ -557,96 +590,110 @@ def main():
             # Si la broche IMAGES_CAPTURE_ACTIVITY_PIN est à l'état bas => capture d'image reprend
             if not isSignalToStandByReceived():
 
-                logger.info('resume signal received')
+                try:
 
-                # Lecture du fichier de configuration
-                configuration.read()
-                logger.info('configuration read')
+                    logger.info('resume signal received')
 
-                # Copie du fichier de configuration dans le dossier où les images sont enregistrées
-                # Nom du fichier : configuration_YYYYMMDDHHMMSS.json
-                now_str = datetime.now().strftime('%Y%m%d%H%M%S')
-                file_path = os.path.join(IMAGES_CAPTURE_FOLDER, 'configuration_' + now_str + '.json')
-                configuration.copy_to(file_path)
-                logger.info(f'configuration file saved to {file_path}')
+                    # Lecture du fichier de configuration
+                    configuration.read()
+                    logger.info('configuration read')
 
-                # Paramétrage des LEDs Front
-                if configuration.mode['mode'] == 'trap' or configuration.mode['mode'] == 'lepinoc' or configuration.mode['mode'] == 'moth':
-                    leds_front.set_intensity(configuration.leds['intensity_front'])
-                    logger.info(f"LEDs front intensity set to {configuration.leds['intensity_front']} %")
-                else: # Mode deported
-                    leds_front.turn_off()
-                    logger.info("LEDs front off")
+                    # Copie du fichier de configuration dans le dossier où les images sont enregistrées
+                    # Nom du fichier : configuration_YYYYMMDDHHMMSS.json
+                    now_str = datetime.now().strftime('%Y%m%d%H%M%S')
+                    file_path = os.path.join(IMAGES_CAPTURE_FOLDER, 'configuration_' + now_str + '.json')
+                    configuration.copy_to(file_path)
+                    logger.info(f'configuration file saved to {file_path}')
 
-                # Paramétrage des LEDs Rear/Deported/UV
-                leds_rear_deported_uv = Leds(LEDS_REAR_DEPORTED_UV_PIN)
-                leds_rear_deported_uv.set_intensity(configuration.leds['intensity_rear_deported_uv'])
-                if configuration.mode['mode'] == 'trap':
-                    logger.info(f"LEDs rear intensity set to {configuration.leds['intensity_rear_deported_uv']} %")
-                elif configuration.mode['mode'] == 'lepinoc':
-                    logger.info(f"LEDs UV intensity set to {configuration.leds['intensity_rear_deported_uv']} %")
-                elif configuration.mode['mode'] == 'deported':
-                    logger.info(f"LEDs deported intensity set to {configuration.leds['intensity_rear_deported_uv']} %")
-                elif configuration.mode['mode'] == 'moth':
-                    logger.info(f"LEDs UV intensity set to {configuration.leds['intensity_rear_deported_uv']} %")
+                    # Paramétrage des LEDs Front
+                    if configuration.mode['mode'] == 'trap' or configuration.mode['mode'] == 'lepinoc' or configuration.mode['mode'] == 'moth':
+                        leds_front.set_intensity(configuration.leds['intensity_front'])
+                        logger.info(f"LEDs front intensity set to {configuration.leds['intensity_front']} %")
+                    else: # Mode deported
+                        leds_front.turn_off()
+                        logger.info("LEDs front off")
 
-                # Définition des metadata complémentaires enregistrées pour chaque capture
-                extra_metadata = {'EntomoscopeSiteID': configuration.site['id'],
-                        'EntomoscopeLatitude': configuration.gnss['latitude'],
-                        'EntomoscopeLongitude': configuration.gnss['longitude'],
-                        'EntomoscopeAltitude': configuration.gnss['altitude'],
-                        'EntomoscopeLedsFrontIntensity': configuration.leds['intensity_front'],
-                        'EntomoscopeLedsRearDeportedUvIntensity': configuration.leds['intensity_rear_deported_uv'],
-                        'EntomoscopeLedsDelayOn': configuration.leds['delay_on'],
-                        'EntomoscopeLedsDelayOff': configuration.leds['delay_off'],
-                        'EntomoscopeAiAvailable': AI_AVAILABLE,
-                        'EntomoscopeAiEnable': configuration.ai_detection['enable'],
-                        'EntomoscopeAiModel': configuration.ai_detection['file'],
-                        'EntomoscopeCameraModel': configuration.camera['model'],
-                        'EntomoscopeFocusMode': configuration.camera['autofocus']['mode'],
-                        'EntomoscopeRaspberryPiModel': rpi.model,
-                        'EntomoscopeRaspberryPiMemory': rpi.memory,
-                        'EntomoscopeRaspberryPiSerialNumber': rpi.serial,
-                        'EntomoscopeAiPredictionNumBoxes': 0,
-                        'EntomoscopeAiPredictionSpeed': 0,
-                        'EntomoscopeAiPredictionBoxes': [],
-                        'EntomoscopeAiPredictionLabels': [],
-                        'EntomoscopeAiPredictionConf': [],
-                        'EntomoscopeAiImageScale': configuration.ai_detection['image_scale'],
-                        'EntomoscopeAiImageSize': [configuration.ai_detection['image_width'], configuration.ai_detection['image_height']]
-                        }
+                    # Paramétrage des LEDs Rear/Deported/UV
+                    leds_rear_deported_uv = Leds(LEDS_REAR_DEPORTED_UV_PIN)
+                    leds_rear_deported_uv.set_intensity(configuration.leds['intensity_rear_deported_uv'])
+                    if configuration.mode['mode'] == 'trap':
+                        logger.info(f"LEDs rear intensity set to {configuration.leds['intensity_rear_deported_uv']} %")
+                    elif configuration.mode['mode'] == 'lepinoc':
+                        logger.info(f"LEDs UV intensity set to {configuration.leds['intensity_rear_deported_uv']} %")
+                    elif configuration.mode['mode'] == 'deported':
+                        logger.info(f"LEDs deported intensity set to {configuration.leds['intensity_rear_deported_uv']} %")
+                    elif configuration.mode['mode'] == 'moth':
+                        logger.info(f"LEDs UV intensity set to {configuration.leds['intensity_rear_deported_uv']} %")
 
-                logger.info(f"delay LEDs on before image capture {configuration.leds['delay_on']} seconds")
-                logger.info(f"delay LEDs off after image capture {configuration.leds['delay_off']} seconds")
+                    # Définition des metadata complémentaires enregistrées pour chaque capture
+                    extra_metadata = {'EntomoscopeSiteID': configuration.site['id'],
+                            'EntomoscopeLatitude': configuration.gnss['latitude'],
+                            'EntomoscopeLongitude': configuration.gnss['longitude'],
+                            'EntomoscopeAltitude': configuration.gnss['altitude'],
+                            'EntomoscopeLedsFrontIntensity': configuration.leds['intensity_front'],
+                            'EntomoscopeLedsRearDeportedUvIntensity': configuration.leds['intensity_rear_deported_uv'],
+                            'EntomoscopeLedsDelayOn': configuration.leds['delay_on'],
+                            'EntomoscopeLedsDelayOff': configuration.leds['delay_off'],
+                            'EntomoscopeAiAvailable': AI_AVAILABLE,
+                            'EntomoscopeAiEnable': configuration.ai_detection['enable'],
+                            'EntomoscopeAiModel': configuration.ai_detection['file'],
+                            'EntomoscopeCameraModel': configuration.camera['model'],
+                            'EntomoscopeFocusMode': configuration.camera['autofocus']['mode'],
+                            'EntomoscopeRaspberryPiModel': rpi.model,
+                            'EntomoscopeRaspberryPiMemory': rpi.memory,
+                            'EntomoscopeRaspberryPiSerialNumber': rpi.serial,
+                            'EntomoscopeAiPredictionNumBoxes': 0,
+                            'EntomoscopeAiPredictionSpeed': 0,
+                            'EntomoscopeAiPredictionBoxes': [],
+                            'EntomoscopeAiPredictionLabels': [],
+                            'EntomoscopeAiPredictionConf': [],
+                            'EntomoscopeAiImageScale': configuration.ai_detection['image_scale'],
+                            'EntomoscopeAiImageSize': [configuration.ai_detection['image_width'], configuration.ai_detection['image_height']]
+                            }
 
-                # Configuration des périodes d'alternance On/Off de capture d'images
-                on_duration = configuration.schedule['on_duration']
-                logger.info(f"on duration: {configuration.schedule['on_duration']} seconds")
-                off_duration = configuration.schedule['off_duration']
-                logger.info(f"off duration: {configuration.schedule['off_duration']} seconds")
+                    logger.info(f"delay LEDs on before image capture {configuration.leds['delay_on']} seconds")
+                    logger.info(f"delay LEDs off after image capture {configuration.leds['delay_off']} seconds")
 
-                images_capture_time_step = configuration.images_capture['time_step']
-                first_capture = True
+                    # Configuration des périodes d'alternance On/Off de capture d'images
+                    on_duration = configuration.schedule['on_duration']
+                    logger.info(f"on duration: {configuration.schedule['on_duration']} seconds")
+                    off_duration = configuration.schedule['off_duration']
+                    logger.info(f"off duration: {configuration.schedule['off_duration']} seconds")
 
-                # Activation de l'IA si disponible et activée dans le fichier de configuration
-                if AI_AVAILABLE and configuration.ai_detection['enable']:
+                    # Qualité JPEG
+                    camera.set_encode_parameter(configuration.files['jpeg_quality'])
 
-                    logger.info('AI detection enabled')
+                    # Activation de l'IA si disponible et activée dans le fichier de configuration
+                    if AI_AVAILABLE:
 
-                    if ai_model is None:
-                        ai_model = YOLO(AI_MODEL) # load .pt file
+                        if configuration.ai_detection['enable']:
 
-                        logger.info(f'YOLO ai_model loaded => {AI_MODEL}')
-                        logger.info(f"detection using images of size {configuration.ai_detection['image_width']}x{configuration.ai_detection['image_height']}")
-                        logger.info(f"detection using minimal confidence of {configuration.ai_detection['min_confidence']}")
+                            logger.info('AI detection enabled')
 
-                else:
+                            ai_model_file = os.path.join(AI_MODEL_PATH, configuration.ai_detection['file'])
+                            start_time = datetime.now()
+                            ai_model = YOLO(ai_model_file)
+                            elapsed_time = datetime.now() - start_time
+                            logger.info(f"AI model file loaded: {configuration.ai_detection['file']}")
+                            logger.info(f"AI model file loading time: {elapsed_time.seconds}.{elapsed_time.microseconds} seconds")
 
-                    ai_model = None
-                    logger.info('AI detection disabled')
+                            logger.info(f"detection using images of size {configuration.ai_detection['image_width']}x{configuration.ai_detection['image_height']}")
+                            logger.info(f"detection using minimal confidence of {configuration.ai_detection['min_confidence']}")
 
-                # Forçage du système à redémarrer en mode On  avec capture immédiate
-                force_on = True
+                        else:
+
+                            logger.info('AI detection disabled')
+
+                    else:
+
+                        logger.info('32-bit arch => AI not available')
+
+                    # Forçage du système à redémarrer en mode On  avec capture immédiate
+                    force_on = True
+
+                except BaseException as e:
+
+                    logger.error(str(e))
 
         # Si la broche SHUTDOWN_PIN passe à l'état haut, on arrete le script
         if isSignalToShutdownReceived() or shutdown_signal_received:

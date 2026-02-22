@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block head %}
-<title>Entomoscope - Home</title>
+    <title>Entomoscope - Home</title>
 {% endblock %}
 
 {% block content %}
@@ -33,11 +33,13 @@
           <a class="nav-link" href="{{ url_for('logs') }}">Logs</a>
         </li>
       </ul>
-      {% if updates_available %}
+    </div>
+    <div class="nav pull-right">
+        {% if updates_available %}
         <span class="badge bg-success me-2" id="updateNavBar">
             Update available
         </span>
-      {% endif %}
+        {% endif %}
         <span class="badge bg-info text-dark me-2" id="batteryLevelNavBar">
             {{ '%.1f' % battery_level }} V
         </span>
@@ -117,6 +119,9 @@
                     <li>On duration: {{ configuration.schedule['on_duration'] }} seconds</li>
                     <li>Off duration: {{ configuration.schedule['off_duration'] }} seconds</li>
                 </ul>
+<!--
+                <canvas id="chart" style="width:100%;"></canvas>
+-->
                 {% else %}
                 <p class="card-text">Scheduler disabled</p>
                 {% endif %}
@@ -147,28 +152,6 @@
                     {% endif %}
                     </ul>
               </div>
-            </div>
-        </div>
-        <!-- Firmware -->
-        <div class="col-4">
-            <div class="card mt-3">
-                <div class="card-body">
-                    <h5 class="card-title">Firmware</h5>
-                    {% if updates_available %}
-                        <p id="updateText" class="card-text">Updates available</p>
-                    {% else %}
-                        <p id="updateText" class="card-text">No updates available</p>
-                    {% endif %}
-                    <hr/>
-                    <div class="form-button-center">
-                        {% if updates_available %}
-                            <button type="submit" class="btn btn-primary" id="getUpdatesButton" onclick="getUpdates()">Update</button>
-                        {% else %}
-                            <button type="submit" class="btn btn-primary" id="getUpdatesButton" onclick="getUpdates()" disabled>Update</button>
-                        {% endif %}
-                        <button type="submit" class="btn btn-primary" id="checkUpdatesButton" onclick="checkUpdates()">Check</button>
-                    </div>
-                </div>
             </div>
         </div>
         <!-- Raspberry Pi -->
@@ -206,6 +189,40 @@
               </div>
             </div>
         </div>
+        <!-- Firmware -->
+        <div class="col-4">
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Firmware</h5>
+                    {% if updates_available %}
+                        <p id="updateText" class="card-text">Updates available</p>
+                    {% else %}
+                        <p id="updateText" class="card-text">No updates available</p>
+                    {% endif %}
+                    <hr/>
+                    <div class="form-button-center">
+                        {% if updates_available %}
+                            <button type="submit" class="btn btn-primary" id="getUpdatesButton" onclick="getUpdates()">Update</button>
+                        {% else %}
+                            <button type="submit" class="btn btn-primary" id="getUpdatesButton" onclick="getUpdates()" disabled>Update</button>
+                        {% endif %}
+                        <button type="submit" class="btn btn-primary" id="checkUpdatesButton" onclick="checkUpdates()">Check</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Power -->
+        <div class="col-4">
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Power</h5>
+                    <div class="form-button-center">
+                        <button type="submit" class="btn btn-primary" id="powerRebootButton" onclick="reboot()">Reboot</button>
+                        <button type="submit" class="btn btn-primary" id="powerShutdownButton" onclick="shutdown()">Shutdown</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <!-- GNSS -->
         <div class="col-4">
             <div class="card mt-3">
@@ -236,6 +253,30 @@
                 <p class="card-text">GNSS not found. Check the USB connection and reload this page.</p>
                 {% endif %}
               </div>
+            </div>
+        </div>
+        <!-- Configuration File -->
+        <div class="col-4">
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Configuration file</h5>
+                    <form action = "/" method = "post" enctype="multipart/form-data">
+                        <input type="file" name="file" id="configFileInput" accept=".json"/>
+                        <input type="submit" value="Send to Entomoscope">
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- Ephemeris File -->
+        <div class="col-4">
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Ephemeris file</h5>
+                    <form action = "/" method = "post" enctype="multipart/form-data">
+                        <input type="file" name="file" id="ephemerisFileInput" accept=".csv"/>
+                        <input type="submit" value="Send to Entomoscope">
+                    </form>
+                </div>
             </div>
         </div>
         <!-- WiFi -->
@@ -308,30 +349,6 @@
               </div>
             </div>
         </div>
-        <!-- Configuration File -->
-        <div class="col-4">
-            <div class="card mt-3">
-                <div class="card-body">
-                    <h5 class="card-title">Configuration file</h5>
-                    <form action = "/" method = "post" enctype="multipart/form-data">
-                        <input type="file" name="file" id="configFileInput" accept=".json"/>
-                        <input type="submit" value="Send to Entomoscope">
-                    </form>
-                </div>
-            </div>
-        </div>
-        <!-- Ephemeris File -->
-        <div class="col-4">
-            <div class="card mt-3">
-                <div class="card-body">
-                    <h5 class="card-title">Ephemeris file</h5>
-                    <form action = "/" method = "post" enctype="multipart/form-data">
-                        <input type="file" name="file" id="ephemerisFileInput" accept=".csv"/>
-                        <input type="submit" value="Send to Entomoscope">
-                    </form>
-                </div>
-            </div>
-        </div>
     </div>
     <div class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" id="modalDialog">
         <div class="modal-dialog modal-dialog-centered">
@@ -346,7 +363,9 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block script %}
 <script type="text/javascript">
 
     const suspendImagesCaptureButton = document.getElementById('suspendImagesCaptureButton');
@@ -812,6 +831,38 @@
         .catch(error => {
             testInternetButton.disabled = false
             console.error('Error updating settings:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function reboot() {
+
+        return fetch('/reboot', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(name),
+        })
+        .catch(error => {
+            console.error('Error reboot: ', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function shutdown() {
+
+        return fetch('/shutdown', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(name),
+        })
+        .catch(error => {
+            console.error('Error shutdown: ', error);
             throw error;  // Re-throw the error for the next catch
         });
 

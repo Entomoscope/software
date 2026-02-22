@@ -217,7 +217,7 @@ class WittyPi():
 
         code = self.get_latest_action_reason_code()
 
-        reasons  = ['N/A', 'ALARM1', 'ALARM2', 'button is clicked', 'input voltage too low', 'input voltage restored', 'over temperature', 'below temperature', 'ALARM1 delayed']
+        reasons  = ['N/A', 'ALARM1', 'ALARM2', 'button is clicked', 'input voltage too low', 'input voltage restored', 'over temperature', 'below temperature', 'ALARM1 delayed', 'USB 5V connected', 'power connected', 'reboot']
 
         if code >= 0 and code < len(reasons):
 

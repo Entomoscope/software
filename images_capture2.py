@@ -78,7 +78,7 @@ def main():
             else:
 
                 AI_AVAILABLE = False
-                app.logger.info('64-bit arch => AI available but manualy disabled')
+                logger.info('64-bit arch => AI available but manualy disabled')
 
         else:
             AI_AVAILABLE = False
@@ -87,7 +87,7 @@ def main():
     except BaseException as e:
 
         AI_AVAILABLE = False
-        app.logger.info('Unable to manage AI => AI not available')
+        logger.info('Unable to manage AI => AI not available')
         logger.error(str(e))
 
     logger.info(f'images capture folder: {IMAGES_CAPTURE_FOLDER}')
@@ -166,15 +166,15 @@ def main():
                     ai_model_files = os.listdir(AI_MODEL_PATH)
                     if len(ai_model_files) > 0:
                         ai_model_file = os.path.join(AI_MODEL_PATH, ai_model_files[0])
-                        app.logger.warning(f'No AI model file in config file')
-                        app.logger.warning(f'Use {ai_model_files[0]} by default')
+                        logger.warning(f'No AI model file in config file')
+                        logger.warning(f'Use {ai_model_files[0]} by default')
                         configuration.ai_detection['file'] = ai_model_files[0]
                         configuration.save()
                     else:
                       ai_model_file = None
                       AI_AVAILABLE = False
-                      app.logger.warning(f'No AI model file found in {AI_MODEL_PATH}')
-                      app.logger.warning(f'AI disabled')
+                      logger.warning(f'No AI model file found in {AI_MODEL_PATH}')
+                      logger.warning(f'AI disabled')
 
                 if ai_model_file:
 
@@ -182,8 +182,8 @@ def main():
                     start_time = datetime.now()
                     ai_model = YOLO(ai_model_file)
                     elapsed_time = datetime.now() - start_time
-                    app.logger.info(f"AI model file loaded: {configuration.ai_detection['file']}")
-                    app.logger.info(f"AI model file loading time: {elapsed_time.seconds}.{elapsed_time.microseconds} seconds")
+                    logger.info(f"AI model file loaded: {configuration.ai_detection['file']}")
+                    logger.info(f"AI model file loading time: {elapsed_time.seconds}.{elapsed_time.microseconds} seconds")
 
                     logger.info(f"detection using images of size {configuration.ai_detection['image_width']}x{configuration.ai_detection['image_height']}")
                     logger.info(f"detection using minimal confidence of {configuration.ai_detection['min_confidence']}")

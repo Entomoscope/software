@@ -281,7 +281,7 @@ def main():
         now = datetime.now()
         t = datetime(now.year, now.month, now.day, configuration_startup_hour, configuration_startup_minute, 0) - timedelta(seconds=configuration.leds['delay_on'])
         delta = t - now
-        if delta > 0
+        if delta > 0:
             logger.info(f'wait {delta.total_seconds()} seconds until {configuration.schedule["next_startup"][11:13]}:{configuration.schedule["next_startup"][14:16]} before capturing images')
             while (now < t):
                 delta = t - now

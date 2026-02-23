@@ -154,41 +154,49 @@ def main():
     # Activation de l'IA si disponible et activée dans le fichier de configuration
     if AI_AVAILABLE:
 
-        if configuration.ai_detection['enable']:
+        try:
 
-            logger.info('AI enabled')
+            if configuration.ai_detection['enable']:
 
-            if configuration.ai_detection['file']:
-                ai_model_file = os.path.join(AI_MODEL_PATH, configuration.ai_detection['file'])
-            else:
-                ai_model_files = os.listdir(AI_MODEL_PATH)
-                if len(ai_model_files) > 0:
-                    ai_model_file = os.path.join(AI_MODEL_PATH, ai_model_files[0])
-                    app.logger.warning(f'No AI model file in config file')
-                    app.logger.warning(f'Use {ai_model_files[0]} by default')
-                    configuration.ai_detection['file'] = ai_model_files[0]
-                    configuration.save()
+                logger.info('AI enabled')
+
+                if configuration.ai_detection['file']:
+                    ai_model_file = os.path.join(AI_MODEL_PATH, configuration.ai_detection['file'])
                 else:
-                  ai_model_file = None
-                  AI_AVAILABLE = False
-                  app.logger.warning(f'No AI model file found in {AI_MODEL_PATH}')
-                  app.logger.warning(f'AI disabled')
+                    ai_model_files = os.listdir(AI_MODEL_PATH)
+                    if len(ai_model_files) > 0:
+                        ai_model_file = os.path.join(AI_MODEL_PATH, ai_model_files[0])
+                        app.logger.warning(f'No AI model file in config file')
+                        app.logger.warning(f'Use {ai_model_files[0]} by default')
+                        configuration.ai_detection['file'] = ai_model_files[0]
+                        configuration.save()
+                    else:
+                      ai_model_file = None
+                      AI_AVAILABLE = False
+                      app.logger.warning(f'No AI model file found in {AI_MODEL_PATH}')
+                      app.logger.warning(f'AI disabled')
 
-            if ai_model_file:
+                if ai_model_file:
 
-                AI_AVAILABLE = True
-                start_time = datetime.now()
-                ai_model = YOLO(ai_model_file)
-                elapsed_time = datetime.now() - start_time
-                app.logger.info(f"AI model file loaded: {configuration.ai_detection['file']}")
-                app.logger.info(f"AI model file loading time: {elapsed_time.seconds}.{elapsed_time.microseconds} seconds")
+                    AI_AVAILABLE = True
+                    start_time = datetime.now()
+                    ai_model = YOLO(ai_model_file)
+                    elapsed_time = datetime.now() - start_time
+                    app.logger.info(f"AI model file loaded: {configuration.ai_detection['file']}")
+                    app.logger.info(f"AI model file loading time: {elapsed_time.seconds}.{elapsed_time.microseconds} seconds")
 
-                logger.info(f"detection using images of size {configuration.ai_detection['image_width']}x{configuration.ai_detection['image_height']}")
-                logger.info(f"detection using minimal confidence of {configuration.ai_detection['min_confidence']}")
+                    logger.info(f"detection using images of size {configuration.ai_detection['image_width']}x{configuration.ai_detection['image_height']}")
+                    logger.info(f"detection using minimal confidence of {configuration.ai_detection['min_confidence']}")
 
-        else:
+            else:
 
-            logger.info('AI disabled')
+                logger.info('AI disabled')
+
+        except BaseException as e:
+
+            AI_AVAILABLE = False
+            logger.info('Unable to manage AI => AI not available')
+            logger.error(str(e))
 
     # Configuration du laser
     # if configuration.laser['enable']:
@@ -281,7 +289,7 @@ def main():
         now = datetime.now()
         t = datetime(now.year, now.month, now.day, configuration_startup_hour, configuration_startup_minute, 0) - timedelta(seconds=configuration.leds['delay_on'])
         delta = t - now
-        if delta > 0:
+        if delta.total_seconds() > 0:
             logger.info(f'wait {delta.total_seconds()} seconds until {configuration.schedule["next_startup"][11:13]}:{configuration.schedule["next_startup"][14:16]} before capturing images')
             while (now < t):
                 delta = t - now

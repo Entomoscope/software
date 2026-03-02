@@ -4,6 +4,8 @@ import os
 import shutil
 from datetime import datetime, timedelta, timezone
 
+import traceback
+
 from time import time, sleep
 
 from flask import Flask, make_response, render_template, Response, jsonify, request, redirect
@@ -32,6 +34,7 @@ from peripherals.rpi import Rpi
 from peripherals.storage import Storage
 from peripherals.leds import Leds
 from peripherals.camera2 import Camera2
+# from peripherals.camera3 import Camera3
 from peripherals.gnss2 import Gnss2
 from peripherals.microphone2 import Microphone2
 from peripherals.wittypi import WittyPi
@@ -216,7 +219,8 @@ leds_always_on = configuration.leds['always_on']
 auto_exposure_gain = {'enable': configuration.camera['auto_exposure_gain']['enable'], 'mode': configuration.camera['auto_exposure_gain']['mode'], 'exposure_time': configuration.camera['auto_exposure_gain']['exposure_time'], 'exposure_value': configuration.camera['auto_exposure_gain']['exposure_value']}
 
 camera_model = configuration.camera['model']
-sensor_resolution = [configuration.camera['sensor']['width_max'], configuration.camera['sensor']['height_max']]
+sensor_resolution = [configuration.camera['sensor']['resolution'][0], configuration.camera['sensor']['resolution'][1]]
+preview_resolution = [configuration.camera['sensor']['width_preview'], configuration.camera['sensor']['height_preview']]
 sensor_mode = [configuration.camera['sensor']['preview_mode'], configuration.camera['sensor']['capture_mode']]
 
 focus_measure_enable = configuration.camera['autofocus']['measure_enable']
@@ -255,6 +259,8 @@ log_data = None
 
 wifi = Wifi(rpi.uuid)
 wifi.list()
+
+pause_stream = False
 
 camera = None
 microphone = None
@@ -702,19 +708,22 @@ def images_capture_settings():
         if images_capture_state == 'stopped':
 
             if not camera:
-                camera = Camera2(configuration=configuration, mode='preview')
+                camera = Camera2(configuration=configuration, mode='preview', perf=True)
                 if camera and camera.is_camera_supported:
                     camera.start()
                     app.logger.info('camera started')
                     camera_supported = camera.is_camera_supported
+                    camera_resolution = camera.get_sensor_resolution()
                     autofocus_available = camera.autofocus_available
                 else:
                     app.logger.warning('camera not started because model is not supported')
                     camera_supported = False
+                    camera_resolution = None
                     autofocus_available = False
             else:
                 app.logger.info('camera already started')
                 camera_supported = camera.is_camera_supported
+                camera_resolution = camera.get_sensor_resolution()
                 autofocus_available = camera.autofocus_available
 
             if not leds_rear_deported_uv:
@@ -743,19 +752,21 @@ def images_capture_settings():
 
             leds_available = True
             camera_supported = False
+            camera_resolution = None
             autofocus_available = False
 
         else:
 
             leds_available = False
             camera_supported = False
+            camera_resolution = None
             autofocus_available = False
 
         ai_models = sorted(os.listdir(AI_MODEL_PATH))
 
         ai_models = [x for x in ai_models if not x.endswith('.onnx')]
 
-        return make_response(render_template('images_capture_settings.html', updates_available=updates_available, camera_supported=camera_supported, autofocus_available=autofocus_available, images_capture_state=images_capture_state, leds_available=leds_available, ai_models=ai_models, configuration=configuration, rpi=rpi, battery_level=battery_level, zip=zip))
+        return make_response(render_template('images_capture_settings.html', updates_available=updates_available, camera_supported=camera_supported, camera_resolution=camera_resolution, autofocus_available=autofocus_available, images_capture_state=images_capture_state, leds_available=leds_available, ai_models=ai_models, configuration=configuration, rpi=rpi, battery_level=battery_level, zip=zip))
 
     except BaseException as e:
 
@@ -1022,7 +1033,7 @@ def sounds_capture_test():
 @app.route('/video_feed')
 def video_feed():
 
-    if camera and camera.is_camera_supported:
+    if camera and camera.is_camera_supported and camera.started:
         return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
     else:
         return Response('')
@@ -1059,7 +1070,6 @@ def generate_frames():
                 'EntomoscopeAiImageSize': [configuration.ai_detection['image_width'], configuration.ai_detection['image_height']]
                 }
 
-
     except BaseException as e:
 
         app.logger.error(str(e))
@@ -1070,29 +1080,50 @@ def generate_frames():
 
     while True:
 
-        if camera:
+        if camera and camera.started:
 
-            if time() - last_frame_time > time_between_frame:
+            if not pause_stream and (time() - last_frame_time > time_between_frame):
 
                 last_frame_time = time()
 
                 try:
 
-                    # Récupération de la capture image et metadata de la caméra
-                    # frame : tableau de bytes depuis le stream MJPEG
-                    # metadata : dictionaire
-                    frame, metadata = camera.get_preview_frame()
+                    if AI_AVAILABLE and AI_ENABLE and configuration.ai_detection['enable']:
+
+                        # Récupération de la capture image et metadata de la caméra
+                        # frame2 : tableau de bytes depuis le stream main
+                        # metadata : dictionaire
+
+                        camera.capture()
+
+                        frame2 = camera.frame_data_main
+                        metadata = camera.metadata
+
+                        (x,y,w,h) = crop_limits
+
+                    else:
+
+                        # Récupération de la capture image et metadata de la caméra
+                        # frame2 : tableau de bytes depuis le stream MJPEG
+                        # metadata : dictionaire
+                        frame, metadata = camera.get_preview_frame()
+
+                        data = np.frombuffer(frame, dtype=np.uint8)
+                        frame2 = cv2.imdecode(data, cv2.IMREAD_COLOR )
+
+                        (x,y,w,h) = crop_limits
+
+                        x = int(x / camera.sensor_resolution[0] * configuration.camera['sensor']['width_preview'])
+                        y = int(y / camera.sensor_resolution[1] * configuration.camera['sensor']['height_preview'])
+                        w = int(w / camera.sensor_resolution[0] * configuration.camera['sensor']['width_preview'])
+                        h = int(h / camera.sensor_resolution[1] * configuration.camera['sensor']['height_preview'])
+
+                    frame2 = frame2[y:y+h,x:x+w,:]
 
                     if camera.autofocus_available:
                         current_lens_position = metadata['LensPosition']
 
                     if AI_AVAILABLE and AI_ENABLE and configuration.ai_detection['enable']:
-
-                        # Conversion du buffer frame vers un tableau numpy
-                        data = np.frombuffer(frame, dtype=np.uint8)
-
-                        # Décodage du buffer JPEG vers un tableau de bytes (image)
-                        frame2 = cv2.imdecode(data, cv2.IMREAD_COLOR )
 
                         # Redimensionnement de l'image pour la détection par IA
                         frameDetect = cv2.resize(frame2, (configuration.ai_detection['image_width'], configuration.ai_detection['image_height']))
@@ -1130,6 +1161,8 @@ def generate_frames():
 
                             extra_metadata['EntomoscopeAiPredictionNumBoxes'] = num_boxes
                             extra_metadata['EntomoscopeAiPredictionSpeed'] = f'{speed:.0f}'
+
+                            frame2 = np.ascontiguousarray(frame2)
 
                             ann = Annotator(
                                 frame2,
@@ -1210,13 +1243,13 @@ def generate_frames():
                             data_encode = np.array(img_encode)
                             frame = data_encode.tobytes()
 
+                        else:
+
+                            img_encode = cv2.imencode('.jpg', frame2, [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality])[1]
+                            data_encode = np.array(img_encode)
+                            frame = data_encode.tobytes()
+
                     elif focus_measure_enable:
-
-                        # Conversion du buffer frame vers un tableau numpy
-                        data = np.frombuffer(frame, dtype=np.uint8)
-
-                        # Décodage du buffer JPEG vers un tableau de bytes
-                        frame2 = cv2.imdecode(data, cv2.IMREAD_COLOR)
 
                         if focus_measure_mode == 'focus_peaking':
 
@@ -1246,35 +1279,45 @@ def generate_frames():
                         data_encode = np.array(img_encode)
                         frame = data_encode.tobytes()
 
-                    if capture_next_image:
+                    # if capture_next_image:
 
-                        capture_next_image = False
+                        # capture_next_image = False
 
-                        now_str = datetime.now().strftime('%Y%m%d%H%M%S_%f')
+                        # now_str = datetime.now().strftime('%Y%m%d%H%M%S_%f')
 
-                        file_path = os.path.join(IMAGES_CAPTURE_FOLDER, now_str)
+                        # file_path = os.path.join(IMAGES_CAPTURE_FOLDER, now_str)
 
-                        camera.capture()
-                        camera.frame_to_jpeg(stream='main')
+                        # camera.capture()
+                        # camera.frame_to_jpeg(stream='main')
 
-                        jpeg_file_path, json_file_path = camera.save_capture(file_path + '_capture_test.jpg', save_metadata=False)
+                        # jpeg_file_path, json_file_path = camera.save_capture(file_path + '_capture_test.jpg', save_metadata=False)
+
+                    else:
+
+                        img_encode = cv2.imencode('.jpg', frame2, [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality])[1]
+                        data_encode = np.array(img_encode)
+                        frame = data_encode.tobytes()
 
                     try:
 
-                        yield (b'--frame\r\n'
-                            b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                        if frame:
+
+                            yield (b'--frame\r\n'
+                                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
                     except RuntimeError as e:
 
                         app.logger.error(str(e))
 
-                        break
+                        # break
 
                 except BaseException as e:
 
                     app.logger.error(str(e))
 
-                    break
+                    print(traceback.format_exc())
+
+                    # break
 
 
 @app.route('/manage_images_capture', methods=['POST'])
@@ -1366,8 +1409,8 @@ def save_configuration():
 
         if data == 'camera_model':
             configuration.camera['model'] = camera_model.lower()
-            configuration.camera['sensor']['width_max'] = sensor_resolution[0]
-            configuration.camera['sensor']['height_max'] = sensor_resolution[1]
+            # configuration.camera['sensor']['width_max'] = sensor_resolution[0]
+            # configuration.camera['sensor']['height_max'] = sensor_resolution[1]
             configuration.camera['sensor']['preview_mode'] = sensor_mode[0]
             configuration.camera['sensor']['capture_mode'] = sensor_mode[1]
         elif data == 'autofocus':
@@ -1535,7 +1578,7 @@ def update_camera_live_settings():
 
 def apply_camera_settings(settingId, settingValue):
 
-    global crop_limits
+    global crop_limits, pause_stream
 
     try:
 
@@ -1572,11 +1615,11 @@ def apply_camera_settings(settingId, settingValue):
 
             crop_limits = settingValue
 
-            image_width, image_height = camera.get_preview_main_size(settingValue, configuration)
+            # image_width, image_height = camera.get_preview_main_size(settingValue, configuration)
 
-            camera.camera_config['main']['size'] = (image_width, image_height)
+            # camera.camera_config['lores']['size'] = camera.get_preview_lores_size(crop_limits, configuration)
 
-            app.logger.info(f'camera main size set to ({image_width}, {image_height})')
+            # app.logger.info(f'camera main size set to ({image_width}, {image_height})')
 
         elif settingId == 'ExposureValue':
             auto_exposure_gain['exposure_value'] = settingValue
@@ -1592,32 +1635,52 @@ def apply_camera_settings(settingId, settingValue):
 
         if camera:
 
-            try:
-                camera.camera.stop_encoder(camera.encoder)
-            except BaseException as e:
-                app.logger.error(str(e))
-            camera.camera.stop()
+            pause_stream = True
+            sleep(0.1)
 
+            # try:
+                # camera.camera.stop_encoder(camera.encoder)
+            # except BaseException as e:
+                # app.logger.error(str(e))
+            # camera.camera.stop()
+            # camera.stop()
             # camera.camera.configure(camera.camera_config)
 
             if settingId == 'LensPosition':
-                camera.camera.set_controls({'AfMode': libcamera.controls.AfModeEnum.Manual, settingId: settingValue})
+                # camera.camera.set_controls({'AfMode': libcamera.controls.AfModeEnum.Manual, settingId: settingValue})
+                camera.set_controls({'AfMode': libcamera.controls.AfModeEnum.Manual, settingId: settingValue})
             elif settingId == 'AfMode' and settingValue == libcamera.controls.AfModeEnum.Manual:
                 # camera.camera.set_controls({settingId: settingValue, 'LensPosition': autofocus['lens_position']})
                 autofocus['lens_position'] = current_lens_position
-                camera.camera.set_controls({settingId: settingValue, 'LensPosition': current_lens_position})
-            elif settingId == 'ScalerCrop':
-                camera.camera.configure(camera.camera_config)
-                camera.camera.set_controls({settingId: settingValue})
-            else:
-                camera.camera.set_controls({settingId: settingValue})
+                # camera.camera.set_controls({settingId: settingValue, 'LensPosition': current_lens_position})
+                camera.set_controls({settingId: settingValue, 'LensPosition': current_lens_position})
+            # elif settingId == 'ScalerCrop':
+                # # camera.camera.configure(camera.camera_config)
+                # # camera.camera.set_controls({settingId: settingValue})
+                # camera.set_controls({settingId: settingValue})
 
-            try:
-                camera.camera.start_encoder(camera.encoder)
-            except BaseException as e:
-                app.logger.error(str(e))
+                # camera.stop()
+                # camera.camera_configure()
+                # camera.start()
 
-            camera.camera.start()
+                # print(camera)
+                # metadata = camera.get_metadata()
+                # print(metadata)
+            # else:
+            elif settingId != 'ScalerCrop':
+                # camera.camera.set_controls({settingId: settingValue})
+                camera.set_controls({settingId: settingValue})
+
+            # try:
+                # camera.camera.start_encoder(camera.encoder)
+            # except BaseException as e:
+                # app.logger.error(str(e))
+
+            # camera.camera.start()
+            #camera.start()
+
+            pause_stream = False
+            sleep(0.1)
 
             app.logger.info(f'camera control {settingId} set to {settingValue}')
 
@@ -1635,7 +1698,7 @@ def apply_camera_settings(settingId, settingValue):
 @app.route('/set_camera_model', methods=['POST'])
 def set_camera_model():
 
-    global camera_model, sensor_resolution, sensor_mode
+    global camera_model, sensor_resolution, sensor_mode, preview_resolution
 
     try:
 
@@ -1645,13 +1708,19 @@ def set_camera_model():
 
         app.logger.info(f'camera model set to {camera_model}')
 
-        sensor_resolution = camera.get_sensor_resolution(camera_model)
+        sensor_resolution = camera.get_model_sensor_resolution(camera_model)
+
+        app.logger.info(f'sensor resolution {sensor_resolution[0]}x{sensor_resolution[1]} pixels')
+
+        preview_resolution = camera.get_model_preview_resolution(camera_model)
+
+        app.logger.info(f'preview resolution {preview_resolution[0]}x{preview_resolution[1]} pixels')
 
         sensor_mode = camera.get_sensor_mode(camera_model)
 
         # autofocus_available = camera.get_autofocus_available(camera_model)
 
-        return jsonify(success=True, message='Camera model set successfully')
+        return jsonify(success=True, message='Camera model set successfully', sensor_resolution=sensor_resolution)
 
     except BaseException as e:
 
@@ -1816,7 +1885,7 @@ def move_image():
 
         app.logger.info('json: %s', request.get_json())
 
-        print(data, flush=True)
+        # print(data, flush=True)
 
         if data[0] == 'up':
 
@@ -1838,8 +1907,8 @@ def move_image():
 
             crop_limits[0] += int(data[1])
 
-        if camera:
-            camera.set_controls({'ScalerCrop': crop_limits})
+        if camera and camera.started:
+            # camera.set_controls({'ScalerCrop': crop_limits})
             app.logger.info(f'image moved to {crop_limits}')
 
         return jsonify(success=True, message="Image moved successfully", crop_limits=crop_limits)
@@ -1881,7 +1950,7 @@ def set_server_settings():
 @app.route('/set_detection_scale', methods=['POST'])
 def set_detection_scale():
 
-    global ai_detection
+    global ai_detection, camera
 
     try:
 
@@ -1893,17 +1962,17 @@ def set_detection_scale():
         ai_detection['image_width'] = int(data[1])
         ai_detection['image_height'] = int(data[2])
 
-        lores_size = (int(data[1]), int(data[2]))
+        # lores_size = (int(data[1]), int(data[2]))
 
-        camera.camera_config['lores']['size'] = lores_size
+        # camera.camera_config['lores']['size'] = lores_size
 
-        # camera.camera.stop_encoder(camera.encoder)
-        camera.camera.stop()
-        camera.camera.configure(camera.camera_config)
-        # camera.camera.start_encoder(camera.encoder)
-        camera.camera.start()
+        # # camera.camera.stop_encoder(camera.encoder)
+        # camera.camera.stop()
+        # camera.camera.configure(camera.camera_config)
+        # # camera.camera.start_encoder(camera.encoder)
+        # camera.camera.start()
 
-        app.logger.info(f'camera lores size set to ({lores_size[0]}, {lores_size[1]})')
+        # app.logger.info(f'camera lores size set to ({lores_size[0]}, {lores_size[1]})')
 
         return jsonify(success=True, message="Settings updated successfully")
 

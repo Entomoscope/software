@@ -85,15 +85,16 @@ class Configuration2():
                             'saturation': 1.0,
                             'sharpness': 1.0
                         },
-                        'image_height': 1500,
-                        'image_width': 1500,
+                        'image_height': 2592,
+                        'image_width': 4608,
                         'model': 'v3',
                         'sensor': {
                             'capture_mode': 2,
-                            'crop_limits': [1554, 546, 1500, 1500],
-                            'height_max': 2592,
-                            'preview_mode': 1,
-                            'width_max': 4608
+                            'crop_limits': [0, 0, 4608, 2592],
+                            'height_preview': 1080,
+                            'preview_mode': 2,
+                            'width_preview': 1920,
+                            'resolution': [4608, 2592]
                         },
                         'auto_white_balance': {
                             'enable': True,

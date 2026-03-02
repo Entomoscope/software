@@ -40,10 +40,8 @@
     <!-- Camera - Model -->
     <p class="config_level_1">Camera - Info</p>
     <p class="config_level_2" id="cameraModelConfigurationText">Model: {{ configuration['camera']['model'].upper() }}</p>
-<!--
-    <p class="config_level_2" id="sensorResolutionConfigurationText">Sensor resolution: {{ configuration['camera']['sensor']['width_max'] }} x {{ configuration['camera']['sensor']['height_max'] }}</p>
--->
-    <!-- Camera - Image Position &amp; Size -->
+    <p class="config_level_2" id="cameraResolutionConfigurationText">Resolution: {{ configuration['camera']['sensor']['resolution'][0] }}x{{ configuration['camera']['sensor']['resolution'][1] }} pixels</p>
+   <!-- Camera - Image Position &amp; Size -->
     <p class="config_level_1">Camera - Image position and size</p>
     <p class="config_level_2" id="sensorCropLimitsWidthConfigurationText">Width: {{ configuration['camera']['sensor']['crop_limits'][2] }} pixels</p>
     <p class="config_level_2" id="sensorCropLimitsHeightConfigurationText">Height: {{ configuration['camera']['sensor']['crop_limits'][3] }} pixels</p>
@@ -106,8 +104,12 @@
     <p class="config_level_2 d-none" id="sensorCropLimitsConfigurationText">{{ configuration['camera']['sensor']['crop_limits'] }}</p>
     <p class="config_level_2 d-none" id="sensorCaptureModeConfigurationText">{{ configuration['camera']['sensor']['capture_mode'] }}</p>
     <p class="config_level_2 d-none" id="sensorPreviewModeConfigurationText">{{ configuration['camera']['sensor']['preview_mode'] }}</p>
+<!--
     <p class="config_level_2 d-none" id="sensorWidthMaxConfigurationText">{{ configuration['camera']['sensor']['width_max'] }}</p>
     <p class="config_level_2 d-none" id="sensorHeightMaxConfigurationText">{{ configuration['camera']['sensor']['height_max'] }}</p>
+-->
+    <p class="config_level_2 d-none" id="sensorWidthMaxConfigurationText">{{ configuration['camera']['sensor']['width_preview'] }}</p>
+    <p class="config_level_2 d-none" id="sensorHeightMaxConfigurationText">{{ configuration['camera']['sensor']['height_preview'] }}</p>
 {% endmacro %}
 
 {% macro display_configuration_sounds_capture_settings(configuration) %}

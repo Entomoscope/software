@@ -8,7 +8,7 @@
 
 {% block content %}
 <!-- Navigation bar -->
-<nav class="navbar navbar-expand-lg navbar-light bg-primary">
+<nav class="navbar navbar-expand-lg navbar-light bg-primary sticky-top">
   <div class="container-fluid">
     <a class="navbar-brand" href="/">Entomoscope</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -65,7 +65,10 @@
 -->
                 <div class="row align-items-start mt-3">
                     <!-- Camera Image Preview -->
+<!--
                     <img class="img-fluid mx-auto" id="camera_preview" style="max-width: {{configuration.server['preview_size']['max_width']}}px;width: 100%;height: auto;">
+-->
+                    <img class="img-fluid mx-auto" id="camera_preview" style="max-width: {{configuration.server['preview_size']['max_width']}}px;height: auto;">
                 </div>
             {% else %}
             <div class="card">
@@ -169,46 +172,56 @@
                 </h2>
                 <div id="cameraInfoCollapse" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
                     <div class="accordion-body">
-                        <!-- Camera - Info  - Model -->
+                        <!-- Camera - Info - Model -->
                         <div class="form-group">
                             <div class="d-flex w-100 align-items-center justify-content-between">
                                 <strong class="mb-1"><label for="brightness" class="form-label">Model</label></strong>
                             </div>
-                            <!-- Model - V1 -->
+                            <!-- Camera - Info - Model - V1 -->
                             <div class="form-check form-check-inline">
                                 {% if configuration['camera']['model'] == 'v1' %}
-                                <input class="form-check-input" type="checkbox" id="cameraV1Model" value="V1" onchange="updateSaveButton('camera_model', false)" onclick="applyCameraModel(this.value)" checked />
+                                <input class="form-check-input" type="checkbox" id="cameraV1Model" value="V1" onchange="updateSaveButton('camera_model', false)" onclick="setCameraModel(this.value)" checked />
                                 {% else %}
-                                <input class="form-check-input" type="checkbox" id="cameraV1Model" value="V1" onchange="updateSaveButton('camera_model', false)" onclick="applyCameraModel(this.value)"/>
+                                <input class="form-check-input" type="checkbox" id="cameraV1Model" value="V1" onchange="updateSaveButton('camera_model', false)" onclick="setCameraModel(this.value)"/>
                                 {% endif %}
                                 <label class="form-check-label" for="cameraV3Model">V1</label>
                             </div>
-                            <!-- Model - V2 -->
+                            <!-- Camera - Info - Model - V2 -->
                             <div class="form-check form-check-inline">
                                 {% if configuration['camera']['model'] == 'v2' %}
-                                <input class="form-check-input" type="checkbox" id="cameraV2Model" value="V2" onchange="updateSaveButton('camera_model', false)" onclick="applyCameraModel(this.value)" checked />
+                                <input class="form-check-input" type="checkbox" id="cameraV2Model" value="V2" onchange="updateSaveButton('camera_model', false)" onclick="setCameraModel(this.value)" checked />
                                 {% else %}
-                                <input class="form-check-input" type="checkbox" id="cameraV2Model" value="V2" onchange="updateSaveButton('camera_model', false)" onclick="applyCameraModel(this.value)"/>
+                                <input class="form-check-input" type="checkbox" id="cameraV2Model" value="V2" onchange="updateSaveButton('camera_model', false)" onclick="setCameraModel(this.value)"/>
                                 {% endif %}
                                 <label class="form-check-label" for="cameraV3Model">V2</label>
                             </div>
-                            <!-- Model - V3 -->
+                            <!-- Camera - Info - Model - V3 -->
                             <div class="form-check form-check-inline">
                                 {% if configuration['camera']['model'] == 'v3' %}
-                                <input class="form-check-input" type="checkbox" id="cameraV3Model" value="V3" onchange="updateSaveButton('camera_model', false)" onclick="applyCameraModel(this.value)" checked />
+                                <input class="form-check-input" type="checkbox" id="cameraV3Model" value="V3" onchange="updateSaveButton('camera_model', false)" onclick="setCameraModel(this.value)" checked />
                                 {% else %}
-                                <input class="form-check-input" type="checkbox" id="cameraV3Model" value="V3" onchange="updateSaveButton('camera_model', false)" onclick="applyCameraModel(this.value)"/>
+                                <input class="form-check-input" type="checkbox" id="cameraV3Model" value="V3" onchange="updateSaveButton('camera_model', false)" onclick="setCameraModel(this.value)"/>
                                 {% endif %}
                                 <label class="form-check-label" for="cameraV3Model">V3</label>
                             </div>
-                            <!-- Model - HQ -->
+                            <!-- Camera - Info - Model - HQ -->
                             <div class="form-check form-check-inline">
                                 {% if configuration['camera']['model'] == 'hq' %}
-                                <input class="form-check-input" type="checkbox" id="cameraHQModel" value="HQ" onchange="updateSaveButton('camera_model', false)" onclick="applyCameraModel(this.value)" checked />
+                                <input class="form-check-input" type="checkbox" id="cameraHQModel" value="HQ" onchange="updateSaveButton('camera_model', false)" onclick="setCameraModel(this.value)" checked />
                                 {% else %}
-                                <input class="form-check-input" type="checkbox" id="cameraHQModel" value="HQ" onchange="updateSaveButton('camera_model', false)" onclick="applyCameraModel(this.value)"/>
+                                <input class="form-check-input" type="checkbox" id="cameraHQModel" value="HQ" onchange="updateSaveButton('camera_model', false)" onclick="setCameraModel(this.value)"/>
                                 {% endif %}
                                 <label class="form-check-label" for="cameraV3Model">HQ</label>
+                            </div>
+                        </div>
+                        <!-- Camera - Info - Resolution -->
+                        <div class="form-group">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">Resolution</label></strong>
+                            </div>
+                            <div class="input-group mb-1">
+                                <input type="text" id="cameraResolutionText" class="form-control" value="{{ camera_resolution[0] }}x{{ camera_resolution[1] }}" disabled=True>
+                                <div class="input-group-text">pixels</div>
                             </div>
                         </div>
                         <hr/>
@@ -258,7 +271,7 @@
                         <!-- Camera - Image Position - Image Width -->
                         <div class="form-group">
                             <div class="d-flex w-100 align-items-center justify-content-between">
-                                <strong class="mb-1"><label for="brightness" class="form-label">Width ({{ configuration['camera']['sensor']['width_max'] }} max)</label></strong>
+                                <strong class="mb-1"><label for="cropLimitsWidthNumber" id="cropLimitsWidthText" class="form-label">Width ({{ configuration['camera']['sensor']['resolution'][0] }} max)</label></strong>
                             </div>
                             <div class="input-group mb-1">
                                 <input type="number" id="cropLimitsWidthNumber" class="form-control" min="0" max="{{ configuration['camera']['sensor']['width_max'] }}" value="{{ configuration['camera']['sensor']['crop_limits'][2] }}" onchange="updateCameraPosition('width')"/>
@@ -273,7 +286,7 @@
                             <!-- Camera - Image Position - Image Height -->
                             <div class="form-group">
                                 <div class="d-flex w-100 align-items-center justify-content-between">
-                                    <strong class="mb-1"><label for="brightness" class="form-label">Height ({{ configuration['camera']['sensor']['height_max'] }} max)</label></strong>
+                                    <strong class="mb-1"><label for="cropLimitsHeightNumber" id="cropLimitsHeightText" class="form-label">Height ({{ configuration['camera']['sensor']['resolution'][1] }} max)</label></strong>
                                 </div>
                                 <div class="input-group mb-1">
                                     <input type="number" id="cropLimitsHeightNumber" class="form-control" min="0" max="{{ configuration['camera']['sensor']['height_max'] }}" value="{{ configuration['camera']['sensor']['crop_limits'][3] }}" onchange="updateCameraPosition('height')"/>
@@ -289,7 +302,7 @@
                             <!-- Camera - Image Position - X -->
                             <div class="form-group">
                                 <div class="d-flex w-100 align-items-center justify-content-between">
-                                    <strong class="mb-1"><label for="brightness" class="form-label">Top left corner X</label></strong>
+                                    <strong class="mb-1"><label for="cropLimitsXNumber" class="form-label">Top left corner X</label></strong>
                                 </div>
                                 <div class="input-group mb-1">
                                     <input type="number" id="cropLimitsXNumber" class="form-control" min="0" value="{{ configuration['camera']['sensor']['crop_limits'][0] }}" onchange="updateCameraPosition('x')"/>
@@ -299,13 +312,18 @@
                             <!-- Camera - Image Position - Y -->
                             <div class="form-group">
                                 <div class="d-flex w-100 align-items-center justify-content-between">
-                                    <strong class="mb-1"><label for="brightness" class="form-label">Top left corner Y</label></strong>
+                                    <strong class="mb-1"><label for="cropLimitsYNumber" class="form-label">Top left corner Y</label></strong>
                                 </div>
                                 <div class="input-group mb-1">
                                     <input type="number" id="cropLimitsYNumber" class="form-control" min="0" value="{{ configuration['camera']['sensor']['crop_limits'][1] }}" onchange="updateCameraPosition('y')"/>
                                     <div class="input-group-text">pixels</div>
                                 </div>
                             </div>
+                        </div>
+                        <hr/>
+                        <!-- Camera - Image Position - Canvas -->
+                        <div class="form-group">
+                            <canvas id="imagePositionCanvas" class="img-fluid" style="width:100%; height:auto;"></canvas>
                         </div>
                         {% if configuration['server']['image_constraints']['centered'] %}
                         <div class="collapse p-2" id="image_centered_settings">
@@ -316,7 +334,7 @@
                             <!-- Camera - Image Position - Move -->
                             <div class="form-group">
                                 <div class="d-flex w-100 align-items-center justify-content-between">
-                                    <strong class="mb-1"><label for="brightness" class="form-label">Move</label></strong>
+                                    <strong class="mb-1"><label for="cropLimitsMoveNumber" class="form-label">Move</label></strong>
                                 </div>
                                 <div class="input-group mb-1">
                                     <input type="number" id="cropLimitsMoveNumber" class="form-control" min="0" value="100" onchange="updateSaveButton('crop_limits', false)"/>
@@ -325,22 +343,22 @@
                                 <!-- Camera - Image Position - Move - Up/Down/Left/Right-->
                                 <div class="form-button-center">
                                     <div class="btn-group mt-2" role="group" aria-label="Standard Button Group">
-                                        <button type="button" class="btn btn-primary" onclick="moveImage('up')">Up</button>
-                                        <button type="button" class="btn btn-primary" onclick="moveImage('down')">Down</button>
-                                        <button type="button" class="btn btn-primary" onclick="moveImage('left')">Left</button>
-                                        <button type="button" class="btn btn-primary" onclick="moveImage('right')">Right</button>
+                                        <button type="button" class="btn btn-primary" onclick="setCameraPositionMove('up')">Up</button>
+                                        <button type="button" class="btn btn-primary" onclick="setCameraPositionMove('down')">Down</button>
+                                        <button type="button" class="btn btn-primary" onclick="setCameraPositionMove('left')">Left</button>
+                                        <button type="button" class="btn btn-primary" onclick="setCameraPositionMove('right')">Right</button>
                                     </div>
                                 </div>
                                 <!-- Camera - Image Position - Move - Center-->
                                 <div class="form-button-center mt-2">
-                                    <button type="submit" class="btn btn-primary" id="cropLimitsCenterButton" onclick="centerCameraPosition()">Center</button>
+                                    <button type="submit" class="btn btn-primary" id="cropLimitsCenterButton" onclick="setCameraPositionCenter()">Center</button>
                                 </div>
                             </div>
                         </div>
                         <hr/>
                         <!-- Camera - Image Position - Full Scale-->
                         <div class="form-button-center mt-2">
-                            <button type="submit" class="btn btn-primary" id="cropLimitsFullScaleButton" onclick="fullScaleCameraPosition()">FullScale</button>
+                            <button type="submit" class="btn btn-primary" id="cropLimitsFullScaleButton" onclick="setCameraPositionFullScale()">FullScale</button>
                         </div>
                         <hr/>
                         <!-- Camera - Image Position - Save -->
@@ -832,7 +850,26 @@
     const cameraV2Model = document.getElementById('cameraV2Model');
     const cameraV3Model = document.getElementById('cameraV3Model');
     const cameraHQModel = document.getElementById('cameraHQModel');
+    const cameraResolutionText = document.getElementById('cameraResolutionText');
     const cameraModelConfigurationText = document.getElementById('cameraModelConfigurationText');
+    const cameraResolutionConfigurationText = document.getElementById('cameraResolutionConfigurationText');
+
+    // Camera - Image Position
+    const imagePositionCanvas = document.getElementById('imagePositionCanvas');
+    const imageConstraintSquare = document.getElementById('imageConstraintSquare');
+    const imageConstraintCentered = document.getElementById('imageConstraintCentered');
+    const cropLimitsWidthText = document.getElementById('cropLimitsWidthText');
+    const cropLimitsHeightText = document.getElementById('cropLimitsHeightText');
+    const cropLimitsWidthNumber = document.getElementById('cropLimitsWidthNumber');
+    const cropLimitsHeightNumber = document.getElementById('cropLimitsHeightNumber');
+    const cropLimitsXNumber = document.getElementById('cropLimitsXNumber');
+    const cropLimitsYNumber = document.getElementById('cropLimitsYNumber');
+    const cropLimitsMoveNumber = document.getElementById('cropLimitsMoveNumber');
+    const cropLimitsSaveButton = document.getElementById('cropLimitsSaveButton');
+    const sensorCropLimitsWidthConfigurationText = document.getElementById('sensorCropLimitsWidthConfigurationText');
+    const sensorCropLimitsHeightConfigurationText = document.getElementById('sensorCropLimitsHeightConfigurationText');
+    const sensorCropLimitsXConfigurationText = document.getElementById('sensorCropLimitsXConfigurationText');
+    const sensorCropLimitsYConfigurationText = document.getElementById('sensorCropLimitsYConfigurationText');
 
     // Camera - Autofocus
     const afMode0Check = document.getElementById('AfMode0');
@@ -882,22 +919,7 @@
     const currentContrast = document.getElementById('currentContrast');
     const currentSaturation = document.getElementById('currentSaturation');
     const currentSharpness = document.getElementById('currentSharpness');
-
     const imageAdjustmentsSaveButton = document.getElementById('imageAdjustmentsSaveButton');
-
-    // Camera - Image Position
-    const imageConstraintSquare = document.getElementById('imageConstraintSquare');
-    const imageConstraintCentered = document.getElementById('imageConstraintCentered');
-    const cropLimitsWidthNumber = document.getElementById('cropLimitsWidthNumber');
-    const cropLimitsHeightNumber = document.getElementById('cropLimitsHeightNumber');
-    const cropLimitsXNumber = document.getElementById('cropLimitsXNumber');
-    const cropLimitsYNumber = document.getElementById('cropLimitsYNumber');
-    const cropLimitsMoveNumber = document.getElementById('cropLimitsMoveNumber');
-    const cropLimitsSaveButton = document.getElementById('cropLimitsSaveButton');
-    const sensorCropLimitsWidthConfigurationText = document.getElementById('sensorCropLimitsWidthConfigurationText');
-    const sensorCropLimitsHeightConfigurationText = document.getElementById('sensorCropLimitsHeightConfigurationText');
-    const sensorCropLimitsXConfigurationText = document.getElementById('sensorCropLimitsXConfigurationText');
-    const sensorCropLimitsYConfigurationText = document.getElementById('sensorCropLimitsYConfigurationText');
 
     // Sensor
     const sensorWidthMaxConfigurationText = document.getElementById('sensorWidthMaxConfigurationText');
@@ -934,8 +956,54 @@
         const camera_preview = document.getElementById('camera_preview');
 
         camera_preview.src = "{{ url_for('video_feed') }}";
+
+        drawImagePosition()
+
     });
 {% endif %}
+
+    function drawImagePosition() {
+
+        var canvasContext = imagePositionCanvas.getContext("2d");
+
+        s = cameraResolutionText.value
+        wh = s.match(/\d+/g)
+
+        widthMax = parseInt(wh[0])
+        heightMax = parseInt(wh[1])
+
+        x_center = imagePositionCanvas.width / 2
+        y_center = imagePositionCanvas.height / 2
+
+        canvasContext.clearRect(0, 0, imagePositionCanvas.width, imagePositionCanvas.height);
+
+        f = imagePositionCanvas.height / heightMax
+
+        h = imagePositionCanvas.height
+
+        w = f * widthMax
+
+        x_s = x_center - w / 2
+        y_s = y_center - h / 2
+
+        canvasContext.strokeStyle = "black";
+        canvasContext.strokeRect(x_s, y_s, w, h);
+
+        width = parseInt(cropLimitsWidthNumber.value)
+        height = parseInt(cropLimitsHeightNumber.value)
+        x = parseInt(cropLimitsXNumber.value)
+        y = parseInt(cropLimitsYNumber.value)
+
+        x = f * x
+        y = f * y
+        w = f * width
+        h = f * height
+
+        canvasContext.strokeStyle = "green";
+        canvasContext.strokeRect(x_s+x, y_s+y, w, h);
+
+    }
+
 
     function updateSaveButton(settingId, state) {
 
@@ -1468,7 +1536,7 @@
         });
     }
 
-    function applyCameraModel(model) {
+    function setCameraModel(model) {
 
         cameraV1Model.checked = false
         cameraV2Model.checked = false
@@ -1498,7 +1566,8 @@
         .then(data => {
             //console.log('Settings updated:', data);
             if (data.success) {
-
+                cameraResolutionText.value = data.sensor_resolution[0] + 'x' +  data.sensor_resolution[1]
+                cameraResolutionConfigurationText.innerText = 'Resolution: ' + data.sensor_resolution[0] + 'x' +  data.sensor_resolution[1] + ' pixels'
             }
         })
         .catch(error => {
@@ -1510,19 +1579,34 @@
 
     function applyImageConstraint(constraintId, constraintValue) {
 
+        console.log(constraintValue)
+
         if (constraintId == 'keep_square') {
-            cropLimitsHeightNumber.value = cropLimitsWidthNumber.value
-            updateCameraPosition('width')
+            if (constraintValue) {
+                cropLimitsHeightNumber.value = cropLimitsWidthNumber.value
+                updateCameraPosition('width')
+            }
         } else if (constraintId == 'keep_center') {
-            width = parseInt(cropLimitsWidthNumber.value)
-            height = parseInt(cropLimitsHeightNumber.value)
+            if (constraintValue) {
+                width = parseInt(cropLimitsWidthNumber.value)
+                height = parseInt(cropLimitsHeightNumber.value)
 
-            widthMax = parseInt(sensorWidthMaxConfigurationText.innerText)
-            heightMax = parseInt(sensorHeightMaxConfigurationText.innerText)
+                s = cameraResolutionText.value
+                wh = s.match(/\d+/g)
 
-            cropLimitsXNumber.value = Math.floor((widthMax - width) / 2)
-            cropLimitsYNumber.value = Math.floor((heightMax - height) / 2)
+                widthMax = parseInt(wh[0])
+                heightMax = parseInt(wh[1])
+
+                cropLimitsXNumber.value = Math.floor((widthMax - width) / 2)
+                cropLimitsYNumber.value = Math.floor((heightMax - height) / 2)
+            }
         }
+
+        s = cameraResolutionText.value
+        wh = s.match(/\d+/g)
+
+        widthMax = parseInt(wh[0])
+        heightMax = parseInt(wh[1])
 
         updateSaveButton('crop_limits', false)
 
@@ -1539,7 +1623,14 @@
         .then(data => {
             //console.log('Settings updated:', data);
             if (data.success) {
-
+                if (constraintId == 'keep_square') {
+                    if (constraintValue) {
+                        cropLimitsWidthText.innerText = 'Width (' + heightMax + ' max)'
+                    }
+                    else {
+                        cropLimitsWidthText.innerText = 'Width (' + widthMax + ' max)'
+                    }
+                }
             }
         })
         .catch(error => {
@@ -1560,23 +1651,33 @@
 
         var cropLimits = [x, y, width, height]
 
-        widthMax = parseInt(sensorWidthMaxConfigurationText.innerText)
-        heightMax = parseInt(sensorHeightMaxConfigurationText.innerText)
+        console.log('Crop limits')
+        console.log('x  y  width  height')
+        console.log(cropLimits)
 
-        console.log('widthMax heightMax width height')
-        console.log([widthMax, heightMax, width, height])
+        s = cameraResolutionText.value
+        wh = s.match(/\d+/g)
+
+        widthMax = parseInt(wh[0])
+        heightMax = parseInt(wh[1])
+
+        console.log('widthMax heightMax')
+        console.log([widthMax, heightMax])
 
         if (positionId == 'width') {
             if (square_constraint) {
+                console.log('square constraint')
                 cropLimitsHeightNumber.value = cropLimitsWidthNumber.value
                 height = cropLimitsHeightNumber.value
             }
             if (center_constraint) {
+                console.log('center constraint')
                 x = (widthMax-width)/2
                 y = (heightMax-height)/2
             }
         } else if (positionId == 'height') {
             if (center_constraint) {
+                console.log('center constraint')
                 x = (widthMax-width)/2
                 y = (heightMax-height)/2
             }
@@ -1586,8 +1687,8 @@
 
         }
 
-        s = aiDetectionSizeLabel.innerText
-        wh = s.match(/\d+/g)
+        //s = aiDetectionSizeLabel.innerText
+        //wh = s.match(/\d+/g)
 
         if (width > widthMax || width < 150) {
             console.log(['W', width, widthMax, 150])
@@ -1624,11 +1725,13 @@
 
         updateCameraLiveSettings('sensor')
 
+        drawImagePosition()
+
         updateSaveButton('crop_limits', false)
 
     }
 
-    function fullScaleCameraPosition() {
+    function setCameraPositionFullScale() {
 
         if (imageConstraintSquare.checked) {
             imageConstraintSquare.click()
@@ -1640,35 +1743,45 @@
         cropLimitsXNumber.value = 0
         cropLimitsYNumber.value = 0
 
-        cropLimitsWidthNumber.value = parseInt(sensorWidthMaxConfigurationText.innerText)
-        cropLimitsHeightNumber.value = parseInt(sensorHeightMaxConfigurationText.innerText)
+        s = cameraResolutionText.value
+        wh = s.match(/\d+/g)
+
+        cropLimitsWidthNumber.value = parseInt(wh[0])
+        cropLimitsHeightNumber.value = parseInt(wh[1])
 
         setDetectionScale()
 
         updateCameraLiveSettings('sensor')
 
+        drawImagePosition()
+
         updateSaveButton('crop_limits', false)
 
     }
 
-    function centerCameraPosition() {
+    function setCameraPositionCenter() {
 
         width = parseInt(cropLimitsWidthNumber.value)
         height = parseInt(cropLimitsHeightNumber.value)
 
-        widthMax = parseInt(sensorWidthMaxConfigurationText.innerText)
-        heightMax = parseInt(sensorHeightMaxConfigurationText.innerText)
+        s = cameraResolutionText.value
+        wh = s.match(/\d+/g)
+
+        widthMax = parseInt(wh[0])
+        heightMax = parseInt(wh[1])
 
         cropLimitsXNumber.value = Math.floor((widthMax - width) / 2)
         cropLimitsYNumber.value = Math.floor((heightMax - height) / 2)
 
         updateCameraLiveSettings('sensor')
 
+        drawImagePosition()
+
         updateSaveButton('crop_limits', false)
 
     }
 
-    function moveImage(direction) {
+    function setCameraPositionMove(direction) {
 
         incr = parseInt(cropLimitsMoveNumber.value)
 
@@ -1677,8 +1790,11 @@
         var width = parseInt(cropLimitsWidthNumber.value)
         var height = parseInt(cropLimitsHeightNumber.value)
 
-        widthMax = parseInt(sensorWidthMaxConfigurationText.innerText)
-        heightMax = parseInt(sensorHeightMaxConfigurationText.innerText)
+        s = cameraResolutionText.value
+        wh = s.match(/\d+/g)
+
+        widthMax = parseInt(wh[0])
+        heightMax = parseInt(wh[1])
 
         if (direction == 'up') {
             if ((y - incr) < 0) {
@@ -1717,6 +1833,8 @@
                 cropLimitsYNumber.value = data.crop_limits[1]
                 cropLimitsWidthNumber.value = data.crop_limits[2]
                 cropLimitsHeightNumber.value = data.crop_limits[3]
+
+                drawImagePosition()
             }
         })
         .catch(error => {

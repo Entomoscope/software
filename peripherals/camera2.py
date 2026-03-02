@@ -6,13 +6,15 @@ from json import dump
 
 import logging
 
+import traceback
+
 import io
 from threading import Condition
 
 import libcamera
 
 from picamera2 import Picamera2, Controls
-from picamera2.encoders import MJPEGEncoder
+from picamera2.encoders import MJPEGEncoder, JpegEncoder, H264Encoder
 from picamera2.outputs import FileOutput
 
 import numpy as np
@@ -21,7 +23,7 @@ from cv2 import imencode, IMWRITE_JPEG_QUALITY, cvtColor, COLOR_YUV420p2RGB
 
 sys.path.append('..')
 
-from globals_parameters import LOGS_DESKTOP_FOLDER, TODAY
+from globals_parameters import LOGS_DESKTOP_FOLDER, TODAY, CAMERA_PREVIEW_FPS
 
 this_script = os.path.basename(__file__)[:-3]
 
@@ -96,7 +98,16 @@ class Camera2():
             self.verbose = verbose
 
             if configuration:
-                self.configure(configuration)
+
+                try:
+
+                    self.configure(configuration)
+
+                except BaseException as e:
+
+                    logger.error('configuration error')
+                    logger.error(str(e))
+
 
             self.available = True
 
@@ -115,23 +126,23 @@ class Camera2():
         self.is_camera_supported = False
         self.autofocus_available = False
 
+        # https://www.raspberrypi.com/documentation/accessories/camera.html#hardware-specification
         if configuration.camera['model'].lower() == 'v3' and self.model == 'imx708':
             self.is_camera_supported = True
             self.autofocus_available = True
-            self.sensor_resolution = (4608, 2592)
+            self.sensor_resolution = self.get_sensor_resolution() # (4608, 2592)
         elif configuration.camera['model'].lower() == 'v2' and self.model == 'imx219':
             self.is_camera_supported = True
             self.autofocus_available = False
-            self.sensor_resolution = (3280, 2464)
+            self.sensor_resolution = self.get_sensor_resolution() # (3280, 2464)
         elif configuration.camera['model'].lower() == 'v1' and self.model == 'ov5647':
             self.is_camera_supported = True
             self.autofocus_available = False
-            self.sensor_resolution = (2592, 1944)
+            self.sensor_resolution = self.get_sensor_resolution() # (2592, 1944)
         elif configuration.camera['model'].lower() == 'hq' and self.model == 'imx477':
             self.is_camera_supported = True
             self.autofocus_available = False
-            self.sensor_resolution = (4056, 3040)
-        # self.image_ratio = self.sensor_resolution[0] / self.sensor_resolution[1]
+            self.sensor_resolution = self.get_sensor_resolution() # (4056, 3040)
 
         if self.is_camera_supported:
 
@@ -171,7 +182,7 @@ class Camera2():
                 controls.AfMode = af_mode
                 controls.AfRange = af_range
                 controls.AfSpeed = af_speed
-            controls.ScalerCrop = configuration.camera['sensor']['crop_limits']
+            controls.ScalerCrop = [0, 0] + list(self.get_sensor_resolution())
             controls.AeEnable = configuration.camera['auto_exposure_gain']['mode'] == 'Auto'
             if controls.AeEnable:
                 controls.AeExposureMode = ae_exposure_mode
@@ -191,10 +202,9 @@ class Camera2():
 
                 sensor_mode = self.camera.sensor_modes[configuration.camera['sensor']['capture_mode']]
 
-                # controls['ScalerCrop'] = configuration.camera['sensor']['crop_limits']
-
                 main_format = 'RGB888'
                 main_size = (image_width, image_height)
+
                 lores_format = 'YUV420'
                 lores_size = (configuration.ai_detection['image_width'], configuration.ai_detection['image_height'])
 
@@ -205,15 +215,16 @@ class Camera2():
                                                                         display=None,
                                                                         encode=None,
                                                                         transform=libcamera.Transform(vflip=True, hflip=True),
-                                                                        buffer_count=4, # speed up capture_array()
+                                                                        buffer_count=2, # speed up capture_array()
                                                                         controls=controls)
 
                 self.set_encode_parameter(configuration.files['jpeg_quality'])
 
                 try:
 
-                    self.camera.configure(self.camera_config)
+                    self.camera_configure()
                     self.configured = True
+
                     logger.info('camera configured for detection')
                     logger.info(f'main format {main_format}')
                     logger.info(f'main size {main_size}')
@@ -231,10 +242,10 @@ class Camera2():
                 sensor_mode = self.camera.sensor_modes[configuration.camera['sensor']['preview_mode']]
 
                 main_format = 'RGB888'
-                main_size = self.get_preview_main_size(configuration.camera['sensor']['crop_limits'], configuration)
+                main_size = self.get_sensor_resolution()
 
                 lores_format = 'YUV420'
-                lores_size = (configuration.ai_detection['image_width'], configuration.ai_detection['image_height'])
+                lores_size = (configuration.camera['sensor']['width_preview'], configuration.camera['sensor']['height_preview'])
 
                 self.camera_config = self.camera.create_video_configuration(sensor={'output_size': sensor_mode['size'], 'bit_depth': sensor_mode['bit_depth']},
                                                                             main={'format': main_format, 'size': main_size},
@@ -242,18 +253,13 @@ class Camera2():
                                                                             raw=None, # no need,
                                                                             display=None,
                                                                             transform=libcamera.Transform(vflip=True, hflip=True),
-                                                                            controls=controls)
+                                                                            buffer_count=2, # speed up capture_array()
+                                                                            controls=controls,
+                                                                            encode='lores')
 
                 try:
 
-                    self.camera.configure(self.camera_config)
-
-                    # self.encoder = MJPEGEncoder(10000000)
-                    self.encoder = MJPEGEncoder(None)
-                    self.streamOut = StreamingOutput()
-                    self.streamOut2 = FileOutput(self.streamOut)
-                    self.encoder.output = [self.streamOut2]
-
+                    self.camera_configure()
                     self.configured = True
 
                     self.set_encode_parameter(configuration.files['jpeg_quality'])
@@ -270,22 +276,22 @@ class Camera2():
                     logger.error(str(e))
                     self.configured = False
 
-                # self.overlay = np.zeros((1536, 864, 4), dtype=np.uint8)
+                try:
 
-                # cl = configuration.camera['sensor']['crop_limits']
+                    self.encoder = MJPEGEncoder(None)
+                    self.encoder.format = "YUV420"
+                    self.encoder.framerate = CAMERA_PREVIEW_FPS * 3
+                    self.streamOut = StreamingOutput()
+                    self.streamOut2 = FileOutput(self.streamOut)
+                    self.encoder.output = [self.streamOut2]
 
-                # cl[0] = int(cl[0] / 4608 * 1536)
-                # cl[1] = int(cl[1] / 2592 * 864)
-                # cl[2] = int(cl[2] / 4608 * 1536)
-                # cl[3] = int(cl[3] / 2592 * 864)
+                    logger.info('MJPEG encoder set')
 
-                # print(cl, flush=True)
+                except BaseException as e:
 
-                # self.overlay[cl[0]:cl[0]+cl[2], cl[1]:cl[1]+cl[3]] = (255,0,0,0)
-
-            # if align_configuration:
-                # self.camera.align_configuration(self.camera_config)
-                # print(self.camera_config['main'])
+                    logger.error('MJPEG encoder not set')
+                    logger.error(str(e))
+                    self.configured = False
 
             if need_to_restart:
                 self.camera.start()
@@ -328,42 +334,100 @@ class Camera2():
 
         try:
 
-            if self.mode == 'preview':
-                self.camera.start_encoder(self.encoder)
-                self.encoder_started = True
+            if not self.started:
 
-            self.camera.start()
+                if self.mode == 'preview':
 
-            if self.overlay is not None:
-                self.camera.set_overlay(self.overlay)
-                logger.info('overlay set')
+                    try:
+                        self.camera.start_encoder(self.encoder)
+                        self.encoder_started = True
+                        logger.info('encoder started')
+                    except BaseException as e:
+                        self.encoder_started = False
+                        logger.error('encoder not started')
+                        logger.error(str(e))
+                        print(traceback.format_exc())
 
-            self.started = True
-            logger.info('camera started')
+                    if self.encoder_started:
+                        self.camera.start()
+                        self.started = True
+                        logger.info('camera started')
+                    else:
+                        logger.error('camera not started')
+
+                else:
+
+                    self.camera.start()
+                    self.started = True
+                    logger.info('camera started')
+            else:
+
+                logger.info('camera already started')
 
         except BaseException as e:
 
             logger.error('camera not started')
             logger.error(str(e))
+            print(traceback.format_exc())
 
     def stop(self):
 
         try:
 
             if self.started:
+
                 if self.mode == 'preview':
                     if self.encoder_started:
-                        self.camera.stop_encoder(self.encoder)
-                        self.encoder_started  = False
+                        try:
+                            self.camera.stop_encoder(self.encoder)
+                            self.encoder_started = False
+                            logger.info('encoder stopped')
+                        except BaseException as e:
+                            logger.error('encoder not stopped')
+                            logger.error(str(e))
+                            print(traceback.format_exc())
 
-                self.camera.close()
+                # self.camera.close()
+                self.camera.stop()
                 self.started = False
                 logger.info('camera stopped')
+
+            else:
+
+                logger.info('camera already stopped')
 
         except BaseException as e:
 
             logger.error('camera not stopped')
             logger.error(str(e))
+            print(traceback.format_exc())
+
+
+    def close(self):
+
+        try:
+
+            self.camera.close()
+            logger.info('camera closed')
+
+        except BaseException as e:
+
+            logger.error('camera not closed')
+            logger.error(str(e))
+            print(traceback.format_exc())
+
+
+    def camera_configure(self):
+
+        try:
+
+            self.camera.configure(self.camera_config)
+
+        except BaseException as e:
+
+            logger.error(str(e))
+            print(traceback.format_exc())
+
 
     def get_preview_frame(self):
 
@@ -375,22 +439,40 @@ class Camera2():
 
         return self.frame, self.metadata
 
-    def get_preview_main_size(self, crop_limits, configuration):
+    # def get_preview_main_size(self, crop_limits, configuration):
 
-        sensor_mode = self.camera.sensor_modes[configuration.camera['sensor']['preview_mode']]
+        # # sensor_mode = self.camera.sensor_modes[configuration.camera['sensor']['preview_mode']]
 
-        sensor_mode_max = self.camera.sensor_modes[-1]
+        # # sensor_mode_max = self.camera.sensor_modes[-1]
 
-        image_width = int(crop_limits[2] / sensor_mode_max['size'][0] * sensor_mode['size'][0])
-        image_height = int(crop_limits[3] / sensor_mode_max['size'][1] * sensor_mode['size'][1])
+        # # print(sensor_mode_max)
 
-        # Width and height should be even
-        image_width = image_width // 2 * 2
-        image_height = image_height // 2 * 2
+        # # image_width = int(crop_limits[2] / sensor_mode_max['size'][0] * sensor_mode['size'][0])
+        # # image_height = int(crop_limits[3] / sensor_mode_max['size'][1] * sensor_mode['size'][1])
 
-        return image_width, image_height
+        # # print(f'{image_width} x {image_height}')
 
-    def capture(self, flush=True, to_jpeg=True, get_metadata=True):
+        # # # Width and height should be even
+        # # image_width = image_width // 2 * 2
+        # # image_height = image_height // 2 * 2
+
+        # image_width = int(crop_limits[2]) // 2 * 2
+        # image_height = int(crop_limits[3]) // 2 * 2
+
+        # return image_width, image_height
+
+    # def get_preview_lores_size(self, crop_limits, configuration):
+
+        # width = int(crop_limits[2] / self.sensor_resolution[0] * configuration.camera['sensor']['width_preview'])
+        # height = int(crop_limits[3] / self.sensor_resolution[1] * configuration.camera['sensor']['height_preview'])
+
+        # # Width and height should be even
+        # width = width // 2 * 2
+        # height = height // 2 * 2
+
+        # return width, height
+
+    def capture(self, stream='main', flush=True, get_metadata=True):
 
         if self.started:
 
@@ -399,9 +481,15 @@ class Camera2():
 
             request = self.camera.capture_request(flush=flush)
 
-            self.frame_data_main = request.make_array('main')
+            if stream == 'main' or 'both':
+                self.frame_data_main = request.make_array('main')
+            else:
+                self.frame_data_main = None
 
-            self.frame_data_lores = cvtColor(request.make_array('lores'), COLOR_YUV420p2RGB)
+            if stream == 'lores' or 'both':
+                self.frame_data_lores = cvtColor(request.make_array('lores'), COLOR_YUV420p2RGB)
+            else:
+                self.frame_data_lores = None
 
             if get_metadata:
                 self.metadata = request.get_metadata()
@@ -411,7 +499,7 @@ class Camera2():
             request.release()
 
             if self.perf:
-                logger.info(f'capture {(time.perf_counter_ns() - s)/1E9}')
+                logger.info(f'capture {stream} in {(time.perf_counter_ns() - s)/1E9:.3f} seconds')
 
     def get_frame(self, stream='main'):
 
@@ -426,15 +514,22 @@ class Camera2():
             s = time.perf_counter_ns()
 
         if stream == 'lores':
-            if crop:
-                self.jpeg_data = imencode('.jpg', self.frame_data_lores[crop[0]:crop[1],crop[2]:crop[3],:], self.encode_param)[1].tobytes()
-            else:
-                self.jpeg_data = imencode('.jpg', self.frame_data_lores, self.encode_param)[1].tobytes()
+            self.jpeg_data = imencode('.jpg', self.frame_data_lores, self.encode_param)[1].tobytes()
+        elif stream == 'main':
+            self.jpeg_data = imencode('.jpg', self.frame_data_main, self.encode_param)[1].tobytes()
         else:
-            if crop:
-                self.jpeg_data = imencode('.jpg', self.frame_data_main[crop[0]:crop[1],crop[2]:crop[3],:], self.encode_param)[1].tobytes()
-            else:
-                self.jpeg_data = imencode('.jpg', self.frame_data_main, self.encode_param)[1].tobytes()
+            self.jpeg_data = None
+
+        # if stream == 'lores':
+            # if crop:
+                # self.jpeg_data = imencode('.jpg', self.frame_data_lores[crop[0]:crop[1],crop[2]:crop[3],:], self.encode_param)[1].tobytes()
+            # else:
+                # self.jpeg_data = imencode('.jpg', self.frame_data_lores, self.encode_param)[1].tobytes()
+        # else:
+            # if crop:
+                # self.jpeg_data = imencode('.jpg', self.frame_data_main[crop[0]:crop[1],crop[2]:crop[3],:], self.encode_param)[1].tobytes()
+            # else:
+                # self.jpeg_data = imencode('.jpg', self.frame_data_main, self.encode_param)[1].tobytes()
 
         if self.perf:
             logger.info(f'frame to JPEG {(time.perf_counter_ns() - s)/1E9}')
@@ -533,7 +628,7 @@ class Camera2():
 
         return horizontal_size, vertical_size
 
-    def get_sensor_resolution(self, model):
+    def get_model_sensor_resolution(self, model):
 
         if model.lower() == 'v3':
             sensor_resolution = (4608, 2592)
@@ -545,6 +640,23 @@ class Camera2():
             sensor_resolution = (4056, 3040)
 
         return sensor_resolution
+
+    def get_sensor_resolution(self):
+
+        return self.camera.camera_properties['PixelArraySize']
+
+    def get_model_preview_resolution(self, model):
+
+        if model.lower() == 'v3':
+            preview_resolution = (1920, 1080)
+        elif model.lower() == 'v2':
+            preview_resolution = (1440, 1080)
+        elif model.lower() == 'v1':
+            preview_resolution = (1440, 1080)
+        elif model.lower() == 'hq':
+            preview_resolution = (1920, 1440)
+
+        return preview_resolution
 
     def get_autofocus_available(self, model):
 
@@ -562,16 +674,16 @@ class Camera2():
     def get_sensor_mode(self, model):
 
         if model.lower() == 'v3':
-            preview_mode = 1
+            preview_mode = 2
             capture_mode = 2
         elif model.lower() == 'v2':
-            preview_mode = 1
+            preview_mode = 2
             capture_mode = 2
         elif model.lower() == 'v1':
-            preview_mode = 1
+            preview_mode = 2
             capture_mode = 2
         elif model.lower() == 'hq':
-            preview_mode = 2
+            preview_mode = 3
             capture_mode = 3
 
         return preview_mode, capture_mode

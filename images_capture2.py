@@ -718,6 +718,7 @@ def main():
 
     # Arret caméra
     camera.stop()
+    camera.close()
 
     logger.info('images capture stopped')
 

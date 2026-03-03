@@ -1,6 +1,7 @@
 import sys
 import os
 import smbus
+from subprocess import check_output, CalledProcessError
 from time import sleep
 
 import logging
@@ -29,6 +30,7 @@ DIODE_VOLTAGE_DROP_OUT = 0.5
 class WittyPi():
 
     I2C_ADDRESS = 0x08
+    I2C_ADDRESS_STR = f'{I2C_ADDRESS:02X}'
 
     NONE = 0
     ALARM_STARTUP = 1
@@ -51,6 +53,11 @@ class WittyPi():
 
         self.i2c_bus = smbus.SMBus(1)
 
+        self.available = self.detect()
+
+        if not self.available:
+            logger.error('Witty Pi is not detected')
+
         self.date = ''
 
         self.firmware_id = 0
@@ -71,34 +78,50 @@ class WittyPi():
         self.led_pulse_interval = 0
         self.led_light_up_duration = 0
 
+    def detect(self):
+
+        try:
+
+            output = check_output('/usr/sbin/i2cdetect -y 1', shell=True).decode('utf-8').split(' ')
+
+            available = self.I2C_ADDRESS_STR in output
+
+        except CalledProcessError as e:
+
+            available = False
+
+            logger.error(str(e))
+
+        return available
+
     def set_date(self, year, month, day, hour, minute, second):
 
-            if year > 2000:
-                year -= 2000
+        if year > 2000:
+            year -= 2000
 
-            year_bcd = ((year // 10) << 4)+ (year - 10 * (year // 10))
-            month_bcd = ((month // 10) << 4) + (month - 10 * (month // 10))
-            day_bcd = ((day // 10) << 4) + (day - 10 * (day // 10))
+        year_bcd = ((year // 10) << 4)+ (year - 10 * (year // 10))
+        month_bcd = ((month // 10) << 4) + (month - 10 * (month // 10))
+        day_bcd = ((day // 10) << 4) + (day - 10 * (day // 10))
 
-            hour_bcd = ((hour // 10) << 4) + (hour - 10 * (hour // 10))
-            minute_bcd = ((minute // 10) << 4) + (minute - 10 * (minute // 10))
-            second_bcd = ((second // 10) << 4) + (second - 10 * (second // 10))
+        hour_bcd = ((hour // 10) << 4) + (hour - 10 * (hour // 10))
+        minute_bcd = ((minute // 10) << 4) + (minute - 10 * (minute // 10))
+        second_bcd = ((second // 10) << 4) + (second - 10 * (second // 10))
 
-            success = self.write_register(58, second_bcd)
+        success = self.write_register(58, second_bcd)
 
-            success = self.write_register(59, minute_bcd)
+        success = self.write_register(59, minute_bcd)
 
-            success = self.write_register(60, hour_bcd)
+        success = self.write_register(60, hour_bcd)
 
-            success = self.write_register(61, day_bcd)
+        success = self.write_register(61, day_bcd)
 
-            success = self.write_register(62, 0)
+        success = self.write_register(62, 0)
 
-            success = self.write_register(63, month_bcd)
+        success = self.write_register(63, month_bcd)
 
-            success = self.write_register(64, year_bcd)
+        success = self.write_register(64, year_bcd)
 
-            logger.info(f'date set to 20{year}-{month:02d}-{day:02d} {hour:02d}:{minute:02d}:{second:02d}')
+        logger.info(f'date set to 20{year}-{month:02d}-{day:02d} {hour:02d}:{minute:02d}:{second:02d}')
 
     def get_info(self):
 
@@ -450,17 +473,19 @@ def main():
 
     witty_pi = WittyPi()
 
-    witty_pi.get_info()
+    if witty_pi.available:
 
-    # witty_pi.set_startup_alarm(14, 16, 39)
-    # witty_pi.set_shutdown_alarm(14, 16, 37)
+        witty_pi.get_info()
 
-    print(witty_pi)
+        # witty_pi.set_startup_alarm(14, 16, 39)
+        # witty_pi.set_shutdown_alarm(14, 16, 37)
 
-    # for i in range(0,50):
-        # witty_pi.get_output_current()
-        # print(f'{witty_pi.output_current:.3f} ', end='')
-        # sleep(0.1)
+        print(witty_pi)
+
+        # for i in range(0,50):
+            # witty_pi.get_output_current()
+            # print(f'{witty_pi.output_current:.3f} ', end='')
+            # sleep(0.1)
 
 if __name__ == '__main__':
 

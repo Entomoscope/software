@@ -198,8 +198,13 @@ dateTime = DateTime()
 tzone = datetime.now().astimezone().strftime('%Z')
 
 witty_pi = WittyPi()
-witty_pi.get_input_voltage()
-battery_level = witty_pi.input_voltage
+
+if witty_pi.available:
+    witty_pi.get_input_voltage()
+    battery_level = witty_pi.input_voltage
+else:
+    battery_level = 0.0
+    app.logger.warning('Witty Pi not detected')
 
 leds_intensity = [configuration.leds['intensity_front'], configuration.leds['intensity_rear_deported_uv']]
 
@@ -1510,10 +1515,12 @@ def update_settings():
 
                 startup_date = startup_date - timedelta(minutes=MINUTES_OFFSET_FOR_STARTING_ON_TIME)
 
-                # witty_pi.set_startup_alarm(startup_date[2], startup_date[3], startup_date[4])
-                witty_pi.set_startup_alarm(startup_date.day, startup_date.hour, startup_date.minute)
-
-                witty_pi.set_shutdown_alarm(shutdown_date[2], shutdown_date[3], shutdown_date[4])
+                if witty_pi.available:
+                    # witty_pi.set_startup_alarm(startup_date[2], startup_date[3], startup_date[4])
+                    witty_pi.set_startup_alarm(startup_date.day, startup_date.hour, startup_date.minute)
+                    witty_pi.set_shutdown_alarm(shutdown_date[2], shutdown_date[3], shutdown_date[4])
+                else:
+                    app.logger.warning('Witty Pi alarms not set')
 
         elif data[0] == 'cooling_system':
 
@@ -2181,7 +2188,10 @@ def gnss_sync_time():
 
             now = datetime.now()
 
-            witty_pi.set_date(now.year, now.month, now.day, now.hour, now.minute, now.second)
+            if witty_pi.available:
+                witty_pi.set_date(now.year, now.month, now.day, now.hour, now.minute, now.second)
+            else:
+                app.logger.warning('Witty Pi clock not synchronized')
 
             return jsonify(success=True, message='RPi time synchronized with GNSS successfully', date_time_info=dateTime.date_time_info)
 
@@ -2252,9 +2262,17 @@ def set_date():
         date = [int(x) for x in data[0].split('-')]
         time = [int(x) for x in data[1].split(':')]
 
-        witty_pi.set_date(date[0], date[1], date[2], time[0], time[1], time[2])
+        if witty_pi.available:
 
-        return jsonify(success=True, message='Date set successfully', data=dateTime.date_time_info)
+            witty_pi.set_date(date[0], date[1], date[2], time[0], time[1], time[2])
+
+            return jsonify(success=True, message='Date set successfully', data=dateTime.date_time_info)
+
+        else:
+
+            app.logger.warning('Witty Pi clock not set')
+
+            return jsonify(success=False, message='Witty Pi not detected')
 
     except BaseException as e:
 

@@ -61,51 +61,58 @@ if __name__ == '__main__':
 
     witty_pi = WittyPi()
 
-    if witty_pi.get_latest_action_reason_code() == witty_pi.ALARM_SHUTDOWN:
-        logger.info('shutdown due to RTC alarm')
-    elif witty_pi.get_latest_action_reason_code() == witty_pi.BUTTON_CLICKED:
-        logger.info('shutdown due to button pressed by user')
-    else:
-        logger.info(f'shutdown due to {witty_pi.get_latest_action_reason()}')
-
-    configuration = Configuration2()
-
-    logger.info('configuration read')
-
-    if configuration.schedule['enable']:
+    if witty_pi.available:
 
         if witty_pi.get_latest_action_reason_code() == witty_pi.ALARM_SHUTDOWN:
-
-            if configuration.mode['mode'].lower() != 'lepinoc':
-
-                alarm = witty_pi.get_shutdown_alarm()
-
-                if alarm[3] == -1 or alarm[2] == -1 and alarm[1] == -1:
-
-                    logger.info(f'shutdown alarm not shifted because wrong values ({alarm[3]} {alarm[2]}:{alarm[1]})')
-
-                else:
-
-                    alarm[3] = int(TOMORROW[6:])
-
-                    witty_pi.set_shutdown_alarm(alarm[3], alarm[2], alarm[1])
-
-                    configuration.schedule['next_shutdown'] = '-'.join([TOMORROW[:4], TOMORROW[4:6], TOMORROW[6:]]) + f' {alarm[2]:02d}:{alarm[1]:02d}'
-                    configuration.save()
-
-                    logger.info(f"shutdown alarm shifted to {configuration.schedule['next_shutdown']} {datetime.now().astimezone().strftime('%Z')}")
-
+            logger.info('shutdown due to RTC alarm')
         elif witty_pi.get_latest_action_reason_code() == witty_pi.BUTTON_CLICKED:
+            logger.info('shutdown due to button pressed by user')
+        else:
+            logger.info(f'shutdown due to {witty_pi.get_latest_action_reason()}')
 
-            logger.info('shutdown alarm not shifted')
+        configuration = Configuration2()
+
+        logger.info('configuration read')
+
+        if configuration.schedule['enable']:
+
+            if witty_pi.get_latest_action_reason_code() == witty_pi.ALARM_SHUTDOWN:
+
+                if configuration.mode['mode'].lower() != 'lepinoc':
+
+                    alarm = witty_pi.get_shutdown_alarm()
+
+                    if alarm[3] == -1 or alarm[2] == -1 and alarm[1] == -1:
+
+                        logger.info(f'shutdown alarm not shifted because wrong values ({alarm[3]} {alarm[2]}:{alarm[1]})')
+
+                    else:
+
+                        alarm[3] = int(TOMORROW[6:])
+
+                        witty_pi.set_shutdown_alarm(alarm[3], alarm[2], alarm[1])
+
+                        configuration.schedule['next_shutdown'] = '-'.join([TOMORROW[:4], TOMORROW[4:6], TOMORROW[6:]]) + f' {alarm[2]:02d}:{alarm[1]:02d}'
+                        configuration.save()
+
+                        logger.info(f"shutdown alarm shifted to {configuration.schedule['next_shutdown']} {datetime.now().astimezone().strftime('%Z')}")
+
+            elif witty_pi.get_latest_action_reason_code() == witty_pi.BUTTON_CLICKED:
+
+                logger.info('shutdown alarm not shifted')
+
+            else:
+
+                logger.info('shutdown alarm not shifted')
 
         else:
 
-            logger.info('shutdown alarm not shifted')
+            logger.info('scheduler is disabled')
 
     else:
 
-        logger.info('scheduler is disabled')
+        logger.warning('Witty Pi not detected')
+        logger.warning('Unable to manage scheduler')
 
     logs_files = LogsFiles()
     logs_files.backup()

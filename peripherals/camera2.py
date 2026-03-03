@@ -5,6 +5,7 @@ from math import tan, pi
 from json import dump
 
 import logging
+from logging.handlers import RotatingFileHandler
 
 import traceback
 
@@ -32,21 +33,23 @@ if not os.path.exists(today_log_path):
     os.mkdir(today_log_path)
 
 picamera2_logger = logging.getLogger('picamera2')
-picamera2_logger.setLevel(logging.INFO)
-h = logging.FileHandler(os.path.join(today_log_path, TODAY + '_picamera2.log'))
-f = logging.Formatter('%(asctime)s.%(msecs)03d;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
-h.setFormatter(f)
-picamera2_logger.addHandler(h)
+filename = os.path.join(today_log_path, TODAY + '_picamera2.log')
+file_handler = RotatingFileHandler(filename, mode="a", maxBytes=10000, backupCount=100, encoding="utf-8")
+picamera2_logger.addHandler(file_handler)
+formatter = logging.Formatter('%(asctime)s.%(msecs)03d;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
+file_handler.setFormatter(formatter)
+picamera2_logger.setLevel("INFO")
 
 os.environ['LIBCAMERA_LOG_FILE'] = os.path.join(today_log_path, TODAY + '_libcamera.log')
 os.environ['LIBCAMERA_LOG_LEVELS'] = '1'
 
 logger = logging.getLogger('entomoscope_camera_2')
-logger.setLevel(logging.INFO)
-h = logging.FileHandler(os.path.join(today_log_path, TODAY + '_' + this_script + '.log'))
-f = logging.Formatter('%(asctime)s.%(msecs)03d;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
-h.setFormatter(f)
-logger.addHandler(h)
+filename = os.path.join(today_log_path, TODAY + '_' + this_script + '.log')
+file_handler = RotatingFileHandler(filename, mode="a", maxBytes=10000, backupCount=100, encoding="utf-8")
+logger.addHandler(file_handler)
+formatter = logging.Formatter('%(asctime)s.%(msecs)03d;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
+file_handler.setFormatter(formatter)
+logger.setLevel("DEBUG")
 
 PREVIEW_WIDTH_MAX = 885
 PREVIEW_HEIGHT_MAX = 500
@@ -107,6 +110,8 @@ class Camera2():
 
                     logger.error('configuration error')
                     logger.error(str(e))
+                    print(traceback.format_exc())
+
 
 
             self.available = True
@@ -182,7 +187,10 @@ class Camera2():
                 controls.AfMode = af_mode
                 controls.AfRange = af_range
                 controls.AfSpeed = af_speed
-            controls.ScalerCrop = [0, 0] + list(self.get_sensor_resolution())
+            if self.mode == 'detection':
+                controls.ScalerCrop = configuration.camera['sensor']['crop_limits']
+            else:
+                controls.ScalerCrop = [0, 0] + list(self.get_sensor_resolution())
             controls.AeEnable = configuration.camera['auto_exposure_gain']['mode'] == 'Auto'
             if controls.AeEnable:
                 controls.AeExposureMode = ae_exposure_mode

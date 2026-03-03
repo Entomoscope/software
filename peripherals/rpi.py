@@ -252,7 +252,7 @@ class Rpi():
 
         s = 'Raspberry Pi\n'
         s += '  Model: ' + self.model + '\n'
-        s += '  Ram: ' + self.ram + '\n'
+        s += '  Ram: ' + self.memory + '\n'
         s += '  Revision: ' + self.revision + '\n'
         s += '  Serial: ' + self.serial + '\n'
         s += '  UUID: ' + self.uuid + '\n'

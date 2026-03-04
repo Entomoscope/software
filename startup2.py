@@ -11,6 +11,8 @@ import pigpio
 from peripherals.pinout2 import IMAGES_CAPTURE_ACTIVITY_PIN, SOUNDS_CAPTURE_ACTIVITY_PIN, SHUTDOWN_PIN, STARTUP_PIN, TOGGLE_SWITCH_PIN_1, TOGGLE_SWITCH_PIN_2
 from peripherals.wittypi import WittyPi
 from peripherals.externaldisk import ExternalDisk
+from peripherals.wifi import Wifi
+from peripherals.rpi import Rpi
 from ephemeris import Ephemeris
 from date_time import DateTime
 
@@ -179,7 +181,11 @@ def main():
         else:
 
             logger.warning('Witty Pi not detected')
-            logger.warning('Unable to manage scheduler')
+            logger.warning('Unable to manage time and scheduler')
+
+        rpi = Rpi()
+
+        wifi = Wifi(uuid=rpi.uuid)
 
         crontab_management = CrontabManagement(check_mandatory_service=True)
 

@@ -91,17 +91,21 @@ def isSignalToShutdownReceived():
 
     return pi.read(SHUTDOWN_PIN)
 
-while not isStartupCompleted():
-    # Si la broche SHUTDOWN_PIN passe à l'état haut => arret capture d'image
-    if isSignalToShutdownReceived():
-        logger.info('shutdown signal received')
-        logger.info('images capture stopped')
-        exit()
-    sleep(0.5)
-
 app.logger.info('****************************')
 
 app.logger.info(f'server script started with pid {os.getpid()}')
+
+app.logger.info('wait for startup script to complete')
+
+while not isStartupCompleted():
+    # Si la broche SHUTDOWN_PIN passe à l'état haut => arret script server
+    if isSignalToShutdownReceived():
+        app.logger.info('shutdown signal received')
+        app.logger.info('server script stopped')
+        exit()
+    sleep(0.5)
+
+app.logger.info('startup script completed')
 
 crontab_management = CrontabManagement()
 

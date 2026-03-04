@@ -44,16 +44,22 @@ def main():
     file_handler.setFormatter(formatter)
     logger.setLevel("DEBUG")
 
+    logger.info('****************************')
+
+    logger.info(f'sounds capture script started with pid {os.getpid()}')
+
+    logger.info('wait for startup script to complete')
+
     # Attente du signal de démarrage complet du sytème
     # La broche STARTUP_PIN doit passer à l'état haut
     while not isStartupCompleted():
         if isSignalToShutdownReceived():
+            logger.info('shutdown signal received')
+            logger.info('sounds capture script stopped')
             exit()
         sleep(0.5)
 
-    logger.info('****************************')
-
-    logger.info(f'sounds capture script started with pid {os.getpid()}')
+    logger.info('startup script completed')
 
     logger.info(f'sounds capture folder: {SOUNDS_CAPTURE_FOLDER}')
 

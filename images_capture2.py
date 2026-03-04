@@ -47,16 +47,22 @@ def main():
     file_handler.setFormatter(formatter)
     logger.setLevel("DEBUG")
 
+    logger.info('****************************')
+
+    logger.info(f'images capture script started with pid {os.getpid()}')
+
+    logger.info('wait for startup script to complete')
+
     # Attente du signal de démarrage complet du sytème
     # La broche STARTUP_PIN doit passer à l'état haut
     while not isStartupCompleted():
         if isSignalToShutdownReceived():
+            logger.info('shutdown signal received')
+            logger.info('images capture script stopped')
             exit()
         sleep(0.5)
 
-    logger.info('****************************')
-
-    logger.info(f'images capture script started with pid {os.getpid()}')
+    logger.info('startup script completed')
 
     # Vérification que le Raspberry Pi peut prendre en charge l'IA
     rpi = Rpi()

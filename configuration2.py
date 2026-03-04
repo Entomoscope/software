@@ -54,9 +54,9 @@ class Configuration2():
                         'enable': False,
                         'file': '',
                         'min_confidence': 0.8,
-                        'image_height': 320,
-                        "image_scale": 10.0,
-                        'image_width': 320
+                        'image_height': 448,
+                        "image_scale": 15.0,
+                        'image_width': 704
                         })
 
         setattr(self, 'camera', {

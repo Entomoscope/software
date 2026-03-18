@@ -38,10 +38,15 @@ class DateTime():
     def get_date_time_info(self):
 
         try:
+            
+            date = check_output('date "+%a %Y-%m-%d %H:%M:%S %Z"', shell=True).decode('utf-8').strip()
+            timezone = check_output('date "+%Z %z"', shell=True).decode('utf-8').strip()
+            
+            self.date_time_info = ['Local time: ' + date, 'Time zone: ' + timezone]
+            
+            # info = [x.strip() for x in check_output('timedatectl', shell=True).decode('utf-8').split('\n')]
 
-            info = [x.strip() for x in check_output('timedatectl', shell=True).decode('utf-8').split('\n')]
-
-            self.date_time_info = [info[0], info[3]]
+            # self.date_time_info = [info[0], info[3]]
 
         except CalledProcessError as e:
 

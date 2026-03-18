@@ -39,6 +39,8 @@ if not user_found:
     USER = USER_FOLDER.split('/')[-1]
 
 DESKTOP_FOLDER = os.path.join(USER_FOLDER, 'Desktop')
+if not os.path.exists(DESKTOP_FOLDER):
+    os.mkdir(DESKTOP_FOLDER)
 
 LOGS_DESKTOP_FOLDER = os.path.join(DESKTOP_FOLDER, 'Logs')
 if not os.path.exists(LOGS_DESKTOP_FOLDER):

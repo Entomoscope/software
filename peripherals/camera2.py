@@ -68,55 +68,69 @@ class Camera2():
 
     encode_param = [int(IMWRITE_JPEG_QUALITY), 100]
 
-    def __init__(self, camera_number=0, configuration=None, mode='detection', verbose=False, perf=False):
+    def __init__(self, camera_index=0, configuration=None, mode='detection', verbose=False, perf=False):
 
         try:
 
             logger.info('***************')
             logger.info('initialising camera')
 
-            self.camera = Picamera2(camera_number)
-            self.camera_number = camera_number
-            self.camera_config = None
-            self.model = self.camera.camera_properties['Model'].lower()
+            try:
+                self.camera = Picamera2(camera_index)
+                camera_found = True
+            except IndexError as e:
 
-            logger.info(f'camera model {self.model } found')
+                camera_found = False
 
-            self.started = False
-            self.encoder_started = False
+                logger.error(f'camera not found (index={camera_index}')
 
-            self.configured = False
+            if camera_found:
 
-            self.autofocus_available = False
+                self.camera_index = camera_index
+                self.camera_config = None
+                self.model = self.camera.camera_properties['Model'].lower()
 
-            self.frame_data = None
-            self.metadata = None
-            self.jpeg_data = None
+                logger.info(f'camera model {self.model } found')
 
-            self.mode = mode
+                self.started = False
+                self.encoder_started = False
 
-            self.overlay = None
+                self.configured = False
 
-            self.perf = perf
-            self.verbose = verbose
+                self.autofocus_available = False
 
-            if configuration:
+                self.frame_data = None
+                self.metadata = None
+                self.jpeg_data = None
 
-                try:
+                self.mode = mode
 
-                    self.configure(configuration)
+                self.overlay = None
 
-                except BaseException as e:
+                self.perf = perf
+                self.verbose = verbose
 
-                    logger.error('configuration error')
-                    logger.error(str(e))
-                    print(traceback.format_exc())
+                if configuration:
 
+                    try:
 
+                        self.configure(configuration)
 
-            self.available = True
+                    except BaseException as e:
 
-            logger.info('camera initialised')
+                        logger.error('configuration error')
+                        logger.error(str(e))
+                        print(traceback.format_exc())
+
+                self.available = True
+
+                logger.info('camera initialised')
+
+            else:
+
+                self.available = False
+
+                logger.info('camera not initialised')
 
         except IndexError as e:
 

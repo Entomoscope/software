@@ -76,8 +76,10 @@ class Camera2():
             logger.info('initialising camera')
 
             try:
+
                 self.camera = Picamera2(camera_index)
                 camera_found = True
+
             except IndexError as e:
 
                 camera_found = False
@@ -139,6 +141,10 @@ class Camera2():
 
             self.camera = None
             self.available = False
+            self.configured = False
+            self.autofocus_available = False
+            self.is_camera_supported = False
+            self.autofocus_available = False
 
     def configure(self, configuration, align_configuration=False):
 

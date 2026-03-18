@@ -50,10 +50,17 @@ class WittyPi():
     TEMPERATURE_MAX_THRESHOLD = 80
 
     def __init__(self):
+        
+        try:
 
-        self.i2c_bus = smbus.SMBus(1)
-
-        self.available = self.detect()
+            self.i2c_bus = smbus.SMBus(1)
+            self.available = self.detect()
+            
+        except PermissionError as e:
+            
+            self.available = False
+            
+            logger.error(str(e))        
 
         if not self.available:
             logger.error('Witty Pi is not detected')

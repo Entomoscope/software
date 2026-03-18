@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 
 import os
-from subprocess import check_output, call
+from subprocess import check_output, call, CalledProcessError
 
 import logging
 from logging.handlers import RotatingFileHandler

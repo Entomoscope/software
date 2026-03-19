@@ -180,14 +180,22 @@ def main():
             logger.info(f'configuration file saved to {file_path}')
 
             # Forçage du système à démarrer en mode On avec capture de son immédiate
-            on = True
+            on = False
             off = not(on)
             force_on = True
 
-            previous_on_time = time()
-            previous_off_time = time()
+            # previous_on_time = time()
+            # previous_off_time = time()
 
             data = []
+
+            on_duration_delta = timedelta(seconds=on_duration)
+            off_duration_delta = timedelta(seconds=off_duration)
+
+            now = datetime.now()
+
+            next_on = datetime(now.year, now.month, now.day, configuration_startup_hour, configuration_startup_minute, 0)
+            next_off = datetime(now.year, now.month, now.day, configuration_startup_hour, configuration_startup_minute, 0)
 
             # Démarrage du code de capture de son
             logger.info('start capturing sounds')
@@ -196,23 +204,40 @@ def main():
 
                 try:
 
-                    # Si capture On et période capture On terminée => capture Off
-                    if on and (time() - previous_on_time > on_duration):
+                    now = datetime.now()
 
-                        previous_off_time = time()
+                    # Si capture On et période capture On terminée => capture Off
+                    if on and now > next_off:
+
+                        # next_on = now + off_duration_delta
+                        next_on = next_off + off_duration_delta
+
+                    # if on and (time() - previous_on_time > on_duration):
+
+                        # previous_off_time = time()
+
                         on = False
                         off = True
                         logger.info('sounds capture off')
 
-                    # Si capture Off et période capture Off terminée, ou forçage capture On => capture On et capture de son immédiate
-                    if (off and (time() - previous_off_time > off_duration)) or force_on:
+                        logger.info(f'next on {next_on}')
 
-                        previous_on_time = time()
-                        previous_capture_time = 0
+                    # Si capture Off et période capture Off terminée, ou forçage capture On => capture On et capture de son immédiate
+                    if (off and now > next_on) or force_on:
+
+                        # next_off = now + on_duration_delta
+                        next_off = next_on + on_duration_delta
+
+                    # if (off and (time() - previous_off_time > off_duration)) or force_on:
+
+                        # previous_on_time = time()
+
                         force_on = False
                         on = True
                         off = False
                         logger.info('sounds capture on')
+
+                        logger.info(f'next off {next_off}')
 
                     # Si capture On
                     if on:
@@ -290,6 +315,9 @@ def main():
 
                             logger.info(f"on duration: {configuration.schedule['on_duration']} seconds")
                             logger.info(f"off duration: {configuration.schedule['off_duration']} seconds")
+
+                            on_duration_delta = timedelta(seconds=on_duration)
+                            off_duration_delta = timedelta(seconds=off_duration)
 
                     # Si la broche SHUTDOWN_PIN passe à l'état haut, on arrete le script
                     if isSignalToShutdownReceived() or shutdown_signal_received:

@@ -468,15 +468,23 @@ def data():
             microphone = None
             app.logger.info('microphone stopped')
 
-    files = sorted(os.listdir(data_current_directory), reverse=True)
+    if os.path.exists(data_current_directory):
 
-    isdirs = [os.path.isdir(os.path.join(data_current_directory, x)) for x in files]
+        files = sorted(os.listdir(data_current_directory), reverse=True)
+        isdirs = [os.path.isdir(os.path.join(data_current_directory, x)) for x in files]
+        isconfs = [x.startswith('configuration') for x in files]
+        isimages = [x.endswith('jpg') for x in files]
+        istopdir = data_current_directory == DATA_FOLDER
 
-    isconfs = [x.startswith('configuration') for x in files]
+    else:
 
-    isimages = [x.endswith('jpg') for x in files]
+        files = None
+        isdirs = None
+        isconfs = None
+        isimages = None
+        istopdir = None
 
-    istopdir = data_current_directory == DATA_FOLDER
+        app.logger.error(f'no directory {data_current_directory}')
 
     return make_response(render_template('data.html', updates_available=updates_available, files=files, isdirs=isdirs, isconfs=isconfs, isimages=isimages, zip=zip, istopdir=istopdir, show_preview_file=show_preview_file, show_preview_image=show_preview_image, show_preview_sound=show_preview_sound, data_current_file=data_current_file, file_data=file_data, rpi=rpi, battery_level=battery_level))
 

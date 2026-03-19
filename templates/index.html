@@ -133,24 +133,29 @@
             <div class="card mt-3">
               <div class="card-body">
                 <h5 class="card-title">Storage</h5>
-                    <ul>
-                    <li class="sd_card">{{ sd_card.name }}</li>
-                    <ul>
-                      <li>Total: {{ sd_card.total }}</li>
-                      <li>Used: {{ sd_card.used }} ({{ sd_card.used_percent }})</li>
-                      <li>Available: {{ sd_card.available }}</li>
-                    </ul>
-                    {% if external_disk.path %}
-                        <li class="external_disk">{{ external_disk.name }}</li>
-                        <ul>
-                          <li>Total: {{ external_disk.total }}</li>
-                          <li>Used: {{ external_disk.used }} ({{ external_disk.used_percent }})</li>
-                          <li>Available: {{ external_disk.available }}</li>
-                        </ul>
-                    {% else %}
-                    <li class="external_disk">{{ external_disk.name }} not found. Check the USB connection and reload this page.</li>
-                    {% endif %}
-                    </ul>
+                <ul>
+                  <li class="sd_card">{{ sd_card.name }}</li>
+                  <ul>
+                    <li>Total: {{ sd_card.total }}</li>
+                    <li>Used: {{ sd_card.used }} ({{ sd_card.used_percent }})</li>
+                    <li>Available: {{ sd_card.available }}</li>
+                  </ul>
+                  {% if external_disk.path %}
+                  <li class="external_disk">{{ external_disk.name }}</li>
+                  <ul>
+                    <li>Total: {{ external_disk.total }}</li>
+                    <li>Used: {{ external_disk.used }} ({{ external_disk.used_percent }})</li>
+                    <li>Available: {{ external_disk.available }}</li>
+                  </ul>
+                  {% else %}
+                  <li class="external_disk">{{ external_disk.name }} not found. Check the USB connection and reload this page.</li>
+                  {% endif %}
+                </ul>
+                {% if sd_card.used_percent_num > 80 %}
+                <p style="color: orange;font-weight: bold;">Less than 20% of storage left on the SD card</p>
+                {% elif sd_card.used_percent_num > 90 %}
+                <p style="color: red;font-weight: bold;">Less than 10% of storage left on the SD card</p>
+                {% endif %}
               </div>
             </div>
         </div>

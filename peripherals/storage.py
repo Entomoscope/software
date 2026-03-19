@@ -61,6 +61,7 @@ class Storage():
                 self.used = output[2]
                 self.available = output[3]
                 self.used_percent = output[4]
+                self.used_percent_num = int(output[4].replace('%',''))
 
             except BaseException as e:
 
@@ -70,6 +71,7 @@ class Storage():
                 self.used = ''
                 self.available = ''
                 self.used_percent = ''
+                self.used_percent_num = None
 
     def __str__(self):
 

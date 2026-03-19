@@ -220,7 +220,7 @@ def main():
                         off = True
                         logger.info('sounds capture off')
 
-                        logger.info(f'next on {next_on}')
+                        logger.info(f"next on {next_on.strftime('%H:%M:%S')}")
 
                     # Si capture Off et période capture Off terminée, ou forçage capture On => capture On et capture de son immédiate
                     if (off and now > next_on) or force_on:
@@ -237,7 +237,7 @@ def main():
                         off = False
                         logger.info('sounds capture on')
 
-                        logger.info(f'next off {next_off}')
+                        logger.info(f"next off {next_off.strftime('%H:%M:%S')}")
 
                     # Si capture On
                     if on:

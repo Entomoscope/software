@@ -583,22 +583,35 @@ class Camera2():
     def save_jpeg(self, jpeg_file_path):
 
         if self.jpeg_data:
-            with open(jpeg_file_path, 'wb') as f:
-                f.write(self.jpeg_data)
+
+            try:
+
+                with open(jpeg_file_path, 'wb') as f:
+                    f.write(self.jpeg_data)
+
+            except BaseException as e:
+
+                logger.error(str(e))
 
     def save_json(self, json_file_path, extra_metadata=None):
 
         if self.metadata:
 
-            if extra_metadata:
-                metadata = {}
-                metadata.update(self.metadata)
-                metadata.update(extra_metadata)
-            else:
-                metadata = self.metadata
+            try:
 
-            with open(json_file_path, 'w') as f:
-                dump(metadata, f, indent=4, sort_keys=True, separators=(',', ': '))
+                if extra_metadata:
+                    metadata = {}
+                    metadata.update(self.metadata)
+                    metadata.update(extra_metadata)
+                else:
+                    metadata = self.metadata
+
+                with open(json_file_path, 'w') as f:
+                    dump(metadata, f, indent=4, sort_keys=True, separators=(',', ': '))
+
+            except BaseException as e:
+
+                logger.error(str(e))
 
     def get_controls(self):
 

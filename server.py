@@ -350,6 +350,7 @@ def index():
 
     rpi.wifi_ssid = rpi.get_wifi_ssid()
     rpi.ip_address = rpi.get_ip_address()
+    rpi.cpu_temperature = rpi.get_temperature()
 
     wifi.show()
     # wifi.list()
@@ -369,6 +370,13 @@ def index():
         app.logger.info('GNSS stopped')
 
     gnss = Gnss2()
+
+    if witty_pi.available:
+        witty_pi.get_input_voltage()
+        battery_level = witty_pi.input_voltage
+    else:
+        battery_level = 0.0
+        app.logger.warning('Witty Pi not detected')
 
     return make_response(render_template('index.html', configuration=configuration, updates_available=updates_available, rpi=rpi, tzone=tzone, wifi=wifi, sd_card=sd_card, external_disk=external_disk, battery_level=battery_level, gnss=gnss, dateTime=dateTime, images_capture_state=images_capture_state, sounds_capture_state=sounds_capture_state))
 
@@ -468,6 +476,17 @@ def data():
             microphone = None
             app.logger.info('microphone stopped')
 
+    rpi.cpu_temperature = rpi.get_temperature()
+
+    if witty_pi.available:
+        witty_pi.get_input_voltage()
+        battery_level = witty_pi.input_voltage
+    else:
+        battery_level = 0.0
+        app.logger.warning('Witty Pi not detected')
+
+    sd_card.get_data()
+
     if os.path.exists(data_current_directory):
 
         files = sorted(os.listdir(data_current_directory), reverse=True)
@@ -486,7 +505,7 @@ def data():
 
         app.logger.error(f'no directory {data_current_directory}')
 
-    return make_response(render_template('data.html', updates_available=updates_available, files=files, isdirs=isdirs, isconfs=isconfs, isimages=isimages, zip=zip, istopdir=istopdir, show_preview_file=show_preview_file, show_preview_image=show_preview_image, show_preview_sound=show_preview_sound, data_current_file=data_current_file, file_data=file_data, rpi=rpi, battery_level=battery_level))
+    return make_response(render_template('data.html', updates_available=updates_available, files=files, isdirs=isdirs, isconfs=isconfs, isimages=isimages, zip=zip, istopdir=istopdir, show_preview_file=show_preview_file, show_preview_image=show_preview_image, show_preview_sound=show_preview_sound, data_current_file=data_current_file, file_data=file_data, rpi=rpi, battery_level=battery_level, sd_card=sd_card))
 
 
 @app.route('/manage_data/<action>/<value>')
@@ -681,6 +700,17 @@ def global_settings():
             microphone = None
             app.logger.info('microphone stopped')
 
+    rpi.cpu_temperature = rpi.get_temperature()
+
+    if witty_pi.available:
+        witty_pi.get_input_voltage()
+        battery_level = witty_pi.input_voltage
+    else:
+        battery_level = 0.0
+        app.logger.warning('Witty Pi not detected')
+
+    sd_card.get_data()
+
     tzone = datetime.now().astimezone().strftime('%Z')
 
     configuration.read()
@@ -694,7 +724,7 @@ def global_settings():
     # today = '-'.join([TODAY[:4], TODAY[4:6], TODAY[6:]])
     today = dateTime.get_date()
 
-    return make_response(render_template('global_settings.html', configuration=configuration, updates_available=updates_available, today=today, tzone=tzone, startup=(startup_date, startup_time), shutdown=(shutdown_date, shutdown_time), zip=zip, rpi=rpi, battery_level=battery_level))
+    return make_response(render_template('global_settings.html', configuration=configuration, updates_available=updates_available, today=today, tzone=tzone, startup=(startup_date, startup_time), shutdown=(shutdown_date, shutdown_time), zip=zip, rpi=rpi, battery_level=battery_level, sd_card=sd_card))
 
 
 @app.route('/images_capture_settings')
@@ -783,7 +813,18 @@ def images_capture_settings():
 
         ai_models = [x for x in ai_models if not x.endswith('.onnx')]
 
-        return make_response(render_template('images_capture_settings.html', updates_available=updates_available, camera_supported=camera_supported, camera_resolution=camera_resolution, autofocus_available=autofocus_available, images_capture_state=images_capture_state, leds_available=leds_available, ai_models=ai_models, configuration=configuration, rpi=rpi, battery_level=battery_level, zip=zip))
+        rpi.cpu_temperature = rpi.get_temperature()
+
+        if witty_pi.available:
+            witty_pi.get_input_voltage()
+            battery_level = witty_pi.input_voltage
+        else:
+            battery_level = 0.0
+            app.logger.warning('Witty Pi not detected')
+
+        sd_card.get_data()
+
+        return make_response(render_template('images_capture_settings.html', updates_available=updates_available, camera_supported=camera_supported, camera_resolution=camera_resolution, autofocus_available=autofocus_available, images_capture_state=images_capture_state, leds_available=leds_available, ai_models=ai_models, configuration=configuration, rpi=rpi, battery_level=battery_level, zip=zip, sd_card=sd_card))
 
     except BaseException as e:
 
@@ -860,7 +901,18 @@ def sounds_capture_settings():
             microphone_id = microphone.id
             microphone_firmware = microphone.firmware
 
-        return make_response(render_template('sounds_capture_settings.html', updates_available=updates_available, microphone_available=microphone_available, microphone_id=microphone_id, microphone_firmware=microphone_firmware, configuration=configuration, rpi=rpi, battery_level=battery_level))
+        rpi.cpu_temperature = rpi.get_temperature()
+
+        if witty_pi.available:
+            witty_pi.get_input_voltage()
+            battery_level = witty_pi.input_voltage
+        else:
+            battery_level = 0.0
+            app.logger.warning('Witty Pi not detected')
+
+        sd_card.get_data()
+
+        return make_response(render_template('sounds_capture_settings.html', updates_available=updates_available, microphone_available=microphone_available, microphone_id=microphone_id, microphone_firmware=microphone_firmware, configuration=configuration, rpi=rpi, battery_level=battery_level, sd_card=sd_card))
 
     except BaseException as e:
 
@@ -910,6 +962,17 @@ def logs():
         gnss = None
         app.logger.info('GNSS stopped')
 
+    rpi.cpu_temperature = rpi.get_temperature()
+
+    if witty_pi.available:
+        witty_pi.get_input_voltage()
+        battery_level = witty_pi.input_voltage
+    else:
+        battery_level = 0.0
+        app.logger.warning('Witty Pi not detected')
+
+    sd_card.get_data()
+
     if sounds_capture_state == 'stopped':
 
         if microphone:
@@ -925,7 +988,7 @@ def logs():
 
     isdirs = [os.path.isdir(os.path.join(logs_current_directory, x)) for x in files]
 
-    return make_response(render_template('logs.html', updates_available=updates_available, files=files, isdirs=isdirs, zip=zip, istopdir=istopdir, show_preview_log=show_preview_log, logs_current_file=logs_current_file, log_data=log_data, rpi=rpi, battery_level=battery_level))
+    return make_response(render_template('logs.html', updates_available=updates_available, files=files, isdirs=isdirs, zip=zip, istopdir=istopdir, show_preview_log=show_preview_log, logs_current_file=logs_current_file, log_data=log_data, rpi=rpi, battery_level=battery_level, sd_card=sd_card))
 
 
 @app.route('/manage_logs/<action>/<value>')
@@ -2438,6 +2501,41 @@ def get_cpu_temperature():
 
         return jsonify(success=False, message=str(e))
 
+@app.route('/get_battery_level', methods=['POST'])
+def get_battery_level():
+
+    try:
+
+        if witty_pi.available:
+            witty_pi.get_input_voltage()
+            battery_level = witty_pi.input_voltage
+        else:
+            battery_level = 0.0
+            app.logger.warning('Witty Pi not detected')
+
+        return jsonify(success=True, message='Battery level read successfully', battery_level=battery_level)
+
+    except Exception as e:
+
+        app.logger.error('' + str(e))
+
+        return jsonify(success=False, message=str(e))
+
+@app.route('/get_sd_card_usage', methods=['POST'])
+def get_sd_card_usage():
+
+    try:
+
+        sd_card.get_data()
+
+        return jsonify(success=True, message='SD card usage read successfully', sd_card_usage=sd_card.used_percent_num)
+
+    except Exception as e:
+
+        app.logger.error('' + str(e))
+
+        return jsonify(success=False, message=str(e))
+
 @app.route('/check_updates', methods=['POST'])
 def check_updates():
 
@@ -2528,13 +2626,39 @@ def log_request_info():
 
 @app.errorhandler(500)
 def server_error(error):
+
     app.logger.error('An exception occurred during a request.')
-    return render_template('500.html', rpi=rpi, battery_level=battery_level)
+
+    if witty_pi.available:
+        witty_pi.get_input_voltage()
+        battery_level = witty_pi.input_voltage
+    else:
+        battery_level = 0.0
+        app.logger.warning('Witty Pi not detected')
+
+    sd_card.get_data()
+
+    rpi.cpu_temperature = rpi.get_temperature()
+
+    return render_template('500.html', rpi=rpi, battery_level=battery_level, sd_card=sd_card)
 
 @app.errorhandler(404)
 def page_not_found(error):
+
     app.logger.error(error)
-    return render_template('404.html', rpi=rpi, battery_level=battery_level)
+
+    if witty_pi.available:
+        witty_pi.get_input_voltage()
+        battery_level = witty_pi.input_voltage
+    else:
+        battery_level = 0.0
+        app.logger.warning('Witty Pi not detected')
+
+    sd_card.get_data()
+
+    rpi.cpu_temperature = rpi.get_temperature()
+
+    return render_template('404.html', rpi=rpi, battery_level=battery_level, sd_card=sd_card)
 
 
 def get_captures_state():

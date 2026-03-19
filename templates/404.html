@@ -33,16 +33,41 @@
           <a class="nav-link" href="{{ url_for('logs') }}">Logs</a>
         </li>
       </ul>
-      {% if updates_available %}
+    </div>
+    <div class="nav pull-right">
+        {% if updates_available %}
         <span class="badge bg-success me-2" id="updateNavBar">
             Update available
         </span>
-      {% endif %}
-        <span class="badge bg-info text-dark me-2" id="batteryLevelNavBar">
-            {{ '%.1f' % battery_level }} V
+        {% endif %}
+        {% if sd_card.used_percent_num < 80 %}
+        <span class="badge bg-success me-2" id="sdCardNavBar">
+        {% elif sd_card.used_percent_num < 90 %}
+        <span class="badge bg-warning me-2" id="sdCardNavBar">
+        {% else %}
+        <span class="badge bg-danger me-2" id="sdCardNavBar">
+        {% endif %}
+            SD {{ sd_card.used_percent_num }} %
         </span>
-        <span class="badge bg-info text-dark" id="cpuTempNavBar">
-            {{ '%.1f' % rpi.get_temperature() }} &deg;C
+        {% if battery_level > 0 %}
+            {% if battery_level > 11.5 %}
+            <span class="badge bg-success me-2" id="batteryLevelNavBar">
+            {% elif battery_level > 10.8 %}
+            <span class="badge bg-warning me-2" id="batteryLevelNavBar">
+            {% else %}
+            <span class="badge bg-danger me-2" id="batteryLevelNavBar">
+            {% endif %}
+                BAT {{ '%.1f' % battery_level }} V
+            </span>
+        {% endif %}
+        {% if rpi.cpu_temperature < 65 %}
+        <span class="badge bg-success me-2" id="cpuTempNavBar">
+        {% elif rpi.cpu_temperature < 75 %}
+        <span class="badge bg-warning me-2" id="cpuTempNavBar">
+        {% else %}
+        <span class="badge bg-danger me-2" id="cpuTempNavBar">
+        {% endif %}
+            CPU {{ '%.0f' % rpi.cpu_temperature }} &deg;C
         </span>
     </div>
   </div>
@@ -62,7 +87,7 @@
 
     function getCpuTemperature() {
 
-        const cpuTempNavBar = document.getElementById('cpuTempNavBar')
+        const cpuTempNavBar = document.getElementById('cpuTempNavBar');
 
         return fetch('/get_cpu_temperature', {
             method: 'POST',
@@ -74,19 +99,83 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                if (data.temperature >= 80) {
-                    cpuTempNavBar.style.color = 'red'
-                } else if (data.temperature >= 75) {
-                    cpuTempNavBar.style.color = 'orange'
+                if (data.temperature >= 75) {
+                    cpuTempNavBar.className = "badge bg-danger me-2"
+                } else if (data.temperature >= 65) {
+                    cpuTempNavBar.className = "badge bg-warning me-2"
                 } else {
-                    cpuTempNavBar.style.color = 'black'
+                    cpuTempNavBar.className = "badge bg-success me-2"
                 }
-                cpuTempNavBar.innerText = data.temperature + ' °C'
+                cpuTempNavBar.innerText = 'CPU ' + data.temperature.toFixed(0) + ' °C'
             }
         })
         .catch(error => {
-        console.error('Error updating settings:', error);
-        throw error;  // Re-throw the error for the next catch
+            console.error('Error updating settings:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function getBatteryLevel() {
+
+        const batteryLevelNavBar = document.getElementById('batteryLevelNavBar');
+
+        return fetch('/get_battery_level', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.battery_level > 0) {
+                    if (data.battery_level > 11.5) {
+                        batteryLevelNavBar.className = "badge bg-success me-2"
+                    } else if (data.battery_level > 10.8) {
+                        batteryLevelNavBar.className = "badge bg-warning me-2"
+                    } else {
+                        batteryLevelNavBar.className = "badge bg-danger me-2"
+                    }
+                    batteryLevelNavBar.innerText = 'BAT ' + data.battery_level.toFixed(1) + ' V'
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error updating settings:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function getSdCardUsage() {
+
+        const sdCardNavBar = document.getElementById('sdCardNavBar');
+
+        return fetch('/get_sd_card_usage', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.sd_card_usage < 80) {
+                    sdCardNavBar.className = "badge bg-success me-2"
+                } else if (data.sd_card_usage < 90) {
+                    sdCardNavBar.className = "badge bg-warning me-2"
+                } else {
+                    sdCardNavBar.className = "badge bg-danger me-2"
+                }
+                sdCardNavBar.innerText = 'SD ' + data.sd_card_usage.toFixed(0) + ' %'
+            }
+        })
+        .catch(error => {
+            console.error('Error updating settings:', error);
+            throw error;  // Re-throw the error for the next catch
         });
 
     }
@@ -95,6 +184,13 @@
         getCpuTemperature()
     }, 10000);
 
+    var intervalId2 = setInterval(function() {
+        getBatteryLevel()
+    }, 60000);
+
+    var intervalId3 = setInterval(function() {
+        getSdCardUsage()
+    }, 60000);
 
 </script>
 

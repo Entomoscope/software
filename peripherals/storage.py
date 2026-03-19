@@ -33,6 +33,7 @@ class Storage():
         self.used = 0
         self.available = 0
         self.used_percent = 0
+        self.used_percent_num = 0
 
         if location == 'sd':
             self.name = 'SD card'

@@ -124,7 +124,7 @@ def get_last_commit():
 
     try:
 
-        result = run(['git', 'show', '-s', '--format=%h', '--abbrev-commit'], text=True, capture_output=True)
+        result = run(['git', '-C', git_folder, 'show', '-s', '--format=%h', '--abbrev-commit'], text=True, capture_output=True)
 
         if result.returncode == 0:
             commit['hash_num'] = result.stdout.strip()
@@ -132,7 +132,7 @@ def get_last_commit():
             for r in result.stderr.split('\n'):
                 logger.error(r)
 
-        result = run(['git', 'show', '-s', '--format=%s'], text=True, capture_output=True)
+        result = run(['git', '-C', git_folder, 'show', '-s', '--format=%s'], text=True, capture_output=True)
 
         if result.returncode == 0:
             commit['subject'] = result.stdout.strip()
@@ -140,7 +140,7 @@ def get_last_commit():
             for r in result.stderr.split('\n'):
                 logger.error(r)
 
-        result = run(['git', 'show', '-s', '--format=%cd', '--date=format:%Y-%m-%d %H:%M:%S %z'], text=True, capture_output=True)
+        result = run(['git', '-C', git_folder, 'show', '-s', '--format=%cd', '--date=format:%Y-%m-%d %H:%M:%S %z'], text=True, capture_output=True)
 
         if result.returncode == 0:
             commit['date'] = result.stdout.strip()

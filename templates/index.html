@@ -227,6 +227,11 @@
             <div class="card mt-3">
                 <div class="card-body">
                     <h5 class="card-title">Firmware</h5>
+                    <ul>
+                        <li>{{ commit['date'] }}</li>
+                        <li>{{ commit['subject'] }}</li>
+                        <li>{{ commit['hash_num'] }}</li>
+                    </ul>
                     {% if updates_available %}
                         <p id="updateText" class="card-text">Updates available</p>
                     {% else %}

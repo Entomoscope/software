@@ -48,7 +48,7 @@ from date_time import DateTime
 
 from globals_parameters import USER, SERVER_PORT, SERVER_DEBUG, SERVER_ALLOWED_EXTENSIONS, TODAY_NOW, AI_ENABLE, AI_MODEL_PATH, CAPTURE_AI_DETECTION, PYTHON_SCRIPTS_BASE_FOLDER, TMP_FOLDER, IMAGES_CAPTURE_FOLDER, SOUNDS_CAPTURE_FOLDER, TODAY, TOMORROW, LOGS_DESKTOP_FOLDER, WITTY_PI_FOLDER, DATA_FOLDER, MINUTES_OFFSET_FOR_STARTING_ON_TIME, CAMERA_PREVIEW_FPS
 
-from firmware import updates_check, updates_get
+from firmware import updates_check, updates_get, get_last_commit
 
 import pigpio
 
@@ -352,6 +352,8 @@ def index():
     rpi.ip_address = rpi.get_ip_address()
     rpi.cpu_temperature = rpi.get_temperature()
 
+    commit = get_last_commit()
+
     wifi.show()
     # wifi.list()
     app.logger.info('Wifi updated')
@@ -378,7 +380,7 @@ def index():
         battery_level = 0.0
         app.logger.warning('Witty Pi not detected')
 
-    return make_response(render_template('index.html', configuration=configuration, updates_available=updates_available, rpi=rpi, tzone=tzone, wifi=wifi, sd_card=sd_card, external_disk=external_disk, battery_level=battery_level, gnss=gnss, dateTime=dateTime, images_capture_state=images_capture_state, sounds_capture_state=sounds_capture_state))
+    return make_response(render_template('index.html', configuration=configuration, updates_available=updates_available, rpi=rpi, tzone=tzone, wifi=wifi, sd_card=sd_card, external_disk=external_disk, battery_level=battery_level, gnss=gnss, dateTime=dateTime, images_capture_state=images_capture_state, sounds_capture_state=sounds_capture_state, commit=commit))
 
 
 def allowed_file(filename):

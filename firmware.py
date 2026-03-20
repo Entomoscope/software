@@ -117,12 +117,53 @@ def updates_back_to_previous():
 
         logger.error(str(e))
 
+
+def get_last_commit():
+
+    commit = {'hash_num': None, 'subject': None, 'date': None}
+
+    try:
+
+        result = run(['git', 'show', '-s', '--format=%h', '--abbrev-commit'], text=True, capture_output=True)
+
+        if result.returncode == 0:
+            commit['hash_num'] = result.stdout.strip()
+        else:
+            for r in result.stderr.split('\n'):
+                logger.error(r)
+
+        result = run(['git', 'show', '-s', '--format=%s'], text=True, capture_output=True)
+
+        if result.returncode == 0:
+            commit['subject'] = result.stdout.strip()
+        else:
+            for r in result.stderr.split('\n'):
+                logger.error(r)
+
+        result = run(['git', 'show', '-s', '--format=%cd', '--date=format:%Y-%m-%d %H:%M:%S %z'], text=True, capture_output=True)
+
+        if result.returncode == 0:
+            commit['date'] = result.stdout.strip()
+        else:
+            for r in result.stderr.split('\n'):
+                logger.error(r)
+
+    except Exception as e:
+
+        logger.error(str(e))
+
+    return commit
+
 if __name__ == '__main__':
 
-    updates_available = updates_check()
+    commit = get_last_commit()
 
-    if updates_available:
-        print('Updates available => get updates')
-        updates_get()
-    else:
-        print('No updates available')
+    print(commit)
+
+    # updates_available = updates_check()
+
+    # if updates_available:
+        # print('Updates available => get updates')
+        # updates_get()
+    # else:
+        # print('No updates available')

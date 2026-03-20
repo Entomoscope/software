@@ -128,3 +128,59 @@
         <p class="config_level_2" id="gainConfigurationText">Gain: high</p>
     {% endif %}
 {% endmacro %}
+
+{% macro sd_card_full_modal(sd_card) %}
+    <div class="modal fade" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" id="sdCardFullModalDialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Full SD card</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-center fw-bold">SD card is {{ sd_card.used_percent_num }} % full.<br/>Make some space...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endmacro %}
+
+{% macro sd_card_full_modal_javascript(sd_card) %}
+
+        const sdCardFullModalDialog = document.getElementById('sdCardFullModalDialog');
+
+        var myModal = new bootstrap.Modal(sdCardFullModalDialog)
+
+        {% if sd_card.used_percent_num > 50 %} // 95
+            myModal.show()
+        {% endif %}
+
+{% endmacro %}
+
+{% macro battery_discharged_modal(battery_level) %}
+    <div class="modal fade" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" id="batteryDischargedModalDialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Battery discharged</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-center fw-bold">Battery is discharged.<br/>Replace it.</</p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endmacro %}
+
+{% macro battery_discharged_modal_javascript(battery_level) %}
+
+        const batteryDischargedModalDialog = document.getElementById('batteryDischargedModalDialog');
+
+        var myModal = new bootstrap.Modal(batteryDischargedModalDialog)
+
+        {% if battery_level < 10.8 %}
+            myModal.show()
+        {% endif %}
+
+{% endmacro %}

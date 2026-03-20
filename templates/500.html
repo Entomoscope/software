@@ -1,3 +1,8 @@
+{% from 'macros.html' import sd_card_full_modal %}
+{% from 'macros.html' import sd_card_full_modal_javascript %}
+{% from 'macros.html' import battery_discharged_modal %}
+{% from 'macros.html' import battery_discharged_modal_javascript %}
+
 {% extends 'base.html' %}
 
 {% block head %}
@@ -6,7 +11,7 @@
 
 {% block content %}
 <!-- Navigation bar -->
-<nav class="navbar navbar-expand-lg navbar-light bg-primary sticky-top">
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
   <div class="container-fluid">
     <a class="navbar-brand" href="/">Entomoscope</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -80,11 +85,20 @@
             <h2 class="text-center">An exception occurred during a request</h2>
         <div>
     <div>
+    {{ sd_card_full_modal(sd_card) }}
+    {{ battery_discharged_modal(battery_level) }}
 </div>
 {% endblock %}
 
 {% block script %}
 <script type="text/javascript">
+
+    document.addEventListener("DOMContentLoaded", function() {
+
+        {{ sd_card_full_modal_javascript(sd_card) }}
+        {{ battery_discharged_modal_javascript(battery_level) }}
+
+    })
 
     function getCpuTemperature() {
 

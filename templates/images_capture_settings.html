@@ -1,4 +1,8 @@
 {% from 'macros.html' import display_configuration_images_capture_settings %}
+{% from 'macros.html' import sd_card_full_modal %}
+{% from 'macros.html' import sd_card_full_modal_javascript %}
+{% from 'macros.html' import battery_discharged_modal %}
+{% from 'macros.html' import battery_discharged_modal_javascript %}
 
 {% extends 'base.html' %}
 
@@ -8,7 +12,7 @@
 
 {% block content %}
 <!-- Navigation bar -->
-<nav class="navbar navbar-expand-lg navbar-light bg-primary sticky-top">
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
   <div class="container-fluid">
     <a class="navbar-brand" href="/">Entomoscope</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -849,11 +853,15 @@
       {{ display_configuration_images_capture_settings(configuration, autofocus_available) }}
     </div>
   </div>
+  {{ sd_card_full_modal(sd_card) }}
+  {{ battery_discharged_modal(battery_level) }}
 </div>
 {% endblock %}
 
 {% block script %}
 <script type="text/javascript">
+
+    const camera_preview = document.getElementById('camera_preview');
 
     // AI Detection
     const aiDetectionFileSelect = document.getElementById('aiDetectionFileSelect');
@@ -973,17 +981,20 @@
     const jpegQualityNumber = document.getElementById('jpegQualityNumber');
     const jpegQualityConfigurationText = document.getElementById('jpegQualityConfigurationText');
 
-{% if camera_supported %}
     document.addEventListener('DOMContentLoaded', function () {
 
-        const camera_preview = document.getElementById('camera_preview');
+        {% if camera_supported %}
 
         camera_preview.src = "{{ url_for('video_feed') }}";
 
         drawImagePosition()
 
+        {% endif %}
+
+        {{ sd_card_full_modal_javascript(sd_card) }}
+        {{ battery_discharged_modal_javascript(battery_level) }}
+
     });
-{% endif %}
 
     function drawImagePosition() {
 

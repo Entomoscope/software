@@ -16,7 +16,7 @@ from peripherals.rpi import Rpi
 from ephemeris import Ephemeris
 from date_time import DateTime
 
-from globals_parameters import USER, LOGS_DESKTOP_FOLDER, TODAY, TODAY_NOW, TOMORROW, TOMORROW_NOW, MINUTES_OFFSET_FOR_STARTING_ON_TIME
+from globals_parameters import USER, LOGS_DESKTOP_FOLDER, TODAY, TODAY_NOW, TOMORROW, TOMORROW_NOW, MINUTES_OFFSET_FOR_STARTING_ON_TIME, LOW_BATTERY_VOLTAGE_TRESHOLD
 
 from crontab_management import CrontabManagement
 
@@ -61,6 +61,8 @@ def main():
         witty_pi = WittyPi()
 
         if witty_pi.available:
+
+            witty_pi.set_low_voltage_threshold(LOW_BATTERY_VOLTAGE_TRESHOLD)
 
             witty_pi.get_date()
 

@@ -50,17 +50,17 @@ class WittyPi():
     TEMPERATURE_MAX_THRESHOLD = 80
 
     def __init__(self):
-        
+
         try:
 
             self.i2c_bus = smbus.SMBus(1)
             self.available = self.detect()
-            
+
         except PermissionError as e:
-            
+
             self.available = False
-            
-            logger.error(str(e))        
+
+            logger.error(str(e))
 
         if not self.available:
             logger.error('Witty Pi is not detected')
@@ -75,6 +75,9 @@ class WittyPi():
 
         self.startup_alarm = [-1, -1, -1, -1, -1]
         self.shutdown_alarm = [-1, -1, -1, -1, -1]
+
+        self.low_voltage_threshold = 0.0
+        self.recovery_voltage_threshold = 0.0
 
         self.below_temperature_action = 0
         self.below_temperature_threshold = 0
@@ -134,12 +137,14 @@ class WittyPi():
 
         self.get_date()
         self.get_firmware_id()
+        self.get_firmware_revision()
         self.get_input_voltage()
         self.get_output_voltage()
         self.get_output_current()
         self.get_power_mode()
-        self.get_firmware_revision()
         self.get_alarms()
+        self.get_low_voltage_threshold()
+        self.get_recovery_voltage_threshold()
         self.get_below_temperature()
         self.get_over_temperature()
         self.get_led_pulse_interval()
@@ -162,13 +167,13 @@ class WittyPi():
 
         self.date = f'{self.year + 2000}-{self.month:02d}-{self.day:02d} {self.hour:02d}:{self.minute:02d}:{self.second:02d}'
 
-        logger.info(f'date : {self.date}')
+        logger.info(f'date: {self.date}')
 
     def get_firmware_id(self):
 
         try:
 
-            self.firmware_id = self.read_register(0x00)
+            self.firmware_id = self.read_register(0)
             logger.info(f'firmware id: {self.firmware_id}')
 
         except BaseException as e:
@@ -179,7 +184,7 @@ class WittyPi():
 
         try:
 
-            self.input_voltage = self.read_register(0x01) + self.read_register(0x02) / 100
+            self.input_voltage = self.read_register(1) + self.read_register(2) / 100
             self.input_voltage += DIODE_VOLTAGE_DROP_OUT
             logger.info(f'input voltage: {self.input_voltage}')
 
@@ -191,7 +196,7 @@ class WittyPi():
 
         try:
 
-            self.output_voltage = self.read_register(0x03) + self.read_register(0x04) / 100
+            self.output_voltage = self.read_register(3) + self.read_register(4) / 100
             logger.info(f'output voltage: {self.output_voltage}')
 
         except BaseException as e:
@@ -202,7 +207,7 @@ class WittyPi():
 
         try:
 
-            self.output_current = self.read_register(0x05) + self.read_register(0x06) / 100
+            self.output_current = self.read_register(5) + self.read_register(6) / 100
             logger.info(f'output current: {self.output_current}')
 
         except BaseException as e:
@@ -213,7 +218,7 @@ class WittyPi():
 
         try:
 
-            self.power_mode = self.read_register(0x07)
+            self.power_mode = self.read_register(7)
             logger.info(f'power mode: {self.power_mode}')
 
         except BaseException as e:
@@ -224,7 +229,7 @@ class WittyPi():
 
         try:
 
-            self.firmware_revision = self.read_register(0x12)
+            self.firmware_revision = self.read_register(12)
             logger.info(f'firmware revision: {self.firmware_revision}')
 
         except BaseException as e:
@@ -233,15 +238,15 @@ class WittyPi():
 
     def is_alarm_startup_triggered(self):
 
-        return self.read_register(0x9)
+        return self.read_register(9)
 
     def is_alarm_shutdown_triggered(self):
 
-        return self.read_register(0xA)
+        return self.read_register(10)
 
     def get_latest_action_reason_code(self):
 
-        return self.read_register(0xB)
+        return self.read_register(11)
 
     def get_latest_action_reason(self):
 
@@ -275,13 +280,13 @@ class WittyPi():
                 hour_bcd = ((hour // 10) << 4) + (hour - 10 * (hour // 10))
                 minute_bcd = ((minute // 10) << 4) + (minute - 10 * (minute // 10))
 
-                success = self.write_register(0x1B, 0)
+                success = self.write_register(27, 0)
 
-                success = self.write_register(0x1C, minute_bcd)
+                success = self.write_register(28, minute_bcd)
 
-                success = self.write_register(0x1D, hour_bcd)
+                success = self.write_register(29, hour_bcd)
 
-                success = self.write_register(0x1E, day_bcd)
+                success = self.write_register(30, day_bcd)
 
                 logger.info(f'startup alarm set to {day:02d} {hour:02d}:{minute:02d}')
 
@@ -307,13 +312,13 @@ class WittyPi():
             hour_bcd = ((hour // 10) << 4) + (hour - 10 * (hour // 10))
             minute_bcd = ((minute // 10) << 4) + (minute - 10 * (minute // 10))
 
-            success = self.write_register(0x20, 0)
+            success = self.write_register(32, 0)
 
-            success = self.write_register(0x21, minute_bcd)
+            success = self.write_register(33, minute_bcd)
 
-            success = self.write_register(0x22, hour_bcd)
+            success = self.write_register(34, hour_bcd)
 
-            success = self.write_register(0x23, day_bcd)
+            success = self.write_register(35, day_bcd)
 
             logger.info(f'shutdown alarm set to {day:02d} {hour:02d}:{minute:02d}')
 
@@ -323,17 +328,17 @@ class WittyPi():
 
         try:
 
-            self.startup_alarm[0] = self.read_register(0x1B) # Seconds
-            self.startup_alarm[1] = self.read_register(0x1C) # Minutes
-            self.startup_alarm[2] = self.read_register(0x1D) # Hours
-            self.startup_alarm[3] = self.read_register(0x1E) # Day
-            self.startup_alarm[4] = self.read_register(0x1F) # Weekday
+            self.startup_alarm[0] = self.read_register(27) # Seconds
+            self.startup_alarm[1] = self.read_register(28) # Minutes
+            self.startup_alarm[2] = self.read_register(29) # Hours
+            self.startup_alarm[3] = self.read_register(30) # Day
+            self.startup_alarm[4] = self.read_register(31) # Weekday
 
-            self.shutdown_alarm[0] = self.read_register(0x20) # Seconds
-            self.shutdown_alarm[1] = self.read_register(0x21) # Minutes
-            self.shutdown_alarm[2] = self.read_register(0x22) # Hours
-            self.shutdown_alarm[3] = self.read_register(0x23) # Day
-            self.shutdown_alarm[4] = self.read_register(0x24) # Weekday
+            self.shutdown_alarm[0] = self.read_register(32) # Seconds
+            self.shutdown_alarm[1] = self.read_register(33) # Minutes
+            self.shutdown_alarm[2] = self.read_register(34) # Hours
+            self.shutdown_alarm[3] = self.read_register(35) # Day
+            self.shutdown_alarm[4] = self.read_register(36) # Weekday
 
             for i in range(0, 5):
 
@@ -353,8 +358,8 @@ class WittyPi():
 
         if threshold >= TEMPERATURE_MIN_THRESHOLD and threshold <= TEMPERATURE_MAX_THRESHOLD and action in [0, 1, 2]:
 
-            success = self.write_register(0x2B, action)
-            success = self.write_register(0x2C, threshold)
+            success = self.write_register(43, action)
+            success = self.write_register(44, threshold)
 
             logger.info(f'below temperature set to {threshold} and action set to {action}')
 
@@ -362,8 +367,8 @@ class WittyPi():
 
     def get_below_temperature(self):
 
-        self.below_temperature_action = self.read_register(0x2B)
-        self.below_temperature_threshold = self.read_register(0x2C)
+        self.below_temperature_action = self.read_register(43)
+        self.below_temperature_threshold = self.read_register(44)
 
     def set_over_temperature(self, action, threshold):
 
@@ -371,8 +376,8 @@ class WittyPi():
 
         if threshold >= TEMPERATURE_MIN_THRESHOLD and threshold <= TEMPERATURE_MAX_THRESHOLD and action in [0, 1, 2]:
 
-            success = self.write_register(0x2D, action)
-            success = self.write_register(0x2E, threshold)
+            success = self.write_register(45, action)
+            success = self.write_register(46, threshold)
 
             logger.info(f'over temperature set to {threshold} and action set to {action}')
 
@@ -380,8 +385,8 @@ class WittyPi():
 
     def get_over_temperature(self):
 
-        self.over_temperature_action = self.read_register(0x2D)
-        self.over_temperature_threshold = self.read_register(0x2E)
+        self.over_temperature_action = self.read_register(45)
+        self.over_temperature_threshold = self.read_register(46)
 
     def set_led_pulse_interval(self, interval):
 
@@ -391,7 +396,7 @@ class WittyPi():
 
             if interval > 0 and interval < 255:
 
-                success = self.write_register(0x12, interval)
+                success = self.write_register(18, interval)
 
                 logger.info(f'led pulse interval set to {interval} seconds')
 
@@ -401,7 +406,7 @@ class WittyPi():
 
     def get_led_pulse_interval(self):
 
-        self.led_pulse_interval = self.read_register(0x12)
+        self.led_pulse_interval = self.read_register(18)
 
     def set_led_light_up_duration(self, duration):
 
@@ -411,7 +416,7 @@ class WittyPi():
 
             if duration > 0 and duration < 255:
 
-                success = self.write_register(0x14, duration)
+                success = self.write_register(20, duration)
 
                 logger.info(f'led light up duration set to {duration} milliseconds')
 
@@ -421,7 +426,31 @@ class WittyPi():
 
     def get_led_light_up_duration(self):
 
-        self.led_light_up_duration = self.read_register(0x14)
+        self.led_light_up_duration = self.read_register(20)
+
+    def set_low_voltage_threshold(self, voltage):
+
+        if voltage >= 2.0 and voltage <= 25.0:
+            success = self.write_register(19, int(voltage*10))
+            logger.info(f'low voltage threshold set to {voltage} volts')
+        else:
+            logger.error(f'low voltage threshold {voltage} not set. Must be in the range [2.0 25.0]')
+
+    def get_low_voltage_threshold(self):
+
+        self.low_voltage_threshold = self.read_register(19) / 10
+
+    def set_recovery_voltage_threshold(self, voltage):
+
+        if voltage >= 2.0 and voltage <= 25.0:
+            success = self.write_register(22, int(voltage*10))
+            logger.info(f'recovery voltage threshold set to {voltage} volts')
+        else:
+            logger.error(f'recovery voltage threshold {voltage} not set. Must be in the range [2.0 25.0]')
+
+    def get_recovery_voltage_threshold(self):
+
+        self.recovery_voltage_threshold = self.read_register(22) / 10
 
     def read_register(self, register):
 
@@ -467,10 +496,28 @@ class WittyPi():
         s += '  Power mode: ' + ('LDO regulator' if self.power_mode == 1 else '5V USB') + '\n'
         s += f'  Startup alarm: {self.startup_alarm[3]:02d} {self.startup_alarm[2]:02d}:{self.startup_alarm[1]:02d}:{self.startup_alarm[0]:02d}\n'
         s += f'  Shutdown alarm: {self.shutdown_alarm[3]:02d} {self.shutdown_alarm[2]:02d}:{self.shutdown_alarm[1]:02d}:{self.shutdown_alarm[0]:02d}\n'
-        s += f'  Below temperature action: {self.below_temperature_action}\n'
-        s += f'  Below temperature threshold: {self.below_temperature_threshold}\n'
-        s += f'  Over temperature action: {self.over_temperature_action}\n'
-        s += f'  Over temperature threshold: {self.over_temperature_threshold}\n'
+        if self.low_voltage_threshold == 0 or self.low_voltage_threshold == 25.5:
+            s += f'  Low voltage threshold: disable\n'
+        else:
+            s += f'  Low voltage threshold: {self.low_voltage_threshold:.1f}V\n'
+        if self.recovery_voltage_threshold == 0 or self.recovery_voltage_threshold == 25.5:
+            s += f'  Recovery voltage threshold: disable\n'
+        else:
+            s += f'  Recovery voltage threshold: {self.recovery_voltage_threshold:.1f}V\n'
+        s += f'  Below temperature threshold: {self.below_temperature_threshold} C\n'
+        if self.below_temperature_action == 0:
+            s += f'  Below temperature action: do nothing\n'
+        elif self.below_temperature_action == 1:
+            s += f'  Below temperature action: shutdown\n'
+        elif self.below_temperature_action == 2:
+            s += f'  Below temperature action: startup\n'
+        s += f'  Over temperature threshold: {self.over_temperature_threshold} C\n'
+        if self.below_temperature_action == 0:
+            s += f'  Over temperature action: do nothing\n'
+        elif self.below_temperature_action == 1:
+            s += f'  Over temperature action: shutdown\n'
+        elif self.below_temperature_action == 2:
+            s += f'  Over temperature action: startup\n'
         s += f'  LED pulse interval: {self.led_pulse_interval}\n'
         s += f'  LED light up duration: {self.led_light_up_duration}\n'
 
@@ -479,6 +526,8 @@ class WittyPi():
 def main():
 
     witty_pi = WittyPi()
+
+    witty_pi.set_low_voltage_threshold(10.5)
 
     if witty_pi.available:
 

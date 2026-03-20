@@ -160,6 +160,8 @@ logger.info(f'internet connection try duration: {INTERNET_CONNECTION_TRY_DURATIO
 WIFI_AUTOCONNECT_AP = True
 logger.info(f'wifi AP autoconnection set to: {WIFI_AUTOCONNECT_AP}')
 
+LOW_BATTERY_VOLTAGE_TRESHOLD = 10.5 # volts
+
 SERVER_PORT = 7777
 logger.info(f'server port: {SERVER_PORT}')
 SERVER_DEBUG = True

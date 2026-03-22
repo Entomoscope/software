@@ -2493,9 +2493,7 @@ def get_cpu_temperature():
 
     try:
 
-        temperature = f'{rpi.get_temperature():.1f}'
-
-        return jsonify(success=True, message='CPU temperature read successfully', temperature=temperature)
+        return jsonify(success=True, message='CPU temperature read successfully', temperature=rpi.get_temperature())
 
     except Exception as e:
 

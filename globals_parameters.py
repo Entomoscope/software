@@ -111,7 +111,7 @@ logger.info('tmp folder: ' + TMP_FOLDER)
 MEDIA_FOLDER = os.path.join('/media', USER)
 logger.info('media folder: ' + MEDIA_FOLDER)
 
-AI_ENABLE = False
+AI_ENABLE = True
 logger.info(f'ai enable: {AI_ENABLE}')
 
 AI_MODEL_PATH = os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'ai_models')

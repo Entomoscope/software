@@ -1,0 +1,738 @@
+{% from 'macros.html' import sd_card_full_modal -%}
+{% from 'macros.html' import sd_card_full_modal_javascript -%}
+{% from 'macros.html' import battery_discharged_modal -%}
+{% from 'macros.html' import battery_discharged_modal_javascript -%}
+{% from 'macros.html' import ask_modal -%}
+{% from 'macros.html' import wait_modal -%}
+{% extends 'base.html' %}
+{% block head -%}
+    <title>Entomoscope - Storage</title>
+{%- endblock -%}
+{%- block content %}
+<!-- Navigation bar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">Entomoscope</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link" href="/">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('data') }}">Data</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="{{ url_for('storage') }}">Storage</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('global_settings') }}">Capture Settings</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('images_capture_settings') }}">Images Capture</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('sounds_capture_settings') }}">Sounds Capture</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('information') }}">Information</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('logs') }}">Logs</a>
+        </li>
+      </ul>
+    </div>
+    <div class="nav pull-right">
+        <!-- Update available -->
+        {% if updates_available %}
+        <button class="btn btn-success me-2" style="pointer-events: none" id="updateNavBar"><i class="bi bi-cloud-download"></i>
+            Update available
+        </button>
+        {% endif %}
+        <!-- SD card usage -->
+        {% if sd_card.used_percent_num < 80 %}
+        <button class="btn btn-success me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card" id="sdCardI"></i>
+        {% elif sd_card.used_percent_num < 90 %}
+        <button class="btn btn-warning me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card" id="sdCardI"></i>
+        {% else %}
+        <button class="btn btn-danger me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card-fill" id="sdCardI"></i>
+        {% endif %}
+             <span class="d-none d-sm-inline" id="sdCardUsageSpan">{{ '%.0f' % sd_card.used_percent_num }} %</span>
+        </button>
+        <!-- Battery level -->
+        {% if battery_level > 0 %}
+            {% if battery_level > 11.5 %}
+            <button class="btn btn-success me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-full" id="batteryLevelI"></i>
+            {% elif battery_level > 10.8 %}
+            <button class="btn btn-warning me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-half" id="batteryLevelI"></i>
+            {% else %}
+            <button class="btn btn-danger me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-low" id="batteryLevelI"></i>
+            {% endif %}
+                 <span class="d-none d-sm-inline" id="batteryLevelSpan">{{ '%.1f' % battery_level }} V</span>
+            </button>
+        {% endif %}
+        <!-- CPU Temperature -->
+        {% if rpi.cpu_temperature < 65 %}
+        <button class="btn btn-success me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
+        {% elif rpi.cpu_temperature < 75 %}
+        <button class="btn btn-warning me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
+        {% else %}
+        <button class="btn btn-danger me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
+        {% endif %}
+            <span class="d-none d-sm-inline" id="cpuTemperatureSpan">{{ '%.0f' % rpi.cpu_temperature }} &deg;C</span>
+        </button>
+        <!-- Reboot -->
+        <button class="btn btn-light me-2" id="updateNavBar" onclick="reboot()"><i class="bi bi-bootstrap-reboot"></i></button>
+        <!-- Shutdown -->
+        <button class="btn btn-danger" id="updateNavBar" onclick="shutdown()"><i class="bi bi-power"></i></button>
+    </div>
+  </div>
+</nav>
+<!-- Page content -->
+<div class="container mt-3">
+    <div class="row align-items-start">
+        <div class="card-group">
+            <!-- SD -->
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">SD card</h5>
+                <div class="mt-3 pt-1">
+                    <div class="d-flex justify-content-between">
+                        <p class="text-muted font-size-13 mb-1">{{ sd_card.total }} total</p>
+                        <p class="text-muted font-size-13 mb-1" id="sdCardUsed">{{ sd_card.used }} used ({{ sd_card.used_percent }})</p>
+                    </div>
+                    <div class="progress animated-progess custom-progress">
+                        {% if sd_card.used_percent_num > 90 %}
+                        <div class="progress-bar bg-gradient bg-danger" role="progressbar" id="sdCardProgress" style="width: {{ sd_card.used_percent_num }}%" aria-valuenow="{{ sd_card.used_percent_num }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        {% elif sd_card.used_percent_num > 80 %}
+                        <div class="progress-bar bg-gradient bg-warning" role="progressbar" id="sdCardProgress" style="width: {{ sd_card.used_percent_num }}%" aria-valuenow="{{ sd_card.used_percent_num }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        {% else %}
+                        <div class="progress-bar bg-gradient bg-success" role="progressbar" id="sdCardProgress" style="width: {{ sd_card.used_percent_num }}%" aria-valuenow="{{ sd_card.used_percent_num }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        {% endif %}
+                    </div>
+                </div>
+              </div>
+            </div>
+            <!-- USB drive -->
+            <div class="card">
+                <div class="card-body">
+                <h5 class="card-title d-flex justify-content-between align-items-center">USB drive
+                {% if external_disk.available %}
+                    <button type="submit" class="btn btn-primary btn-sm" id="usbDriveEjectButton" onclick="ejectUsbDrive()"><i class="bi bi-eject fs-4"></i></button>
+                {% else %}
+                    <button type="submit" class="btn btn-primary btn-sm disabled" id="usbDriveEjectButton" onclick="ejectUsbDrive()"><i class="bi bi-eject fs-4"></i></button>
+                {% endif %}
+                </h5>
+                    <div class="mt-3 pt-1">
+                        <div class="d-flex justify-content-between">
+                            {% if external_disk.available %}
+                                <p class="text-muted font-size-13 mb-1" id="usbDriveTotal">{{ external_disk.total }} total</p>
+                                <p class="text-muted font-size-13 mb-1" id="usbDriveUsed">{{ external_disk.used }} used ({{ external_disk.used_percent }})</p>
+                            {% else %}
+                                <p class="text-muted font-size-13 mb-1" id="usbDriveTotal">0 total</p>
+                                <p class="text-muted font-size-13 mb-1" id="usbDriveUsed">0 used (0%)</p>
+                            {% endif %}
+                        </div>
+                        <div class="progress animated-progess custom-progress">
+                            {% if external_disk.available %}
+                                {% if external_disk.used_percent_num > 90 %}
+                                <div class="progress-bar bg-gradient bg-danger" role="progressbar" style="width: {{ external_disk.used_percent_num }}%" id="usbDriveProgress" aria-valuenow="{{ external_disk.used_percent_num }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                {% elif external_disk.used_percent_num > 80 %}
+                                <div class="progress-bar bg-gradient bg-warning" role="progressbar" style="width: {{ external_disk.used_percent_num }}%" id="usbDriveProgress" aria-valuenow="{{ external_disk.used_percent_num }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                {% else %}
+                                <div class="progress-bar bg-gradient bg-success" role="progressbar" style="width: {{ external_disk.used_percent_num }}%" id="usbDriveProgress" aria-valuenow="{{ external_disk.used_percent_num }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                {% endif %}
+                            {% else %}
+                                <div class="progress-bar bg-gradient bg-secondary" role="progressbar" style="width: 0%" id="usbDriveProgress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% if stats %}
+    <div class="row align-items-start mt-3">
+        <!-- Folders table -->
+        <table class="table table-sm table-light align-middle fs-6" id="foldersTable">
+          <thead>
+            <tr class="text-center">
+              <th scope="col">Date</th>
+              <th scope="col" style="border-left: solid 1px">Captures</th>
+              <th scope="col" style="border-left: solid 1px">Save</th>
+              <th scope="col">Delete</th>
+            </tr>
+          </thead>
+          <tbody class="table-group-divider">
+          {% for folder, stat in zip(stats['folders'], stats['stat']) %}
+            <tr class="text-center">
+              {% if stat['size_all_files'] > 0 %}
+              <th scope="row">{{ folder }}<br/><span class="fw-normal">{{ stat['size_all_files'] }}MB</span></th>
+              {% else %}
+              <th scope="row">{{ folder }}</th>
+              {% endif %}
+              <td style="border-left: solid 1px">
+                {% if stat['num_detection_files'] > 0 %}
+                <button type="button" class="btn btn-light position-relative me-3" style="pointer-events: none">
+                  <i class="bi bi-bug-fill fs-6"></i>
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                    {{ stat['num_detection_files'] }}
+                  </span>
+                </button>
+                {% endif %}
+                {% if stat['num_timelapse_files'] > 0 %}
+                <button type="button" class="btn btn-light position-relative me-3" style="pointer-events: none">
+                  <i class="bi bi-stopwatch-fill fs-6"></i>
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                    {{ stat['num_timelapse_files'] }}
+                  </span>
+                </button>
+                {% endif %}
+                {% if stat['num_test_detection_files'] > 0 %}
+                <button type="button" class="btn btn-light position-relative me-3" style="pointer-events: none">
+                  <i class="bi bi-tools fs-6"></i>
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                    {{ stat['num_test_detection_files'] }}
+                  </span>
+                </button>
+                {% endif %}
+                {% if stat['num_sounds_files'] > 0 %}
+                <button type="button" class="btn btn-light position-relative" style="pointer-events: none">
+                  <i class="bi bi-volume-up-fill fs-6"></i>
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                    {{ stat['num_sounds_files'] }}
+                  </span>
+                </button>
+                {% endif %}
+              </td>
+              {% if external_disk.available %}
+              <td style="border-left: solid 1px"><button type="button" class="btn btn-primary mt-2 btn-sm" onClick="askFolder('save', {{ folder }}, {{ loop.index0 }})"><i class="bi bi-usb-drive fs-4"></i></button></td>
+              {% else %}
+              <td style="border-left: solid 1px"><button type="button" class="btn btn-primary mt-2 disabled btn-sm" onClick="askFolder('save', {{ folder }}, {{ loop.index0 }})"><i class="bi bi-usb-drive fs-4"></i></button></td>
+              {% endif %}
+              <td><button type="button" class="btn btn-primary mt-2 btn-sm" onClick="askFolder('delete', {{ folder }}, {{ loop.index0 }})"><i class="bi bi-trash fs-4"></i></button></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+          <!-- Total-->
+          <tfoot class="table-group-divider">
+            <tr class="text-center">
+              <th scope="row">Total<br/><span class="fw-normal">{{ stats['total']['size_all_files'] }}MB</span></th>
+                <td style="border-left: solid 1px">
+                {% if stats['total']['num_detection_files'] > 0 %}
+                <button type="button" class="btn btn-light position-relative me-3" style="pointer-events: none" id="totalDetectionFilesBtn">
+                  <i class="bi bi-bug-fill fs-6"></i>
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="totalDetectionFilesSpan">
+                    {{ stats['total']['num_detection_files'] }}
+                  </span>
+                </button>
+                {% endif %}
+                {% if stats['total']['num_timelapse_files'] > 0 %}
+                <button type="button" class="btn btn-light position-relative me-3" style="pointer-events: none" id="totalTimelapseFilesBtn">
+                  <i class="bi bi-stopwatch-fill fs-6"></i>
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="totalTimelapseFilesSpan">
+                    {{ stats['total']['num_timelapse_files'] }}
+                  </span>
+                </button>
+                {% endif %}
+                {% if stats['total']['num_test_detection_files'] > 0 %}
+                <button type="button" class="btn btn-light position-relative me-3" style="pointer-events: none" id="totalTestDetectionFilesBtn">
+                  <i class="bi bi-tools fs-6"></i>
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="totalTestDetectionFilesSpan">
+                    {{ stats['total']['num_test_detection_files'] }}
+                  </span>
+                </button>
+                {% endif %}
+                {% if stats['total']['num_sounds_files'] > 0 %}
+                <button type="button" class="btn btn-light position-relative" style="pointer-events: none" id="totalSoundsFilesBtn">
+                  <i class="bi bi-volume-up-fill fs-6"></i>
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="totalSoundsFilesSpan">
+                    {{ stats['total']['num_sounds_files'] }}
+                  </span>
+                </button>
+                {% endif %}
+              </td>
+              {% if external_disk.available and (stats['folders'] | length) > 0  %}
+              <td style="border-left: solid 1px"><button type="button" id="saveTotalButton" class="btn btn-primary mt-2 btn-sm" onClick="askFolder('save', 'all', {{ stats['folders'] | length }})"><i class="bi bi-usb-drive fs-4"></i></button></td>
+              {% else %}
+              <td style="border-left: solid 1px"><button type="button" id="saveTotalButton" class="btn btn-primary mt-2 disabled btn-sm" onClick="askFolder('save', 'all', {{ stats['folders'] | length }})"><i class="bi bi-usb-drive fs-4"></i></button></td>
+              {% endif %}
+              {% if (stats['folders'] | length) > 0 %}
+              <td><button type="button" class="btn btn-primary mt-2 btn-sm" id="deleteTotalButton" onClick="askFolder('delete', 'all', {{ stats['folders'] | length }})"><i class="bi bi-trash fs-4"></i></button></td>
+              {% else %}
+              <td><button type="button" class="btn btn-primary mt-2 disabled btn-sm" id="deleteTotalButton" onClick="askFolder('delete', 'all', {{ stats['folders'] | length }})"><i class="bi bi-trash fs-4"></i></button></td>
+              {% endif %}
+            </tr>
+          </tfoot>
+        </table>
+    </div>
+    <div class="row mb-3 text-center">
+        <div class="col-3">
+            <button type="button" class="btn btn-light position-relative me-3" style="pointer-events: none">
+              <i class="bi bi-bug-fill fs-6"></i>
+              Detections</button>
+        </div>
+        <div class="col-3">
+            <button type="button" class="btn btn-light position-relative me-3" style="pointer-events: none">
+              <i class="bi bi-stopwatch-fill fs-6"></i>
+              Timelapses</button>
+        </div>
+        <div class="col-3">
+            <button type="button" class="btn btn-light position-relative me-3" style="pointer-events: none">
+              <i class="bi bi-tools fs-6"></i>
+              Tests</button>
+        </div>
+        <div class="col-3">
+            <button type="button" class="btn btn-light position-relative me-3" style="pointer-events: none">
+              <i class="bi bi-volume-up-fill fs-6"></i>
+              Sounds</button>
+        </div>
+     </div>
+    {% endif %}
+</div>
+<!-- Modals dialog -->
+{{ wait_modal() }}
+{{ ask_modal() }}
+{{ sd_card_full_modal(sd_card) }}
+{{ battery_discharged_modal(battery_level) }}
+{% endblock %}
+{% block script %}
+<script type="text/javascript">
+
+    const sdCardUsageSpan = document.getElementById('sdCardUsageSpan');
+    const sdCardI = document.getElementById('sdCardI');
+    const batteryLevelSpan = document.getElementById('batteryLevelSpan');
+    const batteryLevelI = document.getElementById('batteryLevelI');
+    const cpuTemperatureSpan = document.getElementById('cpuTemperatureSpan');
+
+    const usbDriveTotal = document.getElementById('usbDriveTotal')
+    const usbDriveUsed = document.getElementById('usbDriveUsed')
+    const usbDriveEjectButton = document.getElementById('usbDriveEjectButton')
+    const usbDriveProgress = document.getElementById('usbDriveProgress')
+
+    const totalDetectionFilesSpan = document.getElementById('totalDetectionFilesSpan')
+    const totalTimelapseFilesSpan = document.getElementById('totalTimelapseFilesSpan')
+    const totalTestDetectionFilesSpan = document.getElementById('totalTestDetectionFilesSpan')
+    const totalSoundsFilesSpan = document.getElementById('totalSoundsFilesSpan')
+
+    const totalDetectionFilesBtn = document.getElementById('totalDetectionFilesBtn')
+    const totalTimelapseFilesBtn = document.getElementById('totalTimelapseFilesBtn')
+    const totalTestDetectionFilesBtn = document.getElementById('totalTestDetectionFilesBtn')
+    const totalSoundsFilesBtn = document.getElementById('totalSoundsFilesBtn')
+
+    const saveTotalButton = document.getElementById('saveTotalButton')
+    const deleteTotalButton = document.getElementById('deleteTotalButton')
+
+    const askModalDialog = document.getElementById('askModalDialog');
+    var askModal = new bootstrap.Modal(askModalDialog)
+    const askParagraph = document.getElementById('askParagraph');
+    const foldersTable = document.getElementById('foldersTable');
+
+    const waitModalDialog = document.getElementById('waitModalDialog');
+    var waitModal = new bootstrap.Modal(waitModalDialog)
+    const waitTitle = document.getElementById('waitTitle');
+    const waitParagraph = document.getElementById('waitParagraph');
+
+    var folderToProcess = ""
+    var rowIndex = 0
+
+    var actionToDo = null
+
+    document.addEventListener("DOMContentLoaded", function() {
+
+        {{ sd_card_full_modal_javascript(sd_card) }}
+        {{ battery_discharged_modal_javascript(battery_level) }}
+
+        //var socket = io();
+
+        //socket.on('connect', function() {
+            //socket.send('User has connected!');
+        //});
+
+        //socket.on('message', function(msg) {
+            //console.log(msg)
+
+            //if (msg == 'file deleted') {
+                //console.log('OK')
+
+        //return fetch('/data2', {
+            //method: 'POST',
+            //headers: {
+                //'Content-Type': 'application/json',
+            //},
+            //body: '',
+        //})
+        //.catch(error => {
+        //console.error('Error updating settings:', error);
+        //throw error;  // Re-throw the error for the next catch
+        //});
+
+            //}
+
+        //});
+
+    })
+
+    function reboot() {
+
+        actionToDo = 'reboot'
+
+        askTitle.innerText = 'Reboot'
+        askParagraph.innerText = 'Do you really want to reboot?'
+
+        askModal.show()
+
+    }
+
+    function shutdown() {
+
+        actionToDo = 'shutdown'
+
+        askTitle.innerText = 'Shutdown'
+        askParagraph.innerText = 'Do you really want to shutdown?'
+
+        askModal.show()
+
+    }
+
+    function showFolder(folder, data_type) {
+
+        data = [folder, data_type, null]
+
+        return fetch('/show', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function ejectUsbDrive() {
+
+        console.log('Eject')
+
+        return fetch('/eject_external_drive', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+
+                usbDriveEjectButton.className = 'btn btn-primary disabled'
+
+                usbDriveTotal.innerText = '0 total'
+                usbDriveUsed.innerText = '0 used (0%)'
+
+                usbDriveProgress.style = 'width: 0%'
+                // usbDriveProgress.aria-valuenow = '0'
+
+            }
+            else {
+
+                usbDriveEjectButton.className = 'btn btn-primary btn-sm'
+            }
+
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function viewFolder(folder) {
+
+        console.log(folder)
+
+    }
+
+    function askFolder(action, folder, index) {
+
+        rowIndex = index
+        actionToDo = action
+        folderToProcess = folder
+
+        askTitle.innerText = String(actionToDo).charAt(0).toUpperCase() + String(actionToDo).slice(1) + ' folder'
+
+        askParagraph.innerText = 'Do you really want to ' + actionToDo + ' ' + folder + ' folder?'
+
+        askModal.show()
+
+    }
+
+    function actionOk() {
+
+        askModal.hide()
+
+        if (actionToDo == 'reboot') {
+            return fetch('/reboot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(name),
+            })
+            .catch(error => {
+                console.error('Error reboot: ', error);
+                throw error;  // Re-throw the error for the next catch
+            });
+        } else if (actionToDo == 'shutdown') {
+            return fetch('/shutdown', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(name),
+            })
+            .catch(error => {
+                console.error('Error shutdown: ', error);
+                throw error;  // Re-throw the error for the next catch
+            });
+        } else if (actionToDo == 'delete') {
+
+            waitTitle.innerText = 'Deleting folder'
+            waitParagraph.innerText = 'Wait for ' + folderToProcess + ' folder deleting to complete'
+            waitModal.show()
+
+            console.log('delete ' + folderToProcess)
+
+            return fetch('/manage_data2/delete/' + folderToProcess, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: '',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+
+                    if (folderToProcess == 'all') {
+                        for (let i = rowIndex; i>0; i--) {
+                            foldersTable.deleteRow(i);
+                        }
+                    } else {
+                        foldersTable.deleteRow(rowIndex+1);
+                    }
+
+                    sdCardUsed.innerText = data.data[0] + ' (' + data.data[2]+ ')'
+
+                    if (data.data[1] < 80) {
+                        sdCardNavBar.className = "btn btn-success me-2"
+                        sdCardNavBar.innerHTML = '<i class="bi bi-sd-card"></i> ' + data.data[3].toFixed(0) + ' %'
+                        sdCardProgress.className = "progress-bar bg-gradient bg-success"
+                    } else if (data.data[1] < 90) {
+                        sdCardNavBar.className = "btn btn-warning me-2"
+                        sdCardNavBar.innerHTML = '<i class="bi bi-sd-card"></i> ' + data.data[3].toFixed(0) + ' %'
+                        sdCardProgress.className = "progress-bar bg-gradient bg-warning"
+                    } else {
+                        sdCardNavBar.className = "btn btn-danger me-2"
+                        sdCardNavBar.innerHTML = '<i class="bi bi-sd-card-fill"></i> ' + data.data[3].toFixed(0) + ' %'
+                        sdCardProgress.className = "progress-bar bg-gradient bg-danger"
+                    }
+
+                    if (data.data[4]['num_sounds_files'] > 0) {
+                        totalSoundsFilesSpan.innerHTML = data.data[4]['num_sounds_files']
+                    } else {
+                        totalSoundsFilesBtn.className = 'd-none'
+                    }
+
+                    if (data.data[4]['num_detection_files'] > 0) {
+                        totalDetectionFilesSpan.innerHTML = data.data[4]['num_detection_files']
+                    } else {
+                        totalDetectionFilesBtn.className = 'd-none'
+                    }
+
+                    if (data.data[4]['num_timelapse_files'] > 0) {
+                        totalTimelapseFilesSpan.innerHTML = data.data[4]['num_timelapse_files']
+                    } else {
+                        totalTimelapseFilesBtn.className = 'd-none'
+                    }
+
+                    if (data.data[4]['num_test_detection_files'] > 0) {
+                        totalTestDetectionFilesSpan.innerHTML = data.data[4]['num_test_detection_files']
+                    } else {
+                        totalTestDetectionFilesBtn.className = 'd-none'
+                    }
+
+                    saveTotalButton.className ="btn btn-primary mt-2 disabled btn-sm"
+                    deleteTotalButton.className ="btn btn-primary mt-2 disabled btn-sm"
+
+                    console.log('Done')
+
+                }
+                waitModal.hide()
+            })
+            .catch(error => {
+            console.error('Error deleting folder:', error);
+            throw error;  // Re-throw the error for the next catch
+            });
+        } else if (actionToDo == 'save') {
+
+            waitTitle.innerText = 'Saving folder'
+            waitParagraph.innerText = 'Wait for ' + folderToProcess + ' folder saving to complete'
+            waitModal.show()
+
+            console.log('saving ' + folderToProcess)
+
+            return fetch('/manage_data2/save/' + folderToProcess, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: '',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Done')
+                    console.log(data)
+
+                    usbDriveUsed.innerText = data.data[0] + ' (' + data.data[2]+ ')'
+
+                    if (data.data[1] < 80) {
+                        usbDriveProgress.className = "progress-bar bg-gradient bg-success"
+                    } else if (data.data[1] < 90) {
+                        usbDriveProgress.className = "progress-bar bg-gradient bg-warning"
+                    } else {
+                        usbDriveProgress.className = "progress-bar bg-gradient bg-danger"
+                    }
+
+                }
+                waitModal.hide()
+            })
+            .catch(error => {
+            console.error('Error saving folder:', error);
+            throw error;  // Re-throw the error for the next catch
+            });
+
+        }
+
+    }
+
+    function getCpuTemperature() {
+
+        const cpuTempNavBar = document.getElementById('cpuTempNavBar')
+
+        return fetch('/get_cpu_temperature', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.temperature >= 75) {
+                    cpuTempNavBar.className = "btn btn-danger me-2"
+                } else if (data.temperature >= 65) {
+                    cpuTempNavBar.className = "btn btn-warning me-2"
+                } else {
+                    cpuTempNavBar.className = "btn btn-success me-2"
+                }
+                cpuTemperatureSpan.innerHTML = data.temperature.toFixed(0) + ' &degC'
+            }
+        })
+        .catch(error => {
+        console.error('Error getting CPU temperature:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function getBatteryLevel() {
+
+        const batteryLevelNavBar = document.getElementById('batteryLevelNavBar');
+
+        return fetch('/get_battery_level', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.battery_level > 0) {
+                    if (data.battery_level > 11.5) {
+                        batteryLevelNavBar.className = "btn btn-success me-2"
+                        batteryLevelI.className = "bi bi-battery-full"
+                    } else if (data.battery_level > 10.8) {
+                        batteryLevelNavBar.className = "btn btn-warning me-2"
+                        batteryLevelI.className = "bi bi-battery-half"
+                    } else {
+                        batteryLevelNavBar.className = "btn btn-danger me-2"
+                        batteryLevelI.className = "bi bi-battery-low"
+                    }
+                    batteryLevelSpan.innerHTML = data.battery_level.toFixed(1) + ' V'
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error getting battery level:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function getSdCardUsage() {
+
+        const sdCardNavBar = document.getElementById('sdCardNavBar');
+
+        return fetch('/get_sd_card_usage', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.sd_card_usage < 80) {
+                    sdCardNavBar.className = "btn btn-success me-2"
+                } else if (data.sd_card_usage < 90) {
+                    sdCardNavBar.className = "btn btn-warning me-2"
+                    sdCardI.className = "bi bi-sd-card"
+                } else {
+                    sdCardNavBar.className = "btn btn-danger me-2"
+                    sdCardI.className = "bi bi-sd-card-fill"
+                }
+                sdCardUsageSpan.innerHTML = data.sd_card_usage.toFixed(0) + ' %'
+            }
+        })
+        .catch(error => {
+            console.error('Error getting SD card usage:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    var intervalId = setInterval(function() {
+        getCpuTemperature()
+    }, 10000);
+
+    var intervalId2 = setInterval(function() {
+        getBatteryLevel()
+    }, 60000);
+
+    var intervalId3 = setInterval(function() {
+        getSdCardUsage()
+    }, 60000);
+
+</script>
+{% endblock %}

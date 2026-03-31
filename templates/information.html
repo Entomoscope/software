@@ -1,0 +1,829 @@
+{% from 'macros.html' import sd_card_full_modal -%}
+{% from 'macros.html' import sd_card_full_modal_javascript -%}
+{% from 'macros.html' import battery_discharged_modal -%}
+{% from 'macros.html' import battery_discharged_modal_javascript -%}
+{% from 'macros.html' import ask_modal -%}
+{% from 'macros.html' import wait_modal -%}
+{% extends 'base.html' %}
+{% block head -%}
+    <title>Entomoscope - Information</title>
+{%- endblock -%}
+{%- block content %}
+<!-- Navigation bar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">Entomoscope</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link" href="/">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('data') }}">Data</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('storage') }}">Storage</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('global_settings') }}">Capture Settings</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('images_capture_settings') }}">Images Capture</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('sounds_capture_settings') }}">Sounds Capture</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="{{ url_for('information') }}">Information</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('logs') }}">Logs</a>
+        </li>
+      </ul>
+    </div>
+    <div class="nav pull-right">
+        <!-- Update available -->
+        {% if updates_available %}
+        <button class="btn btn-success me-2" style="pointer-events: none" id="updateNavBar"><i class="bi bi-cloud-download"></i>
+            Update available
+        </button>
+        {% endif %}
+        <!-- SD card usage -->
+        {% if sd_card.used_percent_num < 80 %}
+        <button class="btn btn-success me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card" id="sdCardI"></i>
+        {% elif sd_card.used_percent_num < 90 %}
+        <button class="btn btn-warning me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card" id="sdCardI"></i>
+        {% else %}
+        <button class="btn btn-danger me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card-fill" id="sdCardI"></i>
+        {% endif %}
+             <span class="d-none d-sm-inline" id="sdCardUsageSpan">{{ '%.0f' % sd_card.used_percent_num }} %</span>
+        </button>
+        <!-- Battery level -->
+        {% if battery_level > 0 %}
+            {% if battery_level > 11.5 %}
+            <button class="btn btn-success me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-full" id="batteryLevelI"></i>
+            {% elif battery_level > 10.8 %}
+            <button class="btn btn-warning me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-half" id="batteryLevelI"></i>
+            {% else %}
+            <button class="btn btn-danger me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-low" id="batteryLevelI"></i>
+            {% endif %}
+                 <span class="d-none d-sm-inline" id="batteryLevelSpan">{{ '%.1f' % battery_level }} V</span>
+            </button>
+        {% endif %}
+        <!-- CPU Temperature -->
+        {% if rpi.cpu_temperature < 65 %}
+        <button class="btn btn-success me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
+        {% elif rpi.cpu_temperature < 75 %}
+        <button class="btn btn-warning me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
+        {% else %}
+        <button class="btn btn-danger me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
+        {% endif %}
+            <span class="d-none d-sm-inline" id="cpuTemperatureSpan">{{ '%.0f' % rpi.cpu_temperature }} &deg;C</span>
+        </button>
+        <!-- Reboot -->
+        <button class="btn btn-light me-2" id="updateNavBar" onclick="reboot()"><i class="bi bi-bootstrap-reboot"></i></button>
+        <!-- Shutdown -->
+        <button class="btn btn-danger" id="updateNavBar" onclick="shutdown()"><i class="bi bi-power"></i></button>
+    </div>
+  </div>
+</nav>
+<!-- Page content -->
+<div class="container-fluid">
+    <div class="row align-items-start">
+<!-- Raspberry Pi -->
+        <div class="col-12 col-sm-6">
+            <div class="card mt-3">
+              <div class="card-body">
+                <h5 class="card-title">Raspberry Pi</h5>
+                <ul>
+                <li>Model: {{ rpi.model }}</li>
+                <li>Memory: {{ rpi.memory }}</li>
+                <li>Revision: {{ rpi.revision }}</li>
+                <li>Serial: {{ rpi.serial }}</li>
+                <li>OS: {{ rpi.os_version }} - {{ rpi.arch_version }}</li>
+                </ul>
+              </div>
+            </div>
+        </div>
+        <!-- Date -->
+        <div class="col-12 col-sm-6">
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Date</h5>
+                    <ul>
+                <li id="datetimeLocalText">{{ dateTime.date_time_info[0] }}</li>
+                <li id="datetimeTimeZoneText">{{ dateTime.date_time_info[1] }}</li>
+                </ul>
+                <hr/>
+                <div class="form-group">
+                    <div class="input-group mb-1">
+                        <input type="date" id="setDateNumber" class="form-control" value="{{ dateTime.date }}"/>
+                        <input type="time" id="setTimeNumber" class="form-control" value="{{ dateTime.time }}"/>
+                        <div class="input-group-text">{{ tzone }}</div>
+                    </div>
+                </div>
+                <div class="form-button-center">
+                    <button type="submit" class="btn btn-primary" id="dateSetButton" onclick="setDate()">Set</button>
+                </div>
+                </div>
+            </div>
+        </div>
+        <!-- Firmware -->
+        <div class="col-12 col-sm-6">
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Firmware</h5>
+                    <ul>
+                        <li>{{ commit['date'] }}</li>
+                        <li>{{ commit['subject'] }}</li>
+                        <li>{{ commit['hash_num'] }}</li>
+                    </ul>
+                    {% if updates_available %}
+                        <p id="updateText" class="card-text">Updates available</p>
+                    {% else %}
+                        <p id="updateText" class="card-text">No updates available</p>
+                    {% endif %}
+                    <hr/>
+                    <div class="form-button-center">
+                        {% if updates_available %}
+                            <button type="submit" class="btn btn-primary" id="getUpdatesButton" onclick="getUpdates()">Update</button>
+                        {% else %}
+                            <button type="submit" class="btn btn-primary" id="getUpdatesButton" onclick="getUpdates()" disabled>Update</button>
+                        {% endif %}
+                        <button type="submit" class="btn btn-primary" id="checkUpdatesButton" onclick="checkUpdates()">Check</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- WiFi -->
+        <div class="col-12 col-sm-6">
+            <div class="card mt-3">
+              <div class="card-body">
+                <h5 class="card-title">WiFi</h5>
+                <h6 class="card-title">Current</h6>
+                <ul>
+                    <li>SSID: {{ rpi.wifi_ssid }}</li>
+                    <li>IP address: {{ rpi.ip_address }}</li>
+                </ul>
+                <hr>
+                <h6 class="card-title">Access Point</h6>
+                    <div class="input-group">
+                      <input type="text" class="form-control" aria-label="Text input with checkbox" id="wifiAPName" value="{{ wifi.ap_name }}" onChange="setNewNameWifiAP()" disabled=True>
+                    </div>
+<!--
+                <hr>
+                {% if wifi.saved_names|length > 0 %}
+                <h6 class="card-title">Station saved</h6>
+                    {% for name in wifi.saved_names %}
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            {% if configuration.wifi['station_ssid'] == name %}
+                            <span class="input-group-text" id="wifiSelect{{ loop.index }}">&#9673;</span>
+                            {% else %}
+                            <span class="input-group-text" id="wifiSelect{{ loop.index }}">&#11096;</span>
+                            {% endif %}
+                        </div>
+                        <input type="text" class="form-control" aria-label="Text input with checkbox" value="{{ name }}" disabled=True>
+                      <div class="input-group-append" id="button-addon4">
+                          <button class="btn btn-primary" type="button" onclick="setWifi('{{ name }}')">Set</button>
+                        <button class="btn btn-primary" type="button" onclick="removeWifi('{{ name }}')">Remove</button>
+                      </div>
+                    </div>
+                    {% endfor %}
+                    <p class="d-none" style="font-weight: bold; color: red" id="warningWifiSetText">New Wifi station set. Restart the entomoscope</p>
+                 {% endif %}
+                 {% if wifi.available_names|length > 0 %}
+                  <h6 class="card-title">Station available</h6>
+                    {% for name in wifi.available_names %}
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text">{{ name }}</span>
+                        </div>
+                      <input type="password" class="form-control" placeholder="Password" aria-label="Recipient's username with two button addons" aria-describedby="button-addon4" id="password{{ loop.index }}">
+                      <div class="input-group-append" id="button-addon4">
+                        <button class="btn btn-primary" type="button" onclick="addWifi('{{ name }}', {{ loop.index }})">Add</button>
+                        <button class="btn btn-primary" type="button" onclick="showPassword({{ loop.index }})">Show password</button>
+                      </div>
+                    </div>
+                    {% endfor %}
+                  {% endif %}
+                <hr>
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                            <button class="btn btn-primary" type="button" id="testInternetButton" onclick="testInternetConnection()">Test internet connection</button>
+                    </div>
+                    <input type="text" class="form-control" aria-label="" aria-describedby="button-addon4" id="testInternetText" disabled>
+                </div>
+-->
+                <hr>
+                <h6 class="card-title">WiFi power save mode</h6>
+                <ul>
+                    {% if rpi.wifi_power_save %}
+                    <li>Yes</li>
+                    {% else %}
+                    <li>No</li>
+                    {% endif %}
+                </ul>
+              </div>
+            </div>
+        </div>
+        <!-- GNSS -->
+        <div class="col-12 col-sm-6 mb-3">
+            <div class="card mt-3">
+              <div class="card-body">
+                <h5 class="card-title">GNSS</h5>
+                <ul>
+                <li id="gnssLastUpdate">Last update: {{ configuration.gnss['last_update'] }}</li>
+                <li id="gnssLastLocalisation">Saved localisation: {{ configuration.gnss['latitude'] }} {{ configuration.gnss['longitude'] }}</li>
+                <li id="gnssLastAltitude">Saved altitude: {{ configuration.gnss['altitude'] }} meters</li>
+                <li id="gnssLastSatellitesUsed">Satellites used: {{ configuration.gnss['satellites_used'] }}</li>
+                </ul>
+                {% if gnss.available %}
+                <hr/>
+                <ul>
+                <li id="gnssDate">Date:</li>
+                <li id="gnssLatitude">Latitude:</li>
+                <li id="gnssLongitude">Longitude:</li>
+                <li id="gnssAltitude">Altitude:</li>
+                <li class="d-none" id="gnssPositionIndication">Position indication: n/a</li>
+                <li id="gnssSatellitesUsed">Satellites used:</li>
+                <li class="d-none" id="gnssHorizontalPrecision">Horizontal Precision: n/a</li>
+                </ul>
+<!--
+                <hr/>
+-->
+                <div class="form-button-center">
+                    <button type="submit" class="btn btn-primary" id="gnssUpdateButton" onclick="gnssUpdateData()">Update</button>
+                    <button type="submit" class="btn btn-primary" id="gnssSyncTimeButton" onclick="gnssSyncTime()" disabled>Sync Time</button>
+                    <button type="submit" class="btn btn-primary" id="gnssSavePositionButton" onclick="gnssSavePosition()" disabled>Save Position</button>
+                </div>
+                {% else %}
+                <p class="card-text">GNSS not found. Check the USB connection and reload this page.</p>
+                {% endif %}
+              </div>
+            </div>
+        </div>
+    <div>
+    <div class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" id="askModalDialog" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="askTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="askParagraph"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">No</button>
+                    <button type="button" class="btn btn-secondary" onClick="actionOk()">Yes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modals dialog -->
+{{ wait_modal() }}
+{{ ask_modal() }}
+{{ sd_card_full_modal(sd_card) }}
+{{ battery_discharged_modal(battery_level) }}
+{% endblock %}
+{% block script %}
+<script type="text/javascript">
+
+    const sdCardUsageSpan = document.getElementById('sdCardUsageSpan');
+    const sdCardI = document.getElementById('sdCardI');
+    const batteryLevelSpan = document.getElementById('batteryLevelSpan');
+    const batteryLevelI = document.getElementById('batteryLevelI');
+    const cpuTemperatureSpan = document.getElementById('cpuTemperatureSpan');
+
+    const datetimeLocalText = document.getElementById('datetimeLocalText')
+    const datetimeTimeZoneText = document.getElementById('datetimeTimeZoneText')
+    const setDateNumber = document.getElementById('setDateNumber');
+    const setTimeNumber = document.getElementById('setTimeNumber');
+    const dateSetButton = document.getElementById('dateSetButton');
+
+    const renameAPWifiButton = document.getElementById('renameAPWifiButton')
+    const wifiAPName = document.getElementById('wifiAPName')
+
+    const warningWifiSetText = document.getElementById('warningWifiSetText')
+
+    const testInternetButton = document.getElementById('testInternetButton')
+    const testInternetText = document.getElementById('testInternetText')
+
+    const gnssDate = document.getElementById('gnssDate');
+    const gnssLatitude = document.getElementById('gnssLatitude')
+    const gnssLongitude = document.getElementById('gnssLongitude')
+    const gnssPositionIndication = document.getElementById('gnssPositionIndication')
+    const gnssSatellitesUsed = document.getElementById('gnssSatellitesUsed')
+    const gnssHorizontalPrecision = document.getElementById('gnssHorizontalPrecision')
+    const gnssAltitude = document.getElementById('gnssAltitude')
+    const gnssLastUpdate = document.getElementById('gnssLastUpdate')
+
+    const gnssUpdateButton = document.getElementById('gnssUpdateButton')
+    const gnssSyncTimeButton = document.getElementById('gnssSyncTimeButton')
+    const gnssSavePositionButton = document.getElementById('gnssSavePositionButton')
+
+    const updateText = document.getElementById('updateText')
+    const getUpdatesButton = document.getElementById('getUpdatesButton')
+    const checkUpdatesButton = document.getElementById('checkUpdatesButton')
+
+    const askModalDialog = document.getElementById('askModalDialog');
+    const askTitle = document.getElementById('askTitle');
+    const askParagraph = document.getElementById('askParagraph');
+
+    var askModal = new bootstrap.Modal(askModalDialog)
+
+    var powerAction = null
+
+    document.addEventListener("DOMContentLoaded", function() {
+
+        {{ sd_card_full_modal_javascript(sd_card) }}
+        {{ battery_discharged_modal_javascript(battery_level) }}
+
+    })
+
+    function renameAPWifi() {
+
+        wifiAPName.disabled = false
+        renameAPWifiButton.disabled = true
+
+    }
+
+    function removeWifi(name) {
+
+        console.log(name)
+
+        return fetch('/remove_wifi', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(name),
+        })
+        .catch(error => {
+            console.error('Error removing wifi:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function setWifi(name) {
+
+        console.log(name)
+
+        warningWifiSetText.classList.remove("d-none");
+        warningWifiSetText.innerText = 'New station set to ' + name + '. Restart the entomoscope.'
+
+        return fetch('/set_wifi', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(name),
+        })
+        .catch(error => {
+            console.error('Error setting wifi:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function addWifi(name, value) {
+
+        var x = document.getElementById("password" + value);
+
+        console.log(name)
+        console.log(x.value)
+
+        return fetch('/add_wifi', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify([name, x.value]),
+        })
+        .catch(error => {
+            console.error('Error adding wifi:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    //function refreshWifi() {
+
+        //refreshWifiButton.disabled = true
+
+        //return fetch('/refresh_wifi', {
+            //method: 'POST',
+            //headers: {
+                //'Content-Type': 'application/json',
+            //},
+            //body: '',
+        //})
+        ////.then(refreshWifiButton.disabled = false)
+        //.catch(error => {
+            //refreshWifiButton.disabled = false
+            //console.error('Error updating settings:', error);
+            //throw error;  // Re-throw the error for the next catch
+        //});
+
+    //}
+
+    function showPassword(value) {
+      var x = document.getElementById("password" + value);
+      if (x.type === "password") {
+        x.type = "text";
+      } else {
+        x.type = "password";
+      }
+    }
+
+    function testInternetConnection() {
+
+        testInternetButton.disabled = true
+        testInternetText.value = 'In progress...'
+
+        return fetch('/test_internet_connection', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                testInternetText.value = 'Available'
+            }
+            else {
+                testInternetText.value = 'Not available'
+            }
+            testInternetButton.disabled = false
+        })
+        .catch(error => {
+            testInternetButton.disabled = false
+            console.error('Error test internet connection:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function gnssSavePosition() {
+
+        return fetch('/save_gnss_position', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log(data.data)
+                gnssSavePositionButton.disabled = true
+            }
+        })
+        .catch(error => {
+            console.error('Error GNSS save position:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function gnssUpdateData() {
+
+        gnssUpdateButton.disabled = true
+        gnssSyncTimeButton.disabled = true
+        gnssSavePositionButton.disabled = true
+
+        return fetch('/get_gnss_data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+
+                console.log(data)
+                gnssDate.innerText = 'Date: ' + (2000 + data.data.date[0]).toString() + '-' + data.data.date[1].toString().padStart(2, '0')  + '-' + data.data.date[2].toString().padStart(2, '0') + ' ' + data.data.time[0].toString().padStart(2, '0') + ':' + data.data.time[1].toString().padStart(2, '0') + ':' + data.data.time[2].toString().padStart(2, '0') + ' UTC'
+                gnssLatitude.innerText = 'Latitude: ' + data.data['latitude'].toFixed(6) + ' ' + data.data['ns']
+                gnssLongitude.innerText = 'Longitude: ' + data.data['longitude'].toFixed(6)  + ' ' + data.data['ew']
+                gnssPositionIndication.innerText = 'Position indication: ' + data.data['position_indication']
+                gnssSatellitesUsed.innerText = 'Satellites used: ' + data.data['satellites_used']
+                gnssHorizontalPrecision.innerText = 'Horizontal Precision: ' + data.data['hdop']
+                gnssAltitude.innerText = 'Altitude: ' + data.data['altitude'] + ' meters'
+                gnssLastUpdate.innerText = 'Last update: ' + data.data['last_update']
+
+                gnssSyncTimeButton.disabled = false
+
+                if (data.data['satellites_used'] > 3) {
+                    gnssSavePositionButton.disabled = false
+                }
+            }
+            gnssUpdateButton.disabled = false
+        })
+        .catch(error => {
+            gnssUpdateButton.disabled = false
+            console.error('Error GNSS update data:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+
+
+    }
+
+    function gnssSyncTime() {
+
+        gnssUpdateButton.disabled = true
+        gnssSyncTimeButton.disabled = true
+        gnssSavePositionButton.disabled = true
+
+        return fetch('/gnss_sync_time', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log(data)
+                //datetimeLocalText.innerText = data.date_time_info[0]
+                //datetimeTimeZoneText.innerText = data.date_time_info[1]
+            }
+            gnssUpdateButton.disabled = false
+        })
+        .catch(error => {
+            gnssUpdateButton.disabled = false
+            console.error('Error GNSS sync time:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function setDate() {
+
+        data = [setDateNumber.value, setTimeNumber.value]
+
+        return fetch('/set_date', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                datetimeLocalText.innerText = data.data[0]
+                datetimeTimeZoneText.innerText = data.data[1]
+            }
+        })
+        .catch(error => {
+        console.error('Error setting date:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+
+    function checkUpdates() {
+
+        checkUpdatesButton.disabled = true
+
+        return fetch('/check_updates', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.updates_available) {
+                getUpdatesButton.disabled = false
+                updateText.innerText = 'Updates available'
+            }
+            else {
+                getUpdatesButton.disabled = true
+                updateText.innerText = 'No updates available'
+            }
+            checkUpdatesButton.disabled = false
+        })
+        .catch(error => {
+            checkUpdatesButton.disabled = false
+            console.error('Error checking updates:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function getUpdates() {
+
+        getUpdatesButton.disabled = true
+
+        return fetch('/get_updates', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.updates_done) {
+                getUpdatesButton.disabled = true
+                updateText.innerText = 'Updates downloaded and installed. Restart the entomoscope.'
+                updateText.style = 'font-weight: bold; color: red'
+            }
+            else {
+                getUpdatesButton.disabled = false
+                updateText.innerText = 'No updates done'
+            }
+        })
+        .catch(error => {
+            getUpdatesButton.disabled = false
+            console.error('Error getting updates:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function reboot() {
+
+        powerAction = 'reboot'
+
+        askTitle.innerText = 'Reboot'
+        askParagraph.innerText = 'Do you really want to reboot?'
+
+        askModal.show()
+
+    }
+
+    function shutdown() {
+
+        powerAction = 'shutdown'
+
+        askTitle.innerText = 'Shutdown'
+        askParagraph.innerText = 'Do you really want to shutdown?'
+
+        askModal.show()
+
+    }
+
+    function actionOk() {
+
+        askModal.hide()
+
+        if (powerAction == 'reboot') {
+            return fetch('/reboot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(name),
+            })
+            .catch(error => {
+                console.error('Error reboot: ', error);
+                throw error;  // Re-throw the error for the next catch
+            });
+        }
+        else if (powerAction == 'shutdown') {
+            return fetch('/shutdown', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(name),
+            })
+            .catch(error => {
+                console.error('Error shutdown: ', error);
+                throw error;  // Re-throw the error for the next catch
+            });
+        }
+    }
+
+    function getCpuTemperature() {
+
+        const cpuTempNavBar = document.getElementById('cpuTempNavBar')
+
+        return fetch('/get_cpu_temperature', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.temperature >= 75) {
+                    cpuTempNavBar.className = "btn btn-danger me-2"
+                } else if (data.temperature >= 65) {
+                    cpuTempNavBar.className = "btn btn-warning me-2"
+                } else {
+                    cpuTempNavBar.className = "btn btn-success me-2"
+                }
+                cpuTemperatureSpan.innerHTML = data.temperature.toFixed(0) + ' &degC'
+            }
+        })
+        .catch(error => {
+        console.error('Error getting CPU temperature:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function getBatteryLevel() {
+
+        const batteryLevelNavBar = document.getElementById('batteryLevelNavBar');
+
+        return fetch('/get_battery_level', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.battery_level > 0) {
+                    if (data.battery_level > 11.5) {
+                        batteryLevelNavBar.className = "btn btn-success me-2"
+                        batteryLevelI.className = "bi bi-battery-full"
+                    } else if (data.battery_level > 10.8) {
+                        batteryLevelNavBar.className = "btn btn-warning me-2"
+                        batteryLevelI.className = "bi bi-battery-half"
+                    } else {
+                        batteryLevelNavBar.className = "btn btn-danger me-2"
+                        batteryLevelI.className = "bi bi-battery-low"
+                    }
+                    batteryLevelSpan.innerHTML = data.battery_level.toFixed(1) + ' V'
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error getting battery level:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function getSdCardUsage() {
+
+        const sdCardNavBar = document.getElementById('sdCardNavBar');
+
+        return fetch('/get_sd_card_usage', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.sd_card_usage < 80) {
+                    sdCardNavBar.className = "btn btn-success me-2"
+                } else if (data.sd_card_usage < 90) {
+                    sdCardNavBar.className = "btn btn-warning me-2"
+                    sdCardI.className = "bi bi-sd-card"
+                } else {
+                    sdCardNavBar.className = "btn btn-danger me-2"
+                    sdCardI.className = "bi bi-sd-card-fill"
+                }
+                sdCardUsageSpan.innerHTML = data.sd_card_usage.toFixed(0) + ' %'
+            }
+        })
+        .catch(error => {
+            console.error('Error getting SD card usage:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    var intervalId = setInterval(function() {
+        getCpuTemperature()
+    }, 10000);
+
+    var intervalId2 = setInterval(function() {
+        getBatteryLevel()
+    }, 60000);
+
+    var intervalId3 = setInterval(function() {
+        getSdCardUsage()
+    }, 60000);
+
+</script>
+
+{% endblock %}

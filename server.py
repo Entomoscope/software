@@ -283,21 +283,9 @@ microphone = None
 leds_rear_deported_uv = None
 leds_front = None
 
-
-
-
-
-
-
 updates_available = False
-# updates_available = updates_check()
-# app.logger.info(f'updates available? {updates_available}')
-
-
-
-
-
-
+updates_available = updates_check()
+app.logger.info(f'updates available? {updates_available}')
 
 @app.route('/')
 def index():

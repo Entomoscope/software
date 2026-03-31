@@ -129,7 +129,7 @@ def main():
                         sleep(delta.total_seconds())
                     now = datetime.now()
             else:
-                logger.warning(f'too late to start the microphone correctly ({-delta} seconds)')
+                logger.warning(f'too late to start the microphone correctly ({-delta} seconds). Start immediately')
         except BaseException as e:
             logger.error(str(e))
 
@@ -168,7 +168,7 @@ def main():
                             sleep(delta.total_seconds())
                         now = datetime.now()
                 else:
-                    logger.info(f'too late to start capture on time ({-delta} seconds)')
+                    logger.info(f'too late to start capture on time ({-delta} seconds). Start immediately')
             except BaseException as e:
                 logger.error(str(e))
 

@@ -95,6 +95,10 @@ class Leds():
             if self.is_on:
                 self.turn_on()
 
+        else:
+
+            logger.warning('intensity not set (must be in the range [0 100])')
+
     def turn_on(self):
 
         try:

@@ -1,15 +1,14 @@
-{% from 'macros.html' import sd_card_full_modal %}
-{% from 'macros.html' import sd_card_full_modal_javascript %}
-{% from 'macros.html' import battery_discharged_modal %}
-{% from 'macros.html' import battery_discharged_modal_javascript %}
-
+{% from 'macros.html' import sd_card_full_modal -%}
+{% from 'macros.html' import sd_card_full_modal_javascript -%}
+{% from 'macros.html' import battery_discharged_modal -%}
+{% from 'macros.html' import battery_discharged_modal_javascript -%}
+{% from 'macros.html' import ask_modal -%}
+{% from 'macros.html' import wait_modal -%}
 {% extends 'base.html' %}
-
-{% block head %}
+{% block head -%}
     <title>Entomoscope - Home</title>
-{% endblock %}
-
-{% block content %}
+{%- endblock -%}
+{%- block content %}
 <!-- Navigation bar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
   <div class="container-fluid">
@@ -26,13 +25,19 @@
           <a class="nav-link" href="{{ url_for('data') }}">Data</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('global_settings') }}">Global Settings</a>
+          <a class="nav-link" href="{{ url_for('storage') }}">Storage</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('images_capture_settings') }}">Images Capture Settings</a>
+          <a class="nav-link" href="{{ url_for('global_settings') }}">Capture Settings</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('sounds_capture_settings') }}">Sounds Capture Settings</a>
+          <a class="nav-link" href="{{ url_for('images_capture_settings') }}">Images Capture</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('sounds_capture_settings') }}">Sounds Capture</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('information') }}">Information</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="{{ url_for('logs') }}">Logs</a>
@@ -40,874 +45,306 @@
       </ul>
     </div>
     <div class="nav pull-right">
+        <!-- Update available -->
         {% if updates_available %}
-        <span class="badge bg-success me-2" id="updateNavBar">
+        <button class="btn btn-success me-2" style="pointer-events: none" id="updateNavBar"><i class="bi bi-cloud-download"></i>
             Update available
-        </span>
+        </button>
         {% endif %}
+        <!-- SD card usage -->
         {% if sd_card.used_percent_num < 80 %}
-        <span class="badge bg-success me-2" id="sdCardNavBar">
+        <button class="btn btn-success me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card" id="sdCardI"></i>
         {% elif sd_card.used_percent_num < 90 %}
-        <span class="badge bg-warning me-2" id="sdCardNavBar">
+        <button class="btn btn-warning me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card" id="sdCardI"></i>
         {% else %}
-        <span class="badge bg-danger me-2" id="sdCardNavBar">
+        <button class="btn btn-danger me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card-fill" id="sdCardI"></i>
         {% endif %}
-            SD {{ sd_card.used_percent_num }} %
-        </span>
+             <span class="d-none d-sm-inline" id="sdCardUsageSpan">{{ '%.0f' % sd_card.used_percent_num }} %</span>
+        </button>
+        <!-- Battery level -->
         {% if battery_level > 0 %}
             {% if battery_level > 11.5 %}
-            <span class="badge bg-success me-2" id="batteryLevelNavBar">
+            <button class="btn btn-success me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-full" id="batteryLevelI"></i>
             {% elif battery_level > 10.8 %}
-            <span class="badge bg-warning me-2" id="batteryLevelNavBar">
+            <button class="btn btn-warning me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-half" id="batteryLevelI"></i>
             {% else %}
-            <span class="badge bg-danger me-2" id="batteryLevelNavBar">
+            <button class="btn btn-danger me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-low" id="batteryLevelI"></i>
             {% endif %}
-                BAT {{ '%.1f' % battery_level }} V
-            </span>
+                 <span class="d-none d-sm-inline" id="batteryLevelSpan">{{ '%.1f' % battery_level }} V</span>
+            </button>
         {% endif %}
+        <!-- CPU Temperature -->
         {% if rpi.cpu_temperature < 65 %}
-        <span class="badge bg-success me-2" id="cpuTempNavBar">
+        <button class="btn btn-success me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
         {% elif rpi.cpu_temperature < 75 %}
-        <span class="badge bg-warning me-2" id="cpuTempNavBar">
+        <button class="btn btn-warning me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
         {% else %}
-        <span class="badge bg-danger me-2" id="cpuTempNavBar">
+        <button class="btn btn-danger me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
         {% endif %}
-            CPU {{ '%.0f' % rpi.cpu_temperature }} &deg;C
-        </span>
+            <span class="d-none d-sm-inline" id="cpuTemperatureSpan">{{ '%.0f' % rpi.cpu_temperature }} &deg;C</span>
+        </button>
+        <!-- Reboot -->
+        <button class="btn btn-light me-2" id="updateNavBar" onclick="reboot()"><i class="bi bi-bootstrap-reboot"></i></button>
+        <!-- Shutdown -->
+        <button class="btn btn-danger" id="updateNavBar" onclick="shutdown()"><i class="bi bi-power"></i></button>
     </div>
   </div>
 </nav>
 <!-- Page content -->
-<div class="container-fluid">
+<div class="container-fluid text-center">
+    <h2 class="text-center mt-3">Current captures states</h2>
+    <div class="row">
+        {% if images_capture_state == 'stopped' %}
+        <div class="col-6 text-end"><span class="badge bg-gradient text-bg-danger">Images stopped</span></div>
+        {% elif images_capture_state == 'paused'%}
+        <div class="col-6 text-end"><span class="badge bg-gradient text-bg-warning">Images paused</span></div>
+        {% else %}
+        <div class="col-6 text-end"><span class="badge bg-gradient text-bg-success">Images running</span></div>
+        {% endif %}
+        {% if sounds_capture_state == 'stopped' %}
+        <div class="col-6 text-start"><span class="badge bg-gradient text-bg-danger">Sounds stopped</span></div>
+        {% elif sounds_capture_state == 'paused'%}
+        <div class="col-6 text-start"><span class="badge bg-gradient text-bg-warning">Sounds paused</span></div>
+        {% else %}
+        <div class="col-6 text-start"><span class="badge bg-gradient text-bg-success">Sounds running</span></div>
+        {% endif %}
+    </div>
+    <h2 class="text-center mt-3">Captures parameters</h2>
+    <div class="row">
+        {% if configuration['site']['id'] %}
+        <div class="col-6 text-end"><span class="badge bg-gradient text-bg-primary">Site ID: {{configuration['site']['id']}}</span></div>
+        {% else %}
+        <div class="col-6 text-end"><span class="badge bg-gradient text-bg-danger">Site ID:</span></div>
+        {% endif %}
+        {% if configuration['ai_detection']['enable'] %}
+        <div class="col-6 text-start"><span class="badge bg-gradient text-bg-primary">AI enabled</span></div>
+        {% else %}
+        <div class="col-6 text-start"><span class="badge bg-gradient text-bg-danger">AI disabled</span></div>
+        {% endif %}
+    </div>
+    <div class="row">
+        {% if configuration['images_capture']['enable'] %}
+        <div class="col-6 text-end"><span class="badge bg-gradient text-bg-primary">Images step: {{configuration['images_capture']['time_step']}} seconds</span></div>
+        {% else %}
+        <div class="col-6 text-start"><span class="badge bg-gradient text-bg-danger">Images disabled</span></div>
+        {% endif %}
+        <div class="col-6 text-start"><span class="badge bg-gradient text-bg-primary">On duration: {{configuration['schedule']['on_duration']}} seconds</span></div>
+    </div>
+    <div class="row">
+        {% if configuration['sounds_capture']['enable'] %}
+        <div class="col-6 text-end"><span class="badge bg-gradient text-bg-primary">Sounds duration: {{configuration['sounds_capture']['duration']}} seconds</span></div>
+        {% else %}
+        <div class="col-6 text-end"><span class="badge bg-gradient text-bg-danger">Sounds disabled</span></div>
+        {% endif %}
+        <div class="col-6 text-start"><span class="badge bg-gradient text-bg-primary">Off duration: {{configuration['schedule']['off_duration']}} seconds</span></div>
+    </div>
+    <div class="row">
+        {% if configuration['leds']['delay_on'] > 0 %}
+        <div class="col-6 text-end"><span class="badge bg-gradient text-bg-primary">LEDs delay on: {{configuration['leds']['delay_on']}} seconds</span></div>
+        {% endif %}
+        {% if configuration['leds']['always_on'] %}
+        <div class="col-6 text-start"><span class="badge bg-gradient text-bg-primary">LEDs always on</span></div>
+        {% endif %}
+        {% if configuration['leds']['delay_off'] > 0 %}
+        <div class="col-6 text-start"><span class="badge bg-gradient text-bg-primary">LEDs delay off: {{configuration['leds']['delay_off']}} seconds</span></div>
+        {% endif %}
+    </div>
+    <h2 class="text-center mt-3">Scheduler</h2>
+    <div class="row">
+        <div class="col-3 text-end d-sm-none d-inline"><span class="badge bg-gradient text-bg-info rounded-0" style="width:100%;font-size: 0.65em">Images</span></div>
+        <div class="col-3 text-end d-sm-none d-inline"><span class="badge bg-gradient text-bg-success rounded-0" style="width:100%;font-size: 0.65em">Images + AI</span></div>
+        <div class="col-3 text-center d-sm-none d-inline"><span class="badge bg-gradient text-bg-warning rounded-0" style="width:100%;font-size: 0.65em">Sounds</span></div>
+        <div class="col-3 text-start d-sm-none d-inline"><span class="badge bg-gradient text-bg-light rounded-0" style="width:100%;font-size: 0.65em">Sleep</span></div>
+    </div>
     <div class="row align-items-start">
-        <!-- Capture States -->
-        <div class="col-4">
-            <div class="card mt-3">
-              <div class="card-body">
-                <h5 class="card-title">Capture States</h5>
-                {% if images_capture_state == 'running' %}
-                <p class="card-text" id="imagesCaptureStateText">Images capture running (click on Pause to pause or Stop to stop)</p>
-                <div class="form-button-center">
-                    <button type="submit" class="btn btn-primary" id="suspendImagesCaptureButton" onclick="manageImagesCapture('suspend')">Pause</button>
-                    <button type="submit" class="btn btn-primary" id="resumeImagesCaptureButton" onclick="manageImagesCapture('resume')" disabled>Resume</button>
-                    <button type="submit" class="btn btn-primary" id="stopImagesCaptureButton" onclick="manageImagesCapture('stop')">Stop</button>
+    {% for day, images_schedule, images_s_day, images_color, sounds_schedule, sounds_day, sounds_color in zip(days, images_capture['schedules'], images_capture['s_days'], images_capture['colors'], sounds_capture['schedules'], sounds_capture['s_days'], sounds_capture['colors']) %}
+        {% if loop.index0 == 0 or loop.index0 == 7 or loop.index0 == 14 %}
+        <div class="card-group mt-3">
+        {% endif %}
+            {% if loop.index0 == 0 %}
+            <div class="card border-secondary">
+            {% else %}
+            <div class="card">
+            {% endif %}
+                <div class="card-header text-center fs-6">
+                    {{ day }}
                 </div>
-                {% elif images_capture_state == 'paused' %}
-                <p class="card-text" id="imagesCaptureStateText">Images capture paused (click on Resume to resume or Stop to stop)</p>
-                <div class="form-button-center">
-                    <button type="submit" class="btn btn-primary" id="suspendImagesCaptureButton" onclick="manageImagesCapture('suspend')" disabled>Pause</button>
-                    <button type="submit" class="btn btn-primary" id="resumeImagesCaptureButton" onclick="manageImagesCapture('resume')">Resume</button>
-                    <button type="submit" class="btn btn-primary" id="stopImagesCaptureButton" onclick="manageImagesCapture('stop')">Stop</button>
-                </div>
-                {% else %}
-                <p class="card-text" id="imagesCaptureStateText">Images capture stopped (reboot the system to restart)</p>
-                <div class="form-button-center">
-                    <button type="submit" class="btn btn-primary" id="suspendImagesCaptureButton" onclick="manageImagesCapture('suspend')" disabled>Pause</button>
-                    <button type="submit" class="btn btn-primary" id="resumeImagesCaptureButton" onclick="manageImagesCapture('resume')" disabled>Resume</button>
-                    <button type="submit" class="btn btn-primary" id="stopImagesCaptureButton" onclick="manageImagesCapture('stop')" disabled>Stop</button>
-                </div>
-                {% endif %}
-                <hr>
-                {% if sounds_capture_state == 'running' %}
-                <p class="card-text" id="soundsCaptureStateText">Sounds capture running (click on Pause to pause or Stop to stop)</p>
-                <div class="form-button-center">
-                    <button type="submit" class="btn btn-primary" id="suspendSoundsCaptureButton" onclick="manageSoundsCapture('suspend')">Pause</button>
-                    <button type="submit" class="btn btn-primary" id="resumeSoundsCaptureButton" onclick="manageSoundsCapture('resume')" disabled>Resume</button>
-                    <button type="submit" class="btn btn-primary" id="stopSoundsCaptureButton" onclick="manageSoundsCapture('stop')">Stop</button>
-                </div>
-                {% elif sounds_capture_state == 'paused' %}
-                <p class="card-text" id="soundsCaptureStateText">Sounds capture paused (click on Resume to resume or Stop to stop)</p>
-                <div class="form-button-center">
-                    <button type="submit" class="btn btn-primary" id="suspendSoundsCaptureButton" onclick="manageSoundsCapture('suspend')" disabled>Pause</button>
-                    <button type="submit" class="btn btn-primary" id="resumeSoundsCaptureButton" onclick="manageSoundsCapture('resume')">Resume</button>
-                    <button type="submit" class="btn btn-primary" id="stopSoundsCaptureButton" onclick="manageSoundsCapture('stop')">Stop</button>
-                </div>
-                {% else %}
-                <p class="card-text" id="soundsCaptureStateText">Sounds capture stopped (reboot the system to restart)</p>
-                <div class="form-button-center">
-                    <button type="submit" class="btn btn-primary" id="suspendSoundsCaptureButton" onclick="manageSoundsCapture('suspend')" disabled>Pause</button>
-                    <button type="submit" class="btn btn-primary" id="resumeSoundsCaptureButton" onclick="manageSoundsCapture('resume')" disabled>Resume</button>
-                    <button type="submit" class="btn btn-primary" id="stopSoundsCaptureButton" onclick="manageSoundsCapture('stop')" disabled>Stop</button>
-                </div>
-                {% endif %}
-              </div>
-            </div>
-        </div>
-        <!-- Scheduler -->
-        <div class="col-4">
-            <div class="card mt-3">
-              <div class="card-body">
-                <h5 class="card-title">Scheduler</h5>
-                {% if configuration.schedule['enable'] %}
-                <ul>
-                    <li>Next startup: {{ configuration.schedule['next_startup'] }} {{ tzone }}</li>
-                    <li>Next shutdown: {{ configuration.schedule['next_shutdown'] }} {{ tzone }}</li>
-                </ul>
-                <ul>
-                    <li>On duration: {{ configuration.schedule['on_duration'] }} seconds</li>
-                    <li>Off duration: {{ configuration.schedule['off_duration'] }} seconds</li>
-                </ul>
-<!--
-                <canvas id="chart" style="width:100%;"></canvas>
--->
-                {% else %}
-                <p class="card-text">Scheduler disabled</p>
-                {% endif %}
-              </div>
-            </div>
-        </div>
-        <!-- Storage -->
-        <div class="col-4">
-            <div class="card mt-3">
-              <div class="card-body">
-                <h5 class="card-title">Storage</h5>
-                <ul>
-                  <li class="sd_card">{{ sd_card.name }}</li>
-                  <ul>
-                    <li>Total: {{ sd_card.total }}</li>
-                    <li>Used: {{ sd_card.used }} ({{ sd_card.used_percent }})</li>
-                    <li>Available: {{ sd_card.available }}</li>
-                  </ul>
-                  {% if external_disk.path %}
-                  <li class="external_disk">{{ external_disk.name }}</li>
-                  <ul>
-                    <li>Total: {{ external_disk.total }}</li>
-                    <li>Used: {{ external_disk.used }} ({{ external_disk.used_percent }})</li>
-                    <li>Available: {{ external_disk.available }}</li>
-                  </ul>
-                  {% else %}
-                  <li class="external_disk">{{ external_disk.name }} not found. Check the USB connection and reload this page.</li>
-                  {% endif %}
-                </ul>
-                {% if sd_card.used_percent_num > 80 %}
-                <p style="color: orange;font-weight: bold;">Less than 20% of storage left on the SD card</p>
-                {% elif sd_card.used_percent_num > 90 %}
-                <p style="color: red;font-weight: bold;">Less than 10% of storage left on the SD card</p>
-                {% endif %}
-              </div>
-            </div>
-        </div>
-        <!-- Raspberry Pi -->
-        <div class="col-4">
-            <div class="card mt-3">
-              <div class="card-body">
-                <h5 class="card-title">Raspberry Pi</h5>
-                <ul>
-                <li>Model: {{ rpi.model }}</li>
-                <li>Memory: {{ rpi.memory }}</li>
-<!--
-                <li>Revision: {{ rpi.revision }}</li>
-                <li>Serial: {{ rpi.serial }}</li>
--->
-                <li>OS: {{ rpi.os_version }} - {{ rpi.arch_version }}</li>
-                </ul>
-                <ul>
-                <li id="datetimeLocalText">{{ dateTime.date_time_info[0] }}</li>
-                <li id="datetimeTimeZoneText">{{ dateTime.date_time_info[1] }}</li>
-                </ul>
-                <hr/>
-                <div class="form-group">
-                    <div class="d-flex w-100 align-items-center justify-content-between">
-                        <label for="brightness" class="form-label">Date</label>
-                    </div>
-                    <div class="input-group mb-1">
-                        <input type="date" id="setDateNumber" class="form-control" value="{{ dateTime.date }}"/>
-                        <input type="time" id="setTimeNumber" class="form-control" value="{{ dateTime.time }}"/>
-                        <div class="input-group-text">{{ tzone }}</div>
-                    </div>
-                </div>
-                <div class="form-button-center">
-                    <button type="submit" class="btn btn-primary" id="dateSetButton" onclick="setDate()">Set</button>
-                </div>
-              </div>
-            </div>
-        </div>
-        <!-- Firmware -->
-        <div class="col-4">
-            <div class="card mt-3">
-                <div class="card-body">
-                    <h5 class="card-title">Firmware</h5>
-                    <ul>
-                        <li>{{ commit['date'] }}</li>
-                        <li>{{ commit['subject'] }}</li>
-                        <li>{{ commit['hash_num'] }}</li>
-                    </ul>
-                    {% if updates_available %}
-                        <p id="updateText" class="card-text">Updates available</p>
-                    {% else %}
-                        <p id="updateText" class="card-text">No updates available</p>
-                    {% endif %}
-                    <hr/>
-                    <div class="form-button-center">
-                        {% if updates_available %}
-                            <button type="submit" class="btn btn-primary" id="getUpdatesButton" onclick="getUpdates()">Update</button>
-                        {% else %}
-                            <button type="submit" class="btn btn-primary" id="getUpdatesButton" onclick="getUpdates()" disabled>Update</button>
-                        {% endif %}
-                        <button type="submit" class="btn btn-primary" id="checkUpdatesButton" onclick="checkUpdates()">Check</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Power -->
-        <div class="col-4">
-            <div class="card mt-3">
-                <div class="card-body">
-                    <h5 class="card-title">Power</h5>
-                    <div class="form-button-center">
-                        <button type="submit" class="btn btn-primary" id="powerRebootButton" onclick="reboot()">Reboot</button>
-                        <button type="submit" class="btn btn-primary" id="powerShutdownButton" onclick="shutdown()">Shutdown</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- GNSS -->
-        <div class="col-4">
-            <div class="card mt-3">
-              <div class="card-body">
-                <h5 class="card-title">GNSS</h5>
-                <ul>
-                {% if gnss.available %}
-                <li id="gnssLastUpdate">Last update: {{ configuration.gnss['last_update'] }}</li>
-                <li id="gnssDate">Date: n/a</li>
-                <li id="gnssLatitude">Latitude: {{ configuration.gnss['latitude'] }}</li>
-                <li id="gnssLongitude">Longitude: {{ configuration.gnss['longitude'] }}</li>
-                <li id="gnssAltitude">Altitude: {{ configuration.gnss['altitude'] }} meters</li>
-<!--
-                <hr/>
--->
-
-                <li class="d-none" id="gnssPositionIndication">Position indication: n/a</li>
-                <li id="gnssSatellitesUsed">Satellites used: {{ configuration.gnss['satellites_used'] }}</p>
-                <li class="d-none" id="gnssHorizontalPrecision">Horizontal Precision: n/a</li>
-                <ul>
-                <hr/>
-                <div class="form-button-center">
-                    <button type="submit" class="btn btn-primary" id="gnssUpdateButton" onclick="gnssUpdateData()">Update</button>
-                    <button type="submit" class="btn btn-primary" id="gnssSyncTimeButton" onclick="gnssSyncTime()" disabled>Sync Time</button>
-                    <button type="submit" class="btn btn-primary" id="gnssSavePositionButton" onclick="gnssSavePosition()" disabled>Save Position</button>
-                </div>
-                {% else %}
-                <p class="card-text">GNSS not found. Check the USB connection and reload this page.</p>
-                {% endif %}
-              </div>
-            </div>
-        </div>
-        <!-- Configuration File -->
-        <div class="col-4">
-            <div class="card mt-3">
-                <div class="card-body">
-                    <h5 class="card-title">Configuration file</h5>
-                    <form action = "/" method = "post" enctype="multipart/form-data">
-                        <input type="file" name="file" id="configFileInput" accept=".json"/>
-                        <input type="submit" value="Send to Entomoscope">
-                    </form>
-                </div>
-            </div>
-        </div>
-        <!-- Ephemeris File -->
-        <div class="col-4">
-            <div class="card mt-3">
-                <div class="card-body">
-                    <h5 class="card-title">Ephemeris file</h5>
-                    <form action = "/" method = "post" enctype="multipart/form-data">
-                        <input type="file" name="file" id="ephemerisFileInput" accept=".csv"/>
-                        <input type="submit" value="Send to Entomoscope">
-                    </form>
-                </div>
-            </div>
-        </div>
-        <!-- WiFi -->
-        <div class="col-4">
-            <div class="card mt-3">
-              <div class="card-body">
-                <h5 class="card-title">WiFi</h5>
-                <h6 class="card-title">Current</h6>
-                <ul>
-                    <li>SSID: {{ rpi.wifi_ssid }}</li>
-                    <li>IP address: {{ rpi.ip_address }}</li>
-                </ul>
-                <hr>
-                <h6 class="card-title">Access Point</h6>
-                    <div class="input-group">
-                      <input type="text" class="form-control" aria-label="Text input with checkbox" id="wifiAPName" value="{{ wifi.ap_name }}" onChange="setNewNameWifiAP()" disabled=True>
-                    </div>
-                <hr>
-                {% if wifi.saved_names|length > 0 %}
-                <h6 class="card-title">Station saved</h6>
-                    {% for name in wifi.saved_names %}
-                    <div class="input-group mb-3">
-                        <div class="input-group-prepend">
-                            {% if configuration.wifi['station_ssid'] == name %}
-                            <span class="input-group-text" id="wifiSelect{{ loop.index }}">&#9673;</span>
+                <div class="card-body" style="padding-left: 0;padding-right: 0;padding-bottom: 0">
+                    <div class="progress custom-progress rounded-0">
+                        {% if images_color[0] != 0 or images_color[1] != 0 or images_color[2] != 0 %}
+                            {% if images_color[0] == 0 %}
+                                <div class="progress-bar bg-gradient bg-light" role="progressbar" style="width: {{ images_schedule[0] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
                             {% else %}
-                            <span class="input-group-text" id="wifiSelect{{ loop.index }}">&#11096;</span>
+                                {% if configuration['ai_detection']['enable'] %}
+                                <div class="progress-bar bg-gradient bg-success" role="progressbar" style="width: {{ images_schedule[0] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                {% else %}
+                                <div class="progress-bar bg-gradient bg-info" role="progressbar" style="width: {{ images_schedule[0] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                {% endif %}
                             {% endif %}
+                            {% if images_color[1] == 0 %}
+                                <div class="progress-bar bg-gradient bg-light" role="progressbar" style="width: {{ images_schedule[1] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                            {% else %}
+                                {% if configuration['ai_detection']['enable'] %}
+                                    <div class="progress-bar bg-gradient bg-success" role="progressbar" style="width: {{ images_schedule[1] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                {% else %}
+                                    <div class="progress-bar bg-gradient bg-info" role="progressbar" style="width: {{ images_schedule[1] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                {% endif %}
+                            {% endif %}
+                            {% if images_color[2] == 0 %}
+                                <div class="progress-bar bg-gradient bg-light" role="progressbar" style="width: {{ images_schedule[2] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                            {% else %}
+                                {% if configuration['ai_detection']['enable'] %}
+                                    <div class="progress-bar bg-gradient bg-success" role="progressbar" style="width: {{ images_schedule[2] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                {% else %}
+                                    <div class="progress-bar bg-gradient bg-info" role="progressbar" style="width: {{ images_schedule[2] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                {% endif %}
+                            {% endif %}
+                        {% else %}
+                            <div class="progress-bar bg-gradient bg-light" role="progressbar" style="width: 100%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                        {% endif %}
+                    </div>
+                    <div class="progress custom-progress rounded-0 mt-1">
+                        {% if sounds_color[0] != 0 or sounds_color[1] != 0 or sounds_color[2] != 0 %}
+                            {% if sounds_color[0] == 0 %}
+                                <div class="progress-bar bg-gradient bg-light " role="progressbar" style="width: {{ sounds_schedule[0] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                            {% else %}
+                                <div class="progress-bar bg-gradient bg-warning" role="progressbar" style="width: {{ sounds_schedule[0] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                            {% endif %}
+                            {% if sounds_color[1] == 0 %}
+                                <div class="progress-bar bg-gradient bg-light" role="progressbar" style="width: {{ sounds_schedule[1] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                            {% else %}
+                                <div class="progress-bar bg-gradient bg-warning" role="progressbar" style="width: {{ sounds_schedule[1] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                            {% endif %}
+                            {% if sounds_color[2] == 0 %}
+                                <div class="progress-bar bg-gradient bg-light" role="progressbar" style="width: {{ sounds_schedule[2] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                            {% else %}
+                                <div class="progress-bar bg-gradient bg-warning" role="progressbar" style="width: {{ sounds_schedule[2] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                            {% endif %}
+                        {% else %}
+                            <div class="progress-bar bg-gradient bg-light" role="progressbar" style="width: 100%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                        {% endif %}
+                    </div>
+                    <div class="container-fluid text-center">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <p class="text-muted mt-0 mb-0" style="font-size: 0.45em">|</p>
+                                <p class="text-muted mt-0 mb-1" style="font-size: 0.45em">04:00</p>
+                            </div>
+                            <div class="col">
+                                <p class="text-center text-muted mt-0 mb-0" style="font-size: 0.45em">|</p>
+                                <p class="text-center text-muted mt-0 mb-1" style="font-size: 0.45em">12:00</p>
+                            </div>
+                            <div class="col">
+                                <p class="text-center text-muted mt-0 mb-0" style="font-size: 0.45em">|</p>
+                                <p class="text-center text-muted mt-0 mb-1" style="font-size: 0.45em">20:00</p>
+                            </div>
                         </div>
-                        <input type="text" class="form-control" aria-label="Text input with checkbox" value="{{ name }}" disabled=True>
-                      <div class="input-group-append" id="button-addon4">
-                          <button class="btn btn-primary" type="button" onclick="setWifi('{{ name }}')">Set</button>
-                        <button class="btn btn-primary" type="button" onclick="removeWifi('{{ name }}')">Remove</button>
-                      </div>
                     </div>
-                    {% endfor %}
-                    <p class="d-none" style="font-weight: bold; color: red" id="warningWifiSetText">New Wifi station set. Restart the entomoscope</p>
-                 {% endif %}
-                 {% if wifi.available_names|length > 0 %}
-                  <h6 class="card-title">Station available</h6>
-                    {% for name in wifi.available_names %}
-                    <div class="input-group mb-3">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text">{{ name }}</span>
-                        </div>
-                      <input type="password" class="form-control" placeholder="Password" aria-label="Recipient's username with two button addons" aria-describedby="button-addon4" id="password{{ loop.index }}">
-                      <div class="input-group-append" id="button-addon4">
-                        <button class="btn btn-primary" type="button" onclick="addWifi('{{ name }}', {{ loop.index }})">Add</button>
-                        <button class="btn btn-primary" type="button" onclick="showPassword({{ loop.index }})">Show password</button>
-                      </div>
-                    </div>
-                    {% endfor %}
-                  {% endif %}
-                <hr>
-                <div class="input-group mb-3">
-                    <div class="input-group-prepend">
-                            <button class="btn btn-primary" type="button" id="testInternetButton" onclick="testInternetConnection()">Test internet connection</button>
-                    </div>
-                    <input type="text" class="form-control" aria-label="" aria-describedby="button-addon4" id="testInternetText" disabled>
-                </div>
-                <hr>
-                <h6 class="card-title">WiFi power save mode</h6>
-                <ul>
-                    {% if rpi.wifi_power_save %}
-                    <li>Yes</li>
-                    {% else %}
-                    <li>No</li>
-                    {% endif %}
-                </ul>
-              </div>
-            </div>
-        </div>
-    </div>
-    <div class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" id="stopCaptureModalDialog">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Stopping images and sounds captures...</h5>
-                </div>
-                <div class="modal-body">
-                    <p>Wait 5 seconds...</p>
                 </div>
             </div>
+        {% if loop.index0 == 6 or loop.index0 == 13 or loop.last %}
         </div>
+        {% endif %}
+    {% endfor %}
     </div>
-    {{ sd_card_full_modal(sd_card) }}
-    {{ battery_discharged_modal(battery_level) }}
+    <div class="row mt-2 mb-3">
+        <div class="col-3 text-end"><span class="badge bg-gradient text-bg-info rounded-0" style="width:100%;font-size: 0.65em">Images</span></div>
+        <div class="col-3 text-end"><span class="badge bg-gradient text-bg-success rounded-0" style="width:100%;font-size: 0.65em">Images + AI</span></div>
+        <div class="col-3 text-center"><span class="badge bg-gradient text-bg-warning rounded-0" style="width:100%;font-size: 0.65em">Sounds</span></div>
+        <div class="col-3 text-start"><span class="badge bg-gradient text-bg-light rounded-0" style="width:100%;font-size: 0.65em">Sleep</span></div>
+    </div>
 </div>
+<!-- Modals dialog -->
+{{ wait_modal() }}
+{{ ask_modal() }}
+{{ sd_card_full_modal(sd_card) }}
+{{ battery_discharged_modal(battery_level) }}
 {% endblock %}
-
 {% block script %}
 <script type="text/javascript">
 
-    const suspendImagesCaptureButton = document.getElementById('suspendImagesCaptureButton');
-    const resumeImagesCaptureButton = document.getElementById('resumeImagesCaptureButton');
-    const stopImagesCaptureButton = document.getElementById('stopImagesCaptureButton');
-    const imagesCaptureStateText = document.getElementById('imagesCaptureStateText');
+    const sdCardUsageSpan = document.getElementById('sdCardUsageSpan');
+    const sdCardI = document.getElementById('sdCardI');
+    const batteryLevelSpan = document.getElementById('batteryLevelSpan');
+    const batteryLevelI = document.getElementById('batteryLevelI');
+    const cpuTemperatureSpan = document.getElementById('cpuTemperatureSpan');
 
-    const suspendSoundsCaptureButton = document.getElementById('suspendSoundsCaptureButton');
-    const resumeSoundsCaptureButton = document.getElementById('resumeSoundsCaptureButton');
-    const stopSoundsCaptureButton = document.getElementById('stopSoundsCaptureButton');
-    const soundsCaptureStateText = document.getElementById('soundsCaptureStateText');
+    const askModalDialog = document.getElementById('askModalDialog');
+    var askModal = new bootstrap.Modal(askModalDialog)
+    const askTitle = document.getElementById('askTitle');
+    const askParagraph = document.getElementById('askParagraph');
 
-    const gnssDate = document.getElementById('gnssDate');
-    const gnssLatitude = document.getElementById('gnssLatitude')
-    const gnssLongitude = document.getElementById('gnssLongitude')
-    const gnssPositionIndication = document.getElementById('gnssPositionIndication')
-    const gnssSatellitesUsed = document.getElementById('gnssSatellitesUsed')
-    const gnssHorizontalPrecision = document.getElementById('gnssHorizontalPrecision')
-    const gnssAltitude = document.getElementById('gnssAltitude')
-    const gnssLastUpdate = document.getElementById('gnssLastUpdate')
-
-    const gnssUpdateButton = document.getElementById('gnssUpdateButton')
-    const gnssSyncTimeButton = document.getElementById('gnssSyncTimeButton')
-    const gnssSavePositionButton = document.getElementById('gnssSavePositionButton')
-
-    const datetimeLocalText = document.getElementById('datetimeLocalText')
-    const datetimeTimeZoneText = document.getElementById('datetimeTimeZoneText')
-    const setDateNumber = document.getElementById('setDateNumber');
-    const setTimeNumber = document.getElementById('setTimeNumber');
-    const dateSetButton = document.getElementById('dateSetButton');
-
-    const configFileInput = document.getElementById('configFileInput')
-
-    const updateText = document.getElementById('updateText')
-    const getUpdatesButton = document.getElementById('getUpdatesButton')
-    const checkUpdatesButton = document.getElementById('checkUpdatesButton')
-
-    const renameAPWifiButton = document.getElementById('renameAPWifiButton')
-    const wifiAPName = document.getElementById('wifiAPName')
-
-    const warningWifiSetText = document.getElementById('warningWifiSetText')
-
-    const testInternetButton = document.getElementById('testInternetButton')
-    const testInternetText = document.getElementById('testInternetText')
-
-    // const refreshWifiButton = document.getElementById('refreshWifiButton')
-
-    const stopCaptureModalDialog = document.getElementById('stopCaptureModalDialog');
+    var powerAction = null
 
     document.addEventListener("DOMContentLoaded", function() {
 
         {{ sd_card_full_modal_javascript(sd_card) }}
         {{ battery_discharged_modal_javascript(battery_level) }}
 
-    })
-
-    function checkUpdates() {
-
-        checkUpdatesButton.disabled = true
-
-        return fetch('/check_updates', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: '',
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.updates_available) {
-                getUpdatesButton.disabled = false
-                updateText.innerText = 'Updates available'
-            }
-            else {
-                getUpdatesButton.disabled = true
-                updateText.innerText = 'No updates available'
-            }
-            checkUpdatesButton.disabled = false
-        })
-        .catch(error => {
-            checkUpdatesButton.disabled = false
-            console.error('Error updating settings:', error);
-            throw error;  // Re-throw the error for the next catch
-        });
-
-    }
-
-    function getUpdates() {
-
-        getUpdatesButton.disabled = true
-
-        return fetch('/get_updates', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: '',
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.updates_done) {
-                getUpdatesButton.disabled = true
-                updateText.innerText = 'Updates downloaded and installed. Restart the entomoscope.'
-                updateText.style = 'font-weight: bold; color: red'
-            }
-            else {
-                getUpdatesButton.disabled = false
-                updateText.innerText = 'No updates done'
-            }
-        })
-        .catch(error => {
-            getUpdatesButton.disabled = false
-            console.error('Error updating settings:', error);
-            throw error;  // Re-throw the error for the next catch
-        });
-
-    }
-
-    function manageImagesCapture(action) {
-
-        var myModal = new bootstrap.Modal(stopCaptureModalDialog)
-
-        if (action == 'stop') {
-            myModal.show()
-        }
-
-        return fetch('/manage_images_capture', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(action),
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                console.log('Settings updated:', data);
-                if (action == 'suspend') {
-                    suspendImagesCaptureButton.disabled = true
-                    resumeImagesCaptureButton.disabled = false
-                    imagesCaptureStateText.innerText  = 'Images capture paused (click on Resume to resume or Stop to stop)'
-                } else if  (action == 'resume') {
-                    suspendImagesCaptureButton.disabled = false
-                    resumeImagesCaptureButton.disabled = true
-                    imagesCaptureStateText.innerText  = 'Images capture running (click on Pause to pause or Stop to stop)'
-                } else {
-                    suspendImagesCaptureButton.disabled = true
-                    resumeImagesCaptureButton.disabled = true
-                    stopImagesCaptureButton.disabled = true
-                    imagesCaptureStateText.innerText  = 'Images capture stopped (reboot the system to restart)'
-
-                    suspendSoundsCaptureButton.disabled = true
-                    resumeSoundsCaptureButton.disabled = true
-                    stopSoundsCaptureButton.disabled = true
-                    soundsCaptureStateText.innerText  = 'Images capture stopped (reboot the system to restart)'
-                }
-            }
-            if (action == 'stop') {
-                myModal.hide()
-            }
-
-        })
-        .catch(error => {
-        console.error('Error updating settings:', error);
-        throw error;  // Re-throw the error for the next catch
-        });
-    }
-
-    function manageSoundsCapture(action) {
-
-        var myModal = new bootstrap.Modal(stopCaptureModalDialog)
-
-        if (action == 'stop') {
-            myModal.show()
-        }
-
-        return fetch('/manage_sounds_capture', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(action),
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                console.log('Settings updated:', data);
-                if (action == 'suspend') {
-                    suspendSoundsCaptureButton.disabled = true
-                    resumeSoundsCaptureButton.disabled = false
-                    soundsCaptureStateText.innerText  = 'Sounds capture paused (click on Resume to resume or Stop to stop)'
-                } else if  (action == 'resume') {
-                    suspendSoundsCaptureButton.disabled = false
-                    resumeSoundsCaptureButton.disabled = true
-                    soundsCaptureStateText.innerText  = 'Sounds capture running (click on Pause to pause or Stop to stop)'
-                } else {
-                    suspendSoundsCaptureButton.disabled = true
-                    resumeSoundsCaptureButton.disabled = true
-                    stopSoundsCaptureButton.disabled = true
-                    soundsCaptureStateText.innerText  = 'Sounds capture stopped (reboot the system to restart)'
-
-                    suspendImagesCaptureButton.disabled = true
-                    resumeImagesCaptureButton.disabled = true
-                    stopImagesCaptureButton.disabled = true
-                    imagesCaptureStateText.innerText  = 'Images capture stopped (reboot the system to restart)'
-                }
-            }
-            if (action == 'stop') {
-                myModal.hide()
-            }
-        })
-        .catch(error => {
-        console.error('Error updating settings:', error);
-        throw error;  // Re-throw the error for the next catch
-        });
-
-    }
-
-    function gnssSavePosition() {
-
-        return fetch('/save_gnss_position', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: '',
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                console.log(data.data)
-                gnssSavePositionButton.disabled = true
-            }
-        })
-        .catch(error => {
-            console.error('Error updating settings:', error);
-            throw error;  // Re-throw the error for the next catch
-        });
-
-    }
-
-    function gnssUpdateData() {
-
-        gnssUpdateButton.disabled = true
-        gnssSyncTimeButton.disabled = true
-        gnssSavePositionButton.disabled = true
-
-        return fetch('/get_gnss_data', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: '',
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-
-                console.log(data)
-                gnssDate.innerText = 'Date: ' + (2000 + data.data.date[0]).toString() + '-' + data.data.date[1].toString().padStart(2, '0')  + '-' + data.data.date[2].toString().padStart(2, '0') + ' ' + data.data.time[0].toString().padStart(2, '0') + ':' + data.data.time[1].toString().padStart(2, '0') + ':' + data.data.time[2].toString().padStart(2, '0') + ' UTC'
-                gnssLatitude.innerText = 'Latitude: ' + data.data['latitude'].toFixed(6) + ' ' + data.data['ns']
-                gnssLongitude.innerText = 'Longitude: ' + data.data['longitude'].toFixed(6)  + ' ' + data.data['ew']
-                gnssPositionIndication.innerText = 'Position indication: ' + data.data['position_indication']
-                gnssSatellitesUsed.innerText = 'Satellites used: ' + data.data['satellites_used']
-                gnssHorizontalPrecision.innerText = 'Horizontal Precision: ' + data.data['hdop']
-                gnssAltitude.innerText = 'Altitude: ' + data.data['altitude'] + ' meters'
-                gnssLastUpdate.innerText = 'Last update: ' + data.data['last_update']
-
-                gnssSyncTimeButton.disabled = false
-
-                if (data.data['satellites_used'] > 3) {
-                    gnssSavePositionButton.disabled = false
-                }
-            }
-            gnssUpdateButton.disabled = false
-        })
-        .catch(error => {
-            gnssUpdateButton.disabled = false
-            console.error('Error updating settings:', error);
-            throw error;  // Re-throw the error for the next catch
-        });
-
-
-
-    }
-
-    function gnssSyncTime() {
-
-        gnssUpdateButton.disabled = true
-        gnssSyncTimeButton.disabled = true
-        gnssSavePositionButton.disabled = true
-
-        return fetch('/gnss_sync_time', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: '',
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                console.log(data)
-                datetimeLocalText.innerText = data.date_time_info[0]
-                datetimeTimeZoneText.innerText = data.date_time_info[1]
-            }
-            gnssUpdateButton.disabled = false
-        })
-        .catch(error => {
-            gnssUpdateButton.disabled = false
-            console.error('Error updating settings:', error);
-            throw error;  // Re-throw the error for the next catch
-        });
-
-    }
-
-    function setDate() {
-
-        data = [setDateNumber.value, setTimeNumber.value]
-
-        return fetch('/set_date', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                datetimeLocalText.innerText = data.data[0]
-                datetimeTimeZoneText.innerText = data.data[1]
-            }
-        })
-        .catch(error => {
-        console.error('Error setting date:', error);
-        throw error;  // Re-throw the error for the next catch
-        });
-
-    }
-
-    function renameAPWifi() {
-
-        wifiAPName.disabled = false
-        renameAPWifiButton.disabled = true
-
-    }
-
-    function removeWifi(name) {
-
-        console.log(name)
-
-        return fetch('/remove_wifi', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(name),
-        })
-        .catch(error => {
-            console.error('Error updating settings:', error);
-            throw error;  // Re-throw the error for the next catch
-        });
-
-    }
-
-    function setWifi(name) {
-
-        console.log(name)
-
-        warningWifiSetText.classList.remove("d-none");
-        warningWifiSetText.innerText = 'New station set to ' + name + '. Restart the entomoscope.'
-
-        return fetch('/set_wifi', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(name),
-        })
-        .catch(error => {
-            console.error('Error updating settings:', error);
-            throw error;  // Re-throw the error for the next catch
-        });
-
-    }
-
-    function addWifi(name, value) {
-
-        var x = document.getElementById("password" + value);
-
-        console.log(name)
-        console.log(x.value)
-
-        return fetch('/add_wifi', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify([name, x.value]),
-        })
-        .catch(error => {
-            console.error('Error updating settings:', error);
-            throw error;  // Re-throw the error for the next catch
-        });
-
-    }
-
-    //function refreshWifi() {
-
-        //refreshWifiButton.disabled = true
-
-        //return fetch('/refresh_wifi', {
-            //method: 'POST',
-            //headers: {
-                //'Content-Type': 'application/json',
-            //},
-            //body: '',
-        //})
-        ////.then(refreshWifiButton.disabled = false)
-        //.catch(error => {
-            //refreshWifiButton.disabled = false
-            //console.error('Error updating settings:', error);
-            //throw error;  // Re-throw the error for the next catch
+        //var socket = io();
+        //socket.on('connect', function() {
+            //socket.send('User has connected!');
         //});
 
-    //}
-
-    function showPassword(value) {
-      var x = document.getElementById("password" + value);
-      if (x.type === "password") {
-        x.type = "text";
-      } else {
-        x.type = "password";
-      }
-    }
-
-    function testInternetConnection() {
-
-        testInternetButton.disabled = true
-        testInternetText.value = 'In progress...'
-
-        return fetch('/test_internet_connection', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: '',
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                testInternetText.value = 'Available'
-            }
-            else {
-                testInternetText.value = 'Not available'
-            }
-            testInternetButton.disabled = false
-        })
-        .catch(error => {
-            testInternetButton.disabled = false
-            console.error('Error updating settings:', error);
-            throw error;  // Re-throw the error for the next catch
-        });
-
-    }
+    })
 
     function reboot() {
 
-        return fetch('/reboot', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(name),
-        })
-        .catch(error => {
-            console.error('Error reboot: ', error);
-            throw error;  // Re-throw the error for the next catch
-        });
+        powerAction = 'reboot'
+
+        askTitle.innerText = 'Reboot'
+        askParagraph.innerText = 'Do you really want to reboot?'
+
+        askModal.show()
 
     }
 
     function shutdown() {
 
-        return fetch('/shutdown', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(name),
-        })
-        .catch(error => {
-            console.error('Error shutdown: ', error);
-            throw error;  // Re-throw the error for the next catch
-        });
+        powerAction = 'shutdown'
 
+        askTitle.innerText = 'Shutdown'
+        askParagraph.innerText = 'Do you really want to shutdown?'
+
+        askModal.show()
+
+    }
+
+    function actionOk() {
+
+        askModal.hide()
+
+        if (powerAction == 'reboot') {
+            return fetch('/reboot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(name),
+            })
+            .catch(error => {
+                console.error('Error reboot: ', error);
+                throw error;  // Re-throw the error for the next catch
+            });
+        }
+        else if (powerAction == 'shutdown') {
+            return fetch('/shutdown', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(name),
+            })
+            .catch(error => {
+                console.error('Error shutdown: ', error);
+                throw error;  // Re-throw the error for the next catch
+            });
+        }
     }
 
     function getCpuTemperature() {
 
-        const cpuTempNavBar = document.getElementById('cpuTempNavBar');
+        const cpuTempNavBar = document.getElementById('cpuTempNavBar')
 
         return fetch('/get_cpu_temperature', {
             method: 'POST',
@@ -920,18 +357,18 @@
         .then(data => {
             if (data.success) {
                 if (data.temperature >= 75) {
-                    cpuTempNavBar.className = "badge bg-danger me-2"
+                    cpuTempNavBar.className = "btn btn-danger me-2"
                 } else if (data.temperature >= 65) {
-                    cpuTempNavBar.className = "badge bg-warning me-2"
+                    cpuTempNavBar.className = "btn btn-warning me-2"
                 } else {
-                    cpuTempNavBar.className = "badge bg-success me-2"
+                    cpuTempNavBar.className = "btn btn-success me-2"
                 }
-                cpuTempNavBar.innerText = 'CPU ' + data.temperature.toFixed(0) + ' °C'
+                cpuTemperatureSpan.innerHTML = data.temperature.toFixed(0) + ' &degC'
             }
         })
         .catch(error => {
-            console.error('Error updating settings:', error);
-            throw error;  // Re-throw the error for the next catch
+        console.error('Error getting CPU temperature:', error);
+        throw error;  // Re-throw the error for the next catch
         });
 
     }
@@ -952,18 +389,21 @@
             if (data.success) {
                 if (data.battery_level > 0) {
                     if (data.battery_level > 11.5) {
-                        batteryLevelNavBar.className = "badge bg-success me-2"
+                        batteryLevelNavBar.className = "btn btn-success me-2"
+                        batteryLevelI.className = "bi bi-battery-full"
                     } else if (data.battery_level > 10.8) {
-                        batteryLevelNavBar.className = "badge bg-warning me-2"
+                        batteryLevelNavBar.className = "btn btn-warning me-2"
+                        batteryLevelI.className = "bi bi-battery-half"
                     } else {
-                        batteryLevelNavBar.className = "badge bg-danger me-2"
+                        batteryLevelNavBar.className = "btn btn-danger me-2"
+                        batteryLevelI.className = "bi bi-battery-low"
                     }
-                    batteryLevelNavBar.innerText = 'BAT ' + data.battery_level.toFixed(1) + ' V'
+                    batteryLevelSpan.innerHTML = data.battery_level.toFixed(1) + ' V'
                 }
             }
         })
         .catch(error => {
-            console.error('Error updating settings:', error);
+            console.error('Error getting battery level:', error);
             throw error;  // Re-throw the error for the next catch
         });
 
@@ -984,17 +424,19 @@
         .then(data => {
             if (data.success) {
                 if (data.sd_card_usage < 80) {
-                    sdCardNavBar.className = "badge bg-success me-2"
+                    sdCardNavBar.className = "btn btn-success me-2"
                 } else if (data.sd_card_usage < 90) {
-                    sdCardNavBar.className = "badge bg-warning me-2"
+                    sdCardNavBar.className = "btn btn-warning me-2"
+                    sdCardI.className = "bi bi-sd-card"
                 } else {
-                    sdCardNavBar.className = "badge bg-danger me-2"
+                    sdCardNavBar.className = "btn btn-danger me-2"
+                    sdCardI.className = "bi bi-sd-card-fill"
                 }
-                sdCardNavBar.innerText = 'SD ' + data.sd_card_usage.toFixed(0) + ' %'
+                sdCardUsageSpan.innerHTML = data.sd_card_usage.toFixed(0) + ' %'
             }
         })
         .catch(error => {
-            console.error('Error updating settings:', error);
+            console.error('Error getting SD card usage:', error);
             throw error;  // Re-throw the error for the next catch
         });
 

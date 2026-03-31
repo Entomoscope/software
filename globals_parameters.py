@@ -70,35 +70,24 @@ logger.info('desktop folder: ' + DESKTOP_FOLDER)
 
 logger.info('logs desktop folder: ' + LOGS_DESKTOP_FOLDER)
 
-EXTERNAL_DISK_FOLDER = os.path.join('/media', USER, 'ENTO_EXT_DISK')
+# EXTERNAL_DISK_FOLDER = os.path.join('/media', USER, 'ENTO_EXT_DISK')
 
-if not os.path.exists(EXTERNAL_DISK_FOLDER):
-    DATA_FOLDER = os.path.join(DESKTOP_FOLDER, 'Data')
-    if not os.path.exists(DATA_FOLDER):
-        os.mkdir(DATA_FOLDER)
-else:
-    DATA_FOLDER = EXTERNAL_DISK_FOLDER
+# if not os.path.exists(EXTERNAL_DISK_FOLDER):
+    # DATA_FOLDER = os.path.join(DESKTOP_FOLDER, 'Data')
+    # if not os.path.exists(DATA_FOLDER):
+        # os.mkdir(DATA_FOLDER)
+# else:
+    # DATA_FOLDER = EXTERNAL_DISK_FOLDER
+# logger.info('data folder: ' + DATA_FOLDER)
+
+DATA_FOLDER = os.path.join(DESKTOP_FOLDER, 'Data')
+if not os.path.exists(DATA_FOLDER):
+    os.mkdir(DATA_FOLDER)
 logger.info('data folder: ' + DATA_FOLDER)
 
 SAVE_FOLDER = os.path.join(DATA_FOLDER, TODAY)
-
 if not os.path.exists(SAVE_FOLDER):
-    try:
-        os.mkdir(SAVE_FOLDER)
-        save_folder_created = True
-    except PermissionError as e:
-        logger.error(str(e))
-        save_folder_created = False
-else:
-    save_folder_created = True
-
-if not save_folder_created:
-    DATA_FOLDER = os.path.join(DESKTOP_FOLDER, 'Data')
-    if not os.path.exists(DATA_FOLDER):
-        os.mkdir(DATA_FOLDER)
-    SAVE_FOLDER = os.path.join(DATA_FOLDER, TODAY)
-    if not os.path.exists(SAVE_FOLDER):
-        os.mkdir(SAVE_FOLDER)
+    os.mkdir(SAVE_FOLDER)
 logger.info('save folder: ' + SAVE_FOLDER)
 
 SOUNDS_CAPTURE_FOLDER = os.path.join(SAVE_FOLDER, 'Sounds')
@@ -119,7 +108,10 @@ logger.info('environment monitoring folder: ' + ENVIRONMENT_MONITORING_FOLDER)
 TMP_FOLDER = os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'tmp')
 logger.info('tmp folder: ' + TMP_FOLDER)
 
-AI_ENABLE = True
+MEDIA_FOLDER = os.path.join('/media', USER)
+logger.info('media folder: ' + MEDIA_FOLDER)
+
+AI_ENABLE = False
 logger.info(f'ai enable: {AI_ENABLE}')
 
 AI_MODEL_PATH = os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'ai_models')

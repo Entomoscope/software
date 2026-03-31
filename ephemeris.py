@@ -34,41 +34,40 @@ class Ephemeris():
         self.tomorrow_setting = {'str': None, 'hour': None, 'minute': None}
 
         if self.file_found:
-            self.read()
+            self.today_rising, self.today_setting = self.find_ephermeris(TODAY_NOW)
+            self.tomorrow_rising, self.tomorrow_setting = self.find_ephermeris(TOMORROW_NOW)
         else:
             logger.error('file not found: ' + self.file)
 
-    def read(self):
+    def find_ephermeris(self, day):
+
+        rising = {'str': None, 'hour': None, 'minute': None}
+        setting = {'str': None, 'hour': None, 'minute': None}
+        ephemeris_found = False
 
         try:
 
-            today = TODAY_NOW.strftime('%Y-%m-%d')
-            tomorrow = TOMORROW_NOW.strftime('%Y-%m-%d')
+            day_to_find = day.strftime('%Y-%m-%d')
 
             with open(self.file, 'r') as f:
                 for line in f:
                     data = line.split(';')
-                    if data[0].lower() == 'sun':
-                        if data[1] == today:
-                            self.today_rising['str'] = data[2]
-                            self.today_rising['hour'], self.today_rising['minute'] = [int(x) for x in data[2].split(':')]
-                            self.today_setting['str'] = data[6]
-                            self.today_setting['hour'], self.today_setting['minute'] = [int(x) for x in data[6].split(':')]
-                            logger.info(f"today rising: {self.today_rising['str']} UTC")
-                            logger.info(f"today setting {self.today_setting['str']} UTC")
-                        elif data[1] == tomorrow:
-                            self.tomorrow_rising['str'] = data[2]
-                            self.tomorrow_rising['hour'], self.tomorrow_rising['minute'] = [int(x) for x in data[2].split(':')]
-                            self.tomorrow_setting['str'] = data[6]
-                            self.tomorrow_setting['hour'], self.tomorrow_setting['minute'] = [int(x) for x in data[6].split(':')]
-                            logger.info(f"tomorrow rising: {self.tomorrow_rising['str']} UTC")
-                            logger.info(f"tomorrow setting: {self.tomorrow_setting['str']} UTC")
-                            break
+                    if data[0].lower() == 'sun' and data[1] == day_to_find:
+                        rising['str'] = data[2]
+                        rising['hour'], rising['minute'] = [int(x) for x in data[2].split(':')]
+                        setting['str'] = data[6]
+                        setting['hour'], setting['minute'] = [int(x) for x in data[6].split(':')]
+                        logger.info(f"{day_to_find} rising: {rising['str']} UTC")
+                        logger.info(f"{day_to_find} setting: {setting['str']} UTC")
+                        ephemeris_found = True
+                        break
 
         except BaseException as e:
 
             logger.error('error reading file: ' + self.file)
             logger.error(str(e))
+
+        return rising, setting, ephemeris_found
 
     def __str__(self):
 

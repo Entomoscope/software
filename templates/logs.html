@@ -1,15 +1,14 @@
-{% from 'macros.html' import sd_card_full_modal %}
-{% from 'macros.html' import sd_card_full_modal_javascript %}
-{% from 'macros.html' import battery_discharged_modal %}
-{% from 'macros.html' import battery_discharged_modal_javascript %}
-
+{% from 'macros.html' import sd_card_full_modal -%}
+{% from 'macros.html' import sd_card_full_modal_javascript -%}
+{% from 'macros.html' import battery_discharged_modal -%}
+{% from 'macros.html' import battery_discharged_modal_javascript -%}
+{% from 'macros.html' import ask_modal -%}
+{% from 'macros.html' import wait_modal -%}
 {% extends 'base.html' %}
-
-{% block head %}
-<title>Entomoscope - Logs</title>
-{% endblock %}
-
-{% block content %}
+{% block head -%}
+    <title>Entomoscope - Logs</title>
+{%- endblock -%}
+{%- block content %}
 <!-- Navigation bar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
   <div class="container-fluid">
@@ -26,13 +25,19 @@
           <a class="nav-link" href="{{ url_for('data') }}">Data</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('global_settings') }}">Global Settings</a>
+          <a class="nav-link" href="{{ url_for('storage') }}">Storage</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('images_capture_settings') }}">Images Capture Settings</a>
+          <a class="nav-link" href="{{ url_for('global_settings') }}">Capture Settings</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('sounds_capture_settings') }}">Sounds Capture Settings</a>
+          <a class="nav-link" href="{{ url_for('images_capture_settings') }}">Images Capture</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('sounds_capture_settings') }}">Sounds Capture</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('information') }}">Information</a>
         </li>
         <li class="nav-item">
           <a class="nav-link active" aria-current="page" href="{{ url_for('logs') }}">Logs</a>
@@ -40,40 +45,48 @@
       </ul>
     </div>
     <div class="nav pull-right">
+        <!-- Update available -->
         {% if updates_available %}
-        <span class="badge bg-success me-2" id="updateNavBar">
+        <button class="btn btn-success me-2" style="pointer-events: none" id="updateNavBar"><i class="bi bi-cloud-download"></i>
             Update available
-        </span>
+        </button>
         {% endif %}
+        <!-- SD card usage -->
         {% if sd_card.used_percent_num < 80 %}
-        <span class="badge bg-success me-2" id="sdCardNavBar">
+        <button class="btn btn-success me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card" id="sdCardI"></i>
         {% elif sd_card.used_percent_num < 90 %}
-        <span class="badge bg-warning me-2" id="sdCardNavBar">
+        <button class="btn btn-warning me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card" id="sdCardI"></i>
         {% else %}
-        <span class="badge bg-danger me-2" id="sdCardNavBar">
+        <button class="btn btn-danger me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card-fill" id="sdCardI"></i>
         {% endif %}
-            SD {{ sd_card.used_percent_num }} %
-        </span>
+             <span class="d-none d-sm-inline" id="sdCardUsageSpan">{{ '%.0f' % sd_card.used_percent_num }} %</span>
+        </button>
+        <!-- Battery level -->
         {% if battery_level > 0 %}
             {% if battery_level > 11.5 %}
-            <span class="badge bg-success me-2" id="batteryLevelNavBar">
+            <button class="btn btn-success me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-full" id="batteryLevelI"></i>
             {% elif battery_level > 10.8 %}
-            <span class="badge bg-warning me-2" id="batteryLevelNavBar">
+            <button class="btn btn-warning me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-half" id="batteryLevelI"></i>
             {% else %}
-            <span class="badge bg-danger me-2" id="batteryLevelNavBar">
+            <button class="btn btn-danger me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-low" id="batteryLevelI"></i>
             {% endif %}
-                BAT {{ '%.1f' % battery_level }} V
-            </span>
+                 <span class="d-none d-sm-inline" id="batteryLevelSpan">{{ '%.1f' % battery_level }} V</span>
+            </button>
         {% endif %}
+        <!-- CPU Temperature -->
         {% if rpi.cpu_temperature < 65 %}
-        <span class="badge bg-success me-2" id="cpuTempNavBar">
+        <button class="btn btn-success me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
         {% elif rpi.cpu_temperature < 75 %}
-        <span class="badge bg-warning me-2" id="cpuTempNavBar">
+        <button class="btn btn-warning me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
         {% else %}
-        <span class="badge bg-danger me-2" id="cpuTempNavBar">
+        <button class="btn btn-danger me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
         {% endif %}
-            CPU {{ '%.0f' % rpi.cpu_temperature }} &deg;C
-        </span>
+            <span class="d-none d-sm-inline" id="cpuTemperatureSpan">{{ '%.0f' % rpi.cpu_temperature }} &deg;C</span>
+        </button>
+        <!-- Reboot -->
+        <button class="btn btn-light me-2" id="updateNavBar" onclick="reboot()"><i class="bi bi-bootstrap-reboot"></i></button>
+        <!-- Shutdown -->
+        <button class="btn btn-danger" id="updateNavBar" onclick="shutdown()"><i class="bi bi-power"></i></button>
     </div>
   </div>
 </nav>
@@ -101,7 +114,7 @@
         </ul>
     </div>
     <!-- File content -->
-    <div class="col-9">
+    <div class="col-9 offset-3 mb-3" style="position: fixed;height:90%;overflow-y:auto;">
         {% if current_file %}
             <h1 class="text-center">{{ current_file }}</h1>
         {% endif %}
@@ -112,13 +125,29 @@
         {% endif %}
     </div>
   </div>
-  {{ sd_card_full_modal(sd_card) }}
-  {{ battery_discharged_modal(battery_level) }}
 </div>
+<!-- Modals dialog -->
+{{ wait_modal() }}
+{{ ask_modal() }}
+{{ sd_card_full_modal(sd_card) }}
+{{ battery_discharged_modal(battery_level) }}
 {% endblock %}
-
 {% block script %}
 <script type="text/javascript">
+
+    const sdCardUsageSpan = document.getElementById('sdCardUsageSpan');
+    const sdCardI = document.getElementById('sdCardI');
+    const batteryLevelSpan = document.getElementById('batteryLevelSpan');
+    const batteryLevelI = document.getElementById('batteryLevelI');
+    const cpuTemperatureSpan = document.getElementById('cpuTemperatureSpan');
+
+    const askModalDialog = document.getElementById('askModalDialog');
+    const askTitle = document.getElementById('askTitle');
+    const askParagraph = document.getElementById('askParagraph');
+
+    var askModal = new bootstrap.Modal(askModalDialog)
+
+    var powerAction = null
 
     document.addEventListener("DOMContentLoaded", function() {
 
@@ -126,6 +155,60 @@
         {{ battery_discharged_modal_javascript(battery_level) }}
 
     })
+
+    function reboot() {
+
+        powerAction = 'reboot'
+
+        askTitle.innerText = 'Reboot'
+        askParagraph.innerText = 'Do you really want to reboot?'
+
+        askModal.show()
+
+    }
+
+    function shutdown() {
+
+        powerAction = 'shutdown'
+
+        askTitle.innerText = 'Shutdown'
+        askParagraph.innerText = 'Do you really want to shutdown?'
+
+        askModal.show()
+
+    }
+
+    function actionOk() {
+
+        askModal.hide()
+
+        if (powerAction == 'reboot') {
+            return fetch('/reboot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(name),
+            })
+            .catch(error => {
+                console.error('Error reboot: ', error);
+                throw error;  // Re-throw the error for the next catch
+            });
+        }
+        else if (powerAction == 'shutdown') {
+            return fetch('/shutdown', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(name),
+            })
+            .catch(error => {
+                console.error('Error shutdown: ', error);
+                throw error;  // Re-throw the error for the next catch
+            });
+        }
+    }
 
     function getCpuTemperature() {
 
@@ -142,17 +225,17 @@
         .then(data => {
             if (data.success) {
                 if (data.temperature >= 75) {
-                    cpuTempNavBar.className = "badge bg-danger me-2"
+                    cpuTempNavBar.className = "btn btn-danger me-2"
                 } else if (data.temperature >= 65) {
-                    cpuTempNavBar.className = "badge bg-warning me-2"
+                    cpuTempNavBar.className = "btn btn-warning me-2"
                 } else {
-                    cpuTempNavBar.className = "badge bg-success me-2"
+                    cpuTempNavBar.className = "btn btn-success me-2"
                 }
-                cpuTempNavBar.innerText = 'CPU ' + data.temperature.toFixed(0) + ' °C'
+                cpuTemperatureSpan.innerHTML = data.temperature.toFixed(0) + ' &degC'
             }
         })
         .catch(error => {
-        console.error('Error updating settings:', error);
+        console.error('Error getting CPU temperature:', error);
         throw error;  // Re-throw the error for the next catch
         });
 
@@ -174,23 +257,25 @@
             if (data.success) {
                 if (data.battery_level > 0) {
                     if (data.battery_level > 11.5) {
-                        batteryLevelNavBar.className = "badge bg-success me-2"
+                        batteryLevelNavBar.className = "btn btn-success me-2"
+                        batteryLevelI.className = "bi bi-battery-full"
                     } else if (data.battery_level > 10.8) {
-                        batteryLevelNavBar.className = "badge bg-warning me-2"
+                        batteryLevelNavBar.className = "btn btn-warning me-2"
+                        batteryLevelI.className = "bi bi-battery-half"
                     } else {
-                        batteryLevelNavBar.className = "badge bg-danger me-2"
+                        batteryLevelNavBar.className = "btn btn-danger me-2"
+                        batteryLevelI.className = "bi bi-battery-low"
                     }
-                    batteryLevelNavBar.innerText = 'BAT ' + data.battery_level.toFixed(1) + ' V'
+                    batteryLevelSpan.innerHTML = data.battery_level.toFixed(1) + ' V'
                 }
             }
         })
         .catch(error => {
-            console.error('Error updating settings:', error);
+            console.error('Error getting battery level:', error);
             throw error;  // Re-throw the error for the next catch
         });
 
     }
-
 
     function getSdCardUsage() {
 
@@ -207,17 +292,19 @@
         .then(data => {
             if (data.success) {
                 if (data.sd_card_usage < 80) {
-                    sdCardNavBar.className = "badge bg-success me-2"
+                    sdCardNavBar.className = "btn btn-success me-2"
                 } else if (data.sd_card_usage < 90) {
-                    sdCardNavBar.className = "badge bg-warning me-2"
+                    sdCardNavBar.className = "btn btn-warning me-2"
+                    sdCardI.className = "bi bi-sd-card"
                 } else {
-                    sdCardNavBar.className = "badge bg-danger me-2"
+                    sdCardNavBar.className = "btn btn-danger me-2"
+                    sdCardI.className = "bi bi-sd-card-fill"
                 }
-                sdCardNavBar.innerText = 'SD ' + data.sd_card_usage.toFixed(0) + ' %'
+                sdCardUsageSpan.innerHTML = data.sd_card_usage.toFixed(0) + ' %'
             }
         })
         .catch(error => {
-            console.error('Error updating settings:', error);
+            console.error('Error getting SD card usage:', error);
             throw error;  // Re-throw the error for the next catch
         });
 

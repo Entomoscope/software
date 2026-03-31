@@ -560,7 +560,7 @@ class Camera2():
                 # self.jpeg_data = imencode('.jpg', self.frame_data_main, self.encode_param)[1].tobytes()
 
         if self.perf:
-            logger.info(f'frame to JPEG {(time.perf_counter_ns() - s)/1E9}')
+            logger.info(f'frame to JPEG {(time.perf_counter_ns() - s)/1E9} seconds')
 
     def save_capture(self, file_path, save_metadata=True, extra_metadata=None):
 

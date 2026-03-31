@@ -53,10 +53,10 @@ class Configuration2():
         setattr(self, 'ai_detection', {
                         'enable': False,
                         'file': '',
-                        'min_confidence': 0.8,
                         'image_height': 448,
                         "image_scale": 15.0,
-                        'image_width': 704
+                        'image_width': 704,
+                        'min_confidence': 0.8
                         })
 
         setattr(self, 'camera', {
@@ -155,8 +155,8 @@ class Configuration2():
                         })
 
         setattr(self, 'microphone', {
-                            "sample_rate": 48000,
-                            'gain': 2
+                            'gain': 2,
+                            'sample_rate': 48000
                         })
 
         setattr(self, 'mode', {
@@ -165,16 +165,17 @@ class Configuration2():
 
         setattr(self, 'schedule', {
                             'enable': False,
-                            'off_duration': 60,
-                            'on_duration': 60,
                             'next_startup': '2025-01-01 07:00',
                             'next_shutdown': '2025-01-01 18:00',
+                            'off_duration': 60,
+                            'on_duration': 60,
+                            'periodicity': 'every_day'
                         })
 
         setattr(self, 'server', {
                             'image_constraints': {
-                                'square': False,
-                                'centered': False
+                                'centered': False,
+                                'square': False
                             },
                             'preview_size': {
                                 'max_width': 800
@@ -186,8 +187,8 @@ class Configuration2():
                         })
 
         setattr(self, 'sounds_capture', {
-                            'duration': 60,
-                            'enable': False
+                            'enable': False,
+                            'duration': 60
                         })
 
         setattr(self, 'wifi', {

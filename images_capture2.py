@@ -148,12 +148,15 @@ def main():
     elif configuration.mode['mode'] == 'moth':
         logger.info(f"LEDs UV intensity set to {configuration.leds['intensity_rear_deported_uv']} %")
 
+    leds_delay_on = configuration.leds['delay_on']
+    leds_delay_off = configuration.leds['delay_off']
     leds_always_on = configuration.leds['always_on']
+
     if leds_always_on:
         logger.info('LEDs always on enabled')
     else:
-        logger.info(f"delay LEDs on before image capture {configuration.leds['delay_on']} seconds")
-        logger.info(f"delay LEDs off after image capture {configuration.leds['delay_off']} seconds")
+        logger.info(f"delay LEDs on before image capture {leds_delay_on} seconds")
+        logger.info(f"delay LEDs off after image capture {leds_delay_off} seconds")
 
     # Configuration des périodes d'alternance On/Off de capture d'images
     on_duration = configuration.schedule['on_duration']
@@ -267,8 +270,8 @@ def main():
                         'EntomoscopeAltitude': configuration.gnss['altitude'],
                         'EntomoscopeLedsFrontIntensity': configuration.leds['intensity_front'],
                         'EntomoscopeLedsRearDeportedUvIntensity': configuration.leds['intensity_rear_deported_uv'],
-                        'EntomoscopeLedsDelayOn': configuration.leds['delay_on'],
-                        'EntomoscopeLedsDelayOff': configuration.leds['delay_off'],
+                        'EntomoscopeLedsDelayOn': leds_delay_on,
+                        'EntomoscopeLedsDelayOff': leds_delay_off,
                         'EntomoscopeAiAvailable': AI_AVAILABLE,
                         'EntomoscopeAiEnable': configuration.ai_detection['enable'],
                         'EntomoscopeAiModel': configuration.ai_detection['file'],
@@ -309,7 +312,7 @@ def main():
         configuration_startup_hour = int(configuration.schedule['next_startup'][11:13])
         configuration_startup_minute = int(configuration.schedule['next_startup'][14:16])
         now = datetime.now()
-        t = datetime(now.year, now.month, now.day, configuration_startup_hour, configuration_startup_minute, 0) - timedelta(seconds=configuration.leds['delay_on'])
+        t = datetime(now.year, now.month, now.day, configuration_startup_hour, configuration_startup_minute, 0) - timedelta(seconds=leds_delay_on)
         delta = t - now
         if delta.total_seconds() > 0:
             logger.info(f'wait {delta.total_seconds()} seconds until {configuration.schedule["next_startup"][11:13]}:{configuration.schedule["next_startup"][14:16]} before capturing images')
@@ -321,7 +324,7 @@ def main():
                     sleep(delta.total_seconds())
                 now = datetime.now()
         else:
-            logger.info(f'too late to start capture on time ({-delta} seconds)')
+            logger.info(f'too late to start capture on time ({-delta} seconds). Start immediately')
     except BaseException as e:
         logger.error(str(e))
 
@@ -441,8 +444,8 @@ def main():
                     leds_rear_deported_uv.turn_on()
 
                 # Attente avant la capture d'image pour permettre à la caméra de se stabiliser
-                if configuration.leds['delay_on'] > 0:
-                    sleep(configuration.leds['delay_on'])
+                if leds_delay_on > 0:
+                    sleep(leds_delay_on)
 
             # Sinon si mode Moth ou Lepinoc
             elif configuration.mode['mode'] == 'moth' or configuration.mode['mode'] == 'lepinoc':
@@ -462,8 +465,8 @@ def main():
             if not leds_always_on:
 
                 # Attente après la capture d'image pour éviter d'éteindre avant la fin de la capture
-                if configuration.leds['delay_off'] > 0:
-                    sleep(configuration.leds['delay_off'])
+                if leds_delay_off > 0:
+                    sleep(leds_delay_off)
 
                 # Gestion des LEDs après capture d'image en fonction du mode
                 if configuration.mode['mode'] == 'trap': # Front Off et Rear Off
@@ -698,13 +701,14 @@ def main():
                     elif configuration.mode['mode'] == 'moth':
                         logger.info(f"LEDs UV intensity set to {configuration.leds['intensity_rear_deported_uv']} %")
 
+                    leds_delay_on = configuration.leds['delay_on']
                     leds_always_on = configuration.leds['always_on']
 
                     if leds_always_on:
                         logger.info('LEDs always on enabled')
                     else:
-                        logger.info(f"delay LEDs on before image capture {configuration.leds['delay_on']} seconds")
-                        logger.info(f"delay LEDs off after image capture {configuration.leds['delay_off']} seconds")
+                        logger.info(f"delay LEDs on before image capture {leds_delay_on} seconds")
+                        logger.info(f"delay LEDs off after image capture {leds_delay_off} seconds")
 
                     # Configuration des périodes d'alternance On/Off de capture d'images
                     on_duration = configuration.schedule['on_duration']
@@ -722,8 +726,8 @@ def main():
                             'EntomoscopeAltitude': configuration.gnss['altitude'],
                             'EntomoscopeLedsFrontIntensity': configuration.leds['intensity_front'],
                             'EntomoscopeLedsRearDeportedUvIntensity': configuration.leds['intensity_rear_deported_uv'],
-                            'EntomoscopeLedsDelayOn': configuration.leds['delay_on'],
-                            'EntomoscopeLedsDelayOff': configuration.leds['delay_off'],
+                            'EntomoscopeLedsDelayOn': leds_delay_on,
+                            'EntomoscopeLedsDelayOff': leds_delay_off,
                             'EntomoscopeAiAvailable': AI_AVAILABLE,
                             'EntomoscopeAiEnable': configuration.ai_detection['enable'],
                             'EntomoscopeAiModel': configuration.ai_detection['file'],

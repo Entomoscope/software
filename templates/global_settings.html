@@ -1,16 +1,15 @@
-{% from 'macros.html' import display_configuration_global_settings %}
-{% from 'macros.html' import sd_card_full_modal %}
-{% from 'macros.html' import sd_card_full_modal_javascript %}
-{% from 'macros.html' import battery_discharged_modal %}
-{% from 'macros.html' import battery_discharged_modal_javascript %}
-
+{% from 'macros.html' import display_configuration_global_settings -%}
+{% from 'macros.html' import sd_card_full_modal -%}
+{% from 'macros.html' import sd_card_full_modal_javascript -%}
+{% from 'macros.html' import battery_discharged_modal -%}
+{% from 'macros.html' import battery_discharged_modal_javascript -%}
+{% from 'macros.html' import ask_modal -%}
+{% from 'macros.html' import wait_modal -%}
 {% extends 'base.html' %}
-
-{% block head %}
-<title>Entomoscope - Global Settings</title>
-{% endblock %}
-
-{% block content %}
+{% block head -%}
+    <title>Entomoscope - Capture Settings</title>
+{%- endblock -%}
+{%- block content %}
 <!-- Navigation bar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
   <div class="container-fluid">
@@ -27,13 +26,19 @@
           <a class="nav-link" href="{{ url_for('data') }}">Data</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="{{ url_for('global_settings') }}">Global Settings</a>
+          <a class="nav-link" href="{{ url_for('storage') }}">Storage</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('images_capture_settings') }}">Images Capture Settings</a>
+          <a class="nav-link active" aria-current="page" href="{{ url_for('global_settings') }}">Capture Settings</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('sounds_capture_settings') }}">Sounds Capture Settings</a>
+          <a class="nav-link" href="{{ url_for('images_capture_settings') }}">Images Capture</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('sounds_capture_settings') }}">Sounds Capture</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('information') }}">Information</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="{{ url_for('logs') }}">Logs</a>
@@ -41,40 +46,48 @@
       </ul>
     </div>
     <div class="nav pull-right">
+        <!-- Update available -->
         {% if updates_available %}
-        <span class="badge bg-success me-2" id="updateNavBar">
+        <button class="btn btn-success me-2" style="pointer-events: none" id="updateNavBar"><i class="bi bi-cloud-download"></i>
             Update available
-        </span>
+        </button>
         {% endif %}
+        <!-- SD card usage -->
         {% if sd_card.used_percent_num < 80 %}
-        <span class="badge bg-success me-2" id="sdCardNavBar">
+        <button class="btn btn-success me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card" id="sdCardI"></i>
         {% elif sd_card.used_percent_num < 90 %}
-        <span class="badge bg-warning me-2" id="sdCardNavBar">
+        <button class="btn btn-warning me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card" id="sdCardI"></i>
         {% else %}
-        <span class="badge bg-danger me-2" id="sdCardNavBar">
+        <button class="btn btn-danger me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card-fill" id="sdCardI"></i>
         {% endif %}
-            SD {{ sd_card.used_percent_num }} %
-        </span>
+             <span class="d-none d-sm-inline" id="sdCardUsageSpan">{{ '%.0f' % sd_card.used_percent_num }} %</span>
+        </button>
+        <!-- Battery level -->
         {% if battery_level > 0 %}
             {% if battery_level > 11.5 %}
-            <span class="badge bg-success me-2" id="batteryLevelNavBar">
+            <button class="btn btn-success me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-full" id="batteryLevelI"></i>
             {% elif battery_level > 10.8 %}
-            <span class="badge bg-warning me-2" id="batteryLevelNavBar">
+            <button class="btn btn-warning me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-half" id="batteryLevelI"></i>
             {% else %}
-            <span class="badge bg-danger me-2" id="batteryLevelNavBar">
+            <button class="btn btn-danger me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-low" id="batteryLevelI"></i>
             {% endif %}
-                BAT {{ '%.1f' % battery_level }} V
-            </span>
+                 <span class="d-none d-sm-inline" id="batteryLevelSpan">{{ '%.1f' % battery_level }} V</span>
+            </button>
         {% endif %}
+        <!-- CPU Temperature -->
         {% if rpi.cpu_temperature < 65 %}
-        <span class="badge bg-success me-2" id="cpuTempNavBar">
+        <button class="btn btn-success me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
         {% elif rpi.cpu_temperature < 75 %}
-        <span class="badge bg-warning me-2" id="cpuTempNavBar">
+        <button class="btn btn-warning me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
         {% else %}
-        <span class="badge bg-danger me-2" id="cpuTempNavBar">
+        <button class="btn btn-danger me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
         {% endif %}
-            CPU {{ '%.0f' % rpi.cpu_temperature }} &deg;C
-        </span>
+            <span class="d-none d-sm-inline" id="cpuTemperatureSpan">{{ '%.0f' % rpi.cpu_temperature }} &deg;C</span>
+        </button>
+        <!-- Reboot -->
+        <button class="btn btn-light me-2" id="updateNavBar" onclick="reboot()"><i class="bi bi-bootstrap-reboot"></i></button>
+        <!-- Shutdown -->
+        <button class="btn btn-danger" id="updateNavBar" onclick="shutdown()"><i class="bi bi-power"></i></button>
     </div>
   </div>
 </nav>
@@ -82,8 +95,26 @@
 <div class="container-fluid">
   <div class="row align-items-start mt-3">
     <!-- Global Settings -->
-    <div class="col-5">
+    <div class="col-12 col-sm-5">
         <div class="accordion" id="accordion">
+           <!-- Configuration file -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseZero" aria-expanded="false" aria-controls="collapseOne">
+                    Configuration file
+                  </button>
+                </h2>
+                <div id="collapseZero" class="accordion-collapse collapse">
+                  <div class="accordion-body">
+                    <div class="form-group">
+                      <form action = "/" method = "post" enctype="multipart/form-data">
+                        <input type="file" name="file" id="configFileInput" accept=".json"/>
+                        <input type="submit" value="Send to Entomoscope">
+                      </form>
+                    </div>
+                  </div>
+                </div>
+            </div>
             <!-- Site -->
             <div class="accordion-item">
                 <h2 class="accordion-header">
@@ -141,8 +172,13 @@
                                 <strong class="mb-1"><label for="brightness" class="form-label">Next startup</label></strong>
                             </div>
                             <div class="input-group mb-1">
-                                <input type="date" id="scheduleStartupDateNumber" class="form-control" value="{{ startup[0] }}" min="{{ today }}" onchange="updateSaveButton('schedule', false)"/>
-                                <input type="time" id="scheduleStartupTimeNumber" class="form-control" value="{{ startup[1] }}" min="{{ today }}" onchange="updateSaveButton('schedule', false)"/>
+                                {% if date_num[0] <= date_num[1] and date_num[1] < date_num[2] %}
+                                <input type="date" id="scheduleStartupDateNumber" class="form-control" value="{{ startup[0] }}" min="{{ today }}" onchange="checkDate('startup')"/>
+                                <input type="time" id="scheduleStartupTimeNumber" class="form-control" value="{{ startup[1] }}" min="{{ today }}" onchange="checkDate('startup')"/>
+                                {% else %}
+                                <input type="date" id="scheduleStartupDateNumber" class="form-control bg-danger" value="{{ startup[0] }}" min="{{ today }}" onchange="checkDate('startup')"/>
+                                <input type="time" id="scheduleStartupTimeNumber" class="form-control bg-danger" value="{{ startup[1] }}" min="{{ today }}" onchange="checkDate('startup')"/>
+                                {% endif %}
                                 <div class="input-group-text">{{ tzone }}</div>
                             </div>
                         </div>
@@ -152,10 +188,18 @@
                                 <strong class="mb-1"><label for="brightness" class="form-label">Next shutdown</label></strong>
                             </div>
                             <div class="input-group mb-1">
-                                <input type="date" id="scheduleShutdownDateNumber" class="form-control" value="{{ shutdown[0] }}" min="{{ today }}" onchange="updateSaveButton('schedule', false)"/>
-                                <input type="time" id="scheduleShutdownTimeNumber" class="form-control" value="{{ shutdown[1] }}" min="{{ today }}" onchange="updateSaveButton('schedule', false)"/>
+                                {% if date_num[0] <= date_num[2] and date_num[1] < date_num[2] %}
+                                <input type="date" id="scheduleShutdownDateNumber" class="form-control" value="{{ shutdown[0] }}" min="{{ today }}" onchange="checkDate('shutdown')"/>
+                                <input type="time" id="scheduleShutdownTimeNumber" class="form-control" value="{{ shutdown[1] }}" min="{{ today }}" onchange="checkDate('shutdown')"/>
+                                {% else %}
+                                <input type="date" id="scheduleShutdownDateNumber" class="form-control bg-danger" value="{{ shutdown[0] }}" min="{{ today }}" onchange="checkDate('shutdown')"/>
+                                <input type="time" id="scheduleShutdownTimeNumber" class="form-control bg-danger" value="{{ shutdown[1] }}" min="{{ today }}" onchange="checkDate('shutdown')"/>
+                                {% endif %}
                                 <div class="input-group-text">{{ tzone }}</div>
                             </div>
+                        </div>
+                        <div class="text-center">
+                            <p class="d-none" id="schedulerP"></p>
                         </div>
                         <!-- Scheduler - On Duration -->
                         <div class="form-group mb-1">
@@ -183,6 +227,38 @@
                                 <input type="number" id="scheduleOffDurationNumber" class="form-control" min="0" value="{{ configuration['schedule']['off_duration'] }}" onchange="updateSaveButton('schedule', false)"/>
                                 {% endif %}
                                 <div class="input-group-text">seconds</div>
+                            </div>
+                        </div>
+                        <!-- Scheduler - Periodicity -->
+                        <div class="form-group mb-1">
+                            <div class="d-flex w-100 align-items-center justify-content-between">
+                                <strong class="mb-1"><label for="brightness" class="form-label">Periodicity</label></strong>
+                            </div>
+                            <div class="form-group">
+                                <div class="form-check form-check-inline">
+                                    {% if configuration['schedule']['periodicity'] == 'every_day' %}
+                                    <input class="form-check-input" type="checkbox" id="everyDayPeriodicity" value="every_day" onchange="" onclick="setPeriodicity(this.value)" checked/>
+                                    {% else %}
+                                    <input class="form-check-input" type="checkbox" id="everyDayPeriodicity" value="every_day" onchange="" onclick="setPeriodicity(this.value)"/>
+                                    {% endif %}
+                                    <label class="form-check-label" for="everydayPeriodicity">Every day</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    {% if configuration['schedule']['periodicity'] == 'every_other_day' %}
+                                    <input class="form-check-input" type="checkbox" id="everyOtherDayPeriodicity" value="every_other_day" onchange="" onclick="setPeriodicity(this.value)" checked/>
+                                    {% else %}
+                                    <input class="form-check-input" type="checkbox" id="everyOtherDayPeriodicity" value="every_other_day" onchange="" onclick="setPeriodicity(this.value)"/>
+                                    {% endif %}
+                                    <label class="form-check-label" for="everyOtherDayPeriodicity">Every other day</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    {% if configuration['schedule']['periodicity'] == 'every_week' %}
+                                    <input class="form-check-input" type="checkbox" id="everyWeekPeriodicity" value="every_week" onchange="" onclick="setPeriodicity(this.value)" checked/>
+                                    {% else %}
+                                    <input class="form-check-input" type="checkbox" id="everyWeekPeriodicity" value="every_week" onchange="" onclick="setPeriodicity(this.value)"/>
+                                    {% endif %}
+                                    <label class="form-check-label" for="everyWeekPeriodicity">Every week</label>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -253,6 +329,24 @@
                   </div>
                 </div>
             </div>
+            <!-- Ephemeris -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEphemeris" aria-expanded="false" aria-controls="collapseOne">
+                    Ephemeris
+                  </button>
+                </h2>
+                <div id="collapseEphemeris" class="accordion-collapse collapse">
+                  <div class="accordion-body">
+                    <div class="form-group">
+                    <form action = "/" method = "post" enctype="multipart/form-data">
+                        <input type="file" name="file" id="ephemerisFileInput" accept=".csv"/>
+                        <input type="submit" value="Send to Entomoscope">
+                    </form>
+                    </div>
+                  </div>
+                </div>
+            </div>
             <!-- Images capture -->
             <div class="accordion-item">
                 <h2 class="accordion-header">
@@ -288,12 +382,15 @@
                             </div>
                             <div class="input-group mb-1">
                                 {% if configuration['mode']['mode'] == 'lepinoc' %}
-                                <input type="number" id="imagesCaptureTimeStepNumber" class="form-control" min="0" value="{{ configuration['images_capture']['time_step'] }}" onchange="updateSaveButton('images_capture', false)" disabled />
+                                <input type="number" id="imagesCaptureTimeStepNumber" class="form-control" min="0" value="{{ configuration['images_capture']['time_step'] }}" onchange="checkImagesCaptureStep()" disabled />
                                 {% else %}
-                                <input type="number" id="imagesCaptureTimeStepNumber" class="form-control" min="0" value="{{ configuration['images_capture']['time_step'] }}" onchange="updateSaveButton('images_capture', false)"/>
+                                <input type="number" id="imagesCaptureTimeStepNumber" class="form-control" min="0" value="{{ configuration['images_capture']['time_step'] }}" onchange="checkImagesCaptureStep()"/>
                                 {% endif %}
                                 <div class="input-group-text">seconds</div>
                             </div>
+                        </div>
+                        <div>
+                            <p class="d-none" id="imagesCaptureP"></p>
                         </div>
                         <!-- Images capture - Fast capture mode -->
                         <div class="form-group">
@@ -382,9 +479,12 @@
                                 <strong class="mb-1"><label for="brightness" class="form-label">Capture duration</label></strong>
                             </div>
                             <div class="input-group mb-1">
-                                <input type="number" id="soundsCaptureDurationNumber" class="form-control" min="0" value="{{ configuration['sounds_capture']['duration'] }}" onchange="updateSaveButton('sounds_capture', false)"/>
+                                <input type="number" id="soundsCaptureDurationNumber" class="form-control" min="0" value="{{ configuration['sounds_capture']['duration'] }}" onchange="checkSoundsCaptureDuration()"/>
                                 <div class="input-group-text">seconds</div>
                             </div>
+                        </div>
+                        <div>
+                            <p class="d-none" id="soundsCaptureP"></p>
                         </div>
                     </div>
                     <hr/>
@@ -430,13 +530,28 @@
                             </div>
                             {% for i, temperature, speed in zip([0,1,2,3], configuration['cooling_system']['cpu_temperature_levels'], configuration['cooling_system']['fan_speed_levels']) %}
                                 <div class="input-group mt-2">
+                                    <span class="input-group-text">
+                                    {% if loop.index0 == 0 %}
+                                    <i class="bi bi-thermometer"></i>
+                                    {% elif loop.index0 == 1 %}
+                                    <i class="bi bi-thermometer-low"></i>
+                                    {% elif loop.index0 == 2 %}
+                                    <i class="bi bi-thermometer-half"></i>
+                                    {% elif loop.index0 == 3 %}
+                                    <i class="bi bi-thermometer-high"></i>
+                                    {% endif %}
+                                    </span>
+<!--
                                     <span class="input-group-text">CPU temperature {{ i+1 }}</span>
+-->
                                     <input type="number" id="cpuTemp{{i}}Number" class="form-control" min="0" max="80" value="{{ configuration['cooling_system']['cpu_temperature_levels'][i] }}" onchange="updateSaveButton('cooling_system', false)"/>
                                     <div class="input-group-text">&deg;C</div>
+<!--
                                     <div class="input-group-text" style="border-top: 0; border-bottom: 0; margin: 0 5 0 5; background-color: white; font-weight:bold">&rarr;</div>
+-->
                                     <span class="input-group-text"
                                         style="border-left: 1; border-right: 0;">
-                                        Fan speed {{ i+1 }}
+                                        Fan speed
                                     </span>
                                     <input type="number" id="fanSpeed{{i}}Number" class="form-control" min="0" max="100" value="{{ configuration['cooling_system']['fan_speed_levels'][i] }}" onchange="updateSaveButton('cooling_system', false)"/>
                                     <div class="input-group-text">%</div>
@@ -465,13 +580,13 @@
             <!-- Environement monitoring -->
             <div class="accordion-item">
                 <h2 class="accordion-header">
-                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEnvironementmonitoring" aria-expanded="false" aria-controls="collapseEnvironementmonitoring">
-                    Environement monitoring
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEnvironmentallMonitoring" aria-expanded="false" aria-controls="collapseEnvironmentallMonitoring">
+                    Environmental monitoring
                   </button>
                 </h2>
-                <div id="collapseEnvironementmonitoring" class="accordion-collapse collapse">
+                <div id="collapseEnvironmentallMonitoring" class="accordion-collapse collapse">
                   <div class="accordion-body">
-                    <!-- Environement monitoring - Enable -->
+                    <!-- Environmental monitoring - Enable -->
                     <div class="form-group">
                         <div class="d-flex w-100 align-items-center justify-content-between">
                             <strong class="mb-1"><label for="brightness" class="form-label">Enable</label></strong>
@@ -512,17 +627,25 @@
         </div>
     </div>
     <!-- Configuration -->
-    <div class="col-3" style="background-color: #FFFFFF">
+    <div class="col-6 offset-6 mb-3 d-none d-sm-block" style="background-color: #FFFFFF;position: fixed;height:90%;overflow-y:auto;">
       {{ display_configuration_global_settings(configuration, tzone) }}
     </div>
   </div>
-  {{ sd_card_full_modal(sd_card) }}
-  {{ battery_discharged_modal(battery_level) }}
 </div>
+<!-- Modals dialog -->
+{{ wait_modal() }}
+{{ ask_modal() }}
+{{ sd_card_full_modal(sd_card) }}
+{{ battery_discharged_modal(battery_level) }}
 {% endblock %}
-
 {% block script %}
 <script type="text/javascript">
+
+    const sdCardUsageSpan = document.getElementById('sdCardUsageSpan');
+    const sdCardI = document.getElementById('sdCardI');
+    const batteryLevelSpan = document.getElementById('batteryLevelSpan');
+    const batteryLevelI = document.getElementById('batteryLevelI');
+    const cpuTemperatureSpan = document.getElementById('cpuTemperatureSpan');
 
     const siteIdText = document.getElementById('siteIdText');
     const siteIdConfigurationText = document.getElementById('siteIdConfigurationText');
@@ -531,12 +654,14 @@
     const imagesCaptureEnable = document.getElementById('imagesCaptureEnable');
     const imagesCaptureFastMode = document.getElementById('imagesCaptureFastMode');
     const imagesCaptureTimeStepNumber = document.getElementById('imagesCaptureTimeStepNumber');
+    const imagesCaptureP = document.getElementById('imagesCaptureP');
     const imagesCaptureMultifocusEnable = document.getElementById('imagesCaptureMultifocusEnable');
     const imagesCaptureMultifocusOffsetNumber = document.getElementById('imagesCaptureMultifocusOffsetNumber');
     const imagesCaptureSaveButton = document.getElementById('imagesCaptureSaveButton');
 
     const soundsCaptureEnable = document.getElementById('soundsCaptureEnable');
     const soundsCaptureDurationNumber = document.getElementById('soundsCaptureDurationNumber');
+    const soundsCaptureP = document.getElementById('soundsCaptureP');
     const soundsCaptureSaveButton = document.getElementById('soundsCaptureSaveButton');
 
     const scheduleEnable = document.getElementById('scheduleEnable');
@@ -546,9 +671,15 @@
     const scheduleStartupTimeNumber = document.getElementById('scheduleStartupTimeNumber');
     const scheduleShutdownDateNumber = document.getElementById('scheduleShutdownDateNumber');
     const scheduleShutdownTimeNumber = document.getElementById('scheduleShutdownTimeNumber');
+    const schedulerP = document.getElementById('schedulerP');
     const scheduleStartupConfigurationText = document.getElementById('scheduleStartupConfigurationText');
     const scheduleShutdownConfigurationText = document.getElementById('scheduleShutdownConfigurationText');
+    const schedulePeriodicityConfigurationText = document.getElementById('schedulePeriodicityConfigurationText');
     const scheduleSaveButton = document.getElementById('scheduleSaveButton');
+
+    const everyDayPeriodicity = document.getElementById('everyDayPeriodicity');
+    const everyOtherDayPeriodicity = document.getElementById('everyOtherDayPeriodicity');
+    const everyWeekPeriodicity = document.getElementById('everyWeekPeriodicity');
 
     const captureTrapMode = document.getElementById('captureTrapMode')
     const captureLepinocMode = document.getElementById('captureLepinocMode')
@@ -580,12 +711,76 @@
     const environmentalMonitoringEnableConfigurationText = document.getElementById('environmentalMonitoringEnableConfigurationText');
     const environmentalMonitoringCheckIntervalConfigurationText = document.getElementById('environmentalMonitoringCheckIntervalConfigurationText');
 
+    const configFileInput = document.getElementById('configFileInput')
+
+    const askModalDialog = document.getElementById('askModalDialog');
+    const askTitle = document.getElementById('askTitle');
+    const askParagraph = document.getElementById('askParagraph');
+
+    var askModal = new bootstrap.Modal(askModalDialog)
+
+    var powerAction = null
+
     document.addEventListener("DOMContentLoaded", function() {
 
         {{ sd_card_full_modal_javascript(sd_card) }}
         {{ battery_discharged_modal_javascript(battery_level) }}
 
     })
+
+    function reboot() {
+
+        powerAction = 'reboot'
+
+        askTitle.innerText = 'Reboot'
+        askParagraph.innerText = 'Do you really want to reboot?'
+
+        askModal.show()
+
+    }
+
+    function shutdown() {
+
+        powerAction = 'shutdown'
+
+        askTitle.innerText = 'Shutdown'
+        askParagraph.innerText = 'Do you really want to shutdown?'
+
+        askModal.show()
+
+    }
+
+    function actionOk() {
+
+        askModal.hide()
+
+        if (powerAction == 'reboot') {
+            return fetch('/reboot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(name),
+            })
+            .catch(error => {
+                console.error('Error reboot: ', error);
+                throw error;  // Re-throw the error for the next catch
+            });
+        }
+        else if (powerAction == 'shutdown') {
+            return fetch('/shutdown', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(name),
+            })
+            .catch(error => {
+                console.error('Error shutdown: ', error);
+                throw error;  // Re-throw the error for the next catch
+            });
+        }
+    }
 
     function updateSaveButton(settingId, state) {
 
@@ -610,6 +805,118 @@
         else if (settingId == 'environmental_monitoring') {
             environmentalMonitoringSaveButton.disabled = state
         }
+    }
+
+    function checkImagesCaptureStep() {
+
+        var imagesCaptureTimeStep = parseInt(imagesCaptureTimeStepNumber.value)
+        var scheduleOnDuration = parseInt(scheduleOnDurationNumber.value)
+
+        if (imagesCaptureTimeStep > scheduleOnDuration) {
+            imagesCaptureTimeStepNumber.className = "form-control bg-danger"
+            imagesCaptureP.className = "text-center"
+            imagesCaptureP.innerText = "Capture duration must be lower than On duration (" + scheduleOnDuration + "s)"
+            updateSaveButton('images_capture', true)
+        } else {
+
+            var numCaptures = Math.floor(scheduleOnDuration/imagesCaptureTimeStep)
+
+            imagesCaptureTimeStepNumber.className = "form-control"
+            imagesCaptureP.className = "text-center"
+            if (numCaptures == 1) {
+                    imagesCaptureP.innerText = numCaptures + " capture during On duration (" + scheduleOnDuration + "s)"
+            } else {
+                imagesCaptureP.innerText = numCaptures + " captures during On duration (" + scheduleOnDuration + "s)"
+            }
+            updateSaveButton('images_capture', false)
+        }
+
+
+
+    }
+
+    function checkSoundsCaptureDuration() {
+
+        var soundsCaptureDuration = parseInt(soundsCaptureDurationNumber.value)
+        var scheduleOnDuration = parseInt(scheduleOnDurationNumber.value)
+
+         if (soundsCaptureDuration > scheduleOnDuration) {
+            soundsCaptureDurationNumber.className = "form-control bg-danger"
+            soundsCaptureP.className = "text-center"
+            soundsCaptureP.innerText = "Capture duration must be lower than On duration (" + scheduleOnDuration + "s)"
+            updateSaveButton('sounds_capture', true)
+        }
+        else {
+
+            var numFullCaptures = Math.floor(scheduleOnDuration/soundsCaptureDuration)
+
+            if (scheduleOnDuration % soundsCaptureDuration != 0) {
+                soundsCaptureDurationNumber.className = "form-control bg-warning"
+                soundsCaptureP.className = "text-center"
+                if (numFullCaptures == 1) {
+                    soundsCaptureP.innerText = numFullCaptures + " full capture + 1 partial capture of " + scheduleOnDuration % soundsCaptureDuration +  " seconds during On duration (" + scheduleOnDuration + "s)"
+                } else {
+                    soundsCaptureP.innerText = numFullCaptures + " full captures + 1 partial capture of " + scheduleOnDuration % soundsCaptureDuration +  " seconds during On duration (" + scheduleOnDuration + "s)"
+                }
+                updateSaveButton('sounds_capture', false)
+            }
+            else {
+                soundsCaptureDurationNumber.className = "form-control"
+                soundsCaptureP.className = "text-center"
+                if (numFullCaptures == 1) {
+                    soundsCaptureP.innerText = numFullCaptures + " capture during On duration (" + scheduleOnDuration + "s)"
+                } else {
+                    soundsCaptureP.innerText = numFullCaptures + " captures during On duration (" + scheduleOnDuration + "s)"
+                }
+                updateSaveButton('sounds_capture', false)
+            }
+        }
+    }
+
+    function checkDate() {
+
+        const now = Date.now()
+        const startDate = new Date(scheduleStartupDateNumber.value + ' ' + scheduleStartupTimeNumber.value).getTime()
+        const shutdownDate = new Date(scheduleShutdownDateNumber.value + ' ' + scheduleShutdownTimeNumber.value).getTime()
+
+        if (now < startDate && startDate < shutdownDate) {
+            scheduleStartupDateNumber.className = "form-control"
+            scheduleStartupTimeNumber.className = "form-control"
+            schedulerP.className = "d-none"
+            schedulerP.innerText = ""
+            updateSaveButton('schedule', false)
+        } else {
+            scheduleStartupDateNumber.className = "form-control bg-danger"
+            scheduleStartupTimeNumber.className = "form-control bg-danger"
+            schedulerP.className = ""
+            schedulerP.innerText = "Startup must occur before shutdown"
+            updateSaveButton('schedule', true)
+        }
+
+        if (now < shutdownDate && startDate < shutdownDate) {
+            scheduleShutdownDateNumber.className = "form-control"
+            scheduleShutdownTimeNumber.className = "form-control"
+            schedulerP.className = "d-none"
+            schedulerP.innerText = ""
+            updateSaveButton('schedule', false)
+        } else {
+            scheduleShutdownDateNumber.className = "form-control bg-danger"
+            scheduleShutdownTimeNumber.className = "form-control bg-danger"
+            schedulerP.className = ""
+            schedulerP.innerText = "Shutdown must occur after startup"
+            updateSaveButton('schedule', true)
+        }
+
+        if (shutdownDate-startDate > 86400000) {
+            scheduleStartupDateNumber.className = "form-control bg-danger"
+            scheduleStartupTimeNumber.className = "form-control bg-danger"
+            scheduleShutdownDateNumber.className = "form-control bg-danger"
+            scheduleShutdownTimeNumber.className = "form-control bg-danger"
+            schedulerP.className = ""
+            schedulerP.innerText = "No more than 24 hours between startup and shutdown"
+            updateSaveButton('schedule', true)
+        }
+
     }
 
     function updateSettings(settingId) {
@@ -670,7 +977,7 @@
             //console.log('Settings updated:', data);
             if (data.success) {
                 if (settingId == 'site') {
-                    siteIdConfigurationText.innerText = 'Id: ' + siteIdText.value
+                    siteIdConfigurationText.innerText = 'ID: ' + siteIdText.value
                 } else if (settingId == 'capture_mode') {
                     if (captureTrapMode.checked) {
                         captureModeConfigurationText.innerText = 'Mode: trap'
@@ -696,10 +1003,17 @@
                     scheduleOffDurationConfigurationText.innerText = 'Off duration: ' + scheduleOffDurationNumber.value + ' seconds'
                     scheduleStartupConfigurationText.innerText = 'Next startup: ' + scheduleStartupDateNumber.value + ' ' + scheduleStartupTimeNumber.value + ' ' + data.tzone
                     scheduleShutdownConfigurationText.innerText = 'Next shutdown: ' + scheduleShutdownDateNumber.value + ' ' + scheduleShutdownTimeNumber.value + ' ' + data.tzone
+                    if (everyDayPeriodicity.checked) {
+                        schedulePeriodicityConfigurationText.innerText = 'Periodicity: every day'
+                    } else if (everyOtherDayPeriodicity.checked) {
+                        schedulePeriodicityConfigurationText.innerText = 'Periodicity: every other day'
+                    } else if (everyWeekPeriodicity.checked) {
+                        schedulePeriodicityConfigurationText.innerText = 'Periodicity: every week'
+                    }
                 } else if (settingId == 'cooling_system') {
                     coolingSystemEnableConfigurationText.innerText = 'Enable: ' + String(coolingSystemEnable.checked).charAt(0).toUpperCase() + String(coolingSystemEnable.checked).slice(1)
-                    coolingSystemCpuTemperatureCheckIntervalConfigurationText.innerText = 'Cpu temperature check interval: ' + cpu_temp_check_interval + ' minutes'
-                    coolingSystemCpuTemperatureLevelsConfigurationText.innerText = 'Cpu temperature levels: [' + cpu_temps + '] °C'
+                    coolingSystemCpuTemperatureCheckIntervalConfigurationText.innerText = 'CPU temperature check interval: ' + cpu_temp_check_interval + ' minutes'
+                    coolingSystemCpuTemperatureLevelsConfigurationText.innerText = 'CPU temperature levels: [' + cpu_temps + '] °C'
                     coolingSystemFanSpeedLevelsConfigurationText.innerText = 'Fan speed levels: [' + fan_speeds + '] %'
                 } else if (settingId == 'environmental_monitoring') {
                     environmentalMonitoringEnableConfigurationText.innerText = 'Enable: ' + String(environmentalMonitoringEnable.checked).charAt(0).toUpperCase() + String(environmentalMonitoringEnable.checked).slice(1)
@@ -816,6 +1130,44 @@
 
     }
 
+    function setPeriodicity(periodicity) {
+
+        everyDayPeriodicity.checked = false
+        everyOtherDayPeriodicity.checked = false
+        everyWeekPeriodicity.checked = false
+
+        if (periodicity == 'every_day') {
+            everyDayPeriodicity.checked = true
+        } else if (periodicity == 'every_other_day') {
+            everyOtherDayPeriodicity.checked = true
+        } else if (periodicity == 'every_week') {
+            everyWeekPeriodicity.checked = true
+        }
+
+        updateSaveButton('schedule', false)
+
+        data = periodicity
+
+        return fetch('/set_periodicity', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+
+            }
+        })
+        .catch(error => {
+        console.error('Error setting periodicity:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
     function getCpuTemperature() {
 
         const cpuTempNavBar = document.getElementById('cpuTempNavBar')
@@ -831,17 +1183,17 @@
         .then(data => {
             if (data.success) {
                 if (data.temperature >= 75) {
-                    cpuTempNavBar.className = "badge bg-danger me-2"
+                    cpuTempNavBar.className = "btn btn-danger me-2"
                 } else if (data.temperature >= 65) {
-                    cpuTempNavBar.className = "badge bg-warning me-2"
+                    cpuTempNavBar.className = "btn btn-warning me-2"
                 } else {
-                    cpuTempNavBar.className = "badge bg-success me-2"
+                    cpuTempNavBar.className = "btn btn-success me-2"
                 }
-                cpuTempNavBar.innerText = 'CPU ' + data.temperature.toFixed(0) + ' °C'
+                cpuTemperatureSpan.innerHTML = data.temperature.toFixed(0) + ' &degC'
             }
         })
         .catch(error => {
-        console.error('Error updating settings:', error);
+        console.error('Error getting CPU temperature:', error);
         throw error;  // Re-throw the error for the next catch
         });
 
@@ -863,23 +1215,25 @@
             if (data.success) {
                 if (data.battery_level > 0) {
                     if (data.battery_level > 11.5) {
-                        batteryLevelNavBar.className = "badge bg-success me-2"
+                        batteryLevelNavBar.className = "btn btn-success me-2"
+                        batteryLevelI.className = "bi bi-battery-full"
                     } else if (data.battery_level > 10.8) {
-                        batteryLevelNavBar.className = "badge bg-warning me-2"
+                        batteryLevelNavBar.className = "btn btn-warning me-2"
+                        batteryLevelI.className = "bi bi-battery-half"
                     } else {
-                        batteryLevelNavBar.className = "badge bg-danger me-2"
+                        batteryLevelNavBar.className = "btn btn-danger me-2"
+                        batteryLevelI.className = "bi bi-battery-low"
                     }
-                    batteryLevelNavBar.innerText = 'BAT ' + data.battery_level.toFixed(1) + ' V'
+                    batteryLevelSpan.innerHTML = data.battery_level.toFixed(1) + ' V'
                 }
             }
         })
         .catch(error => {
-            console.error('Error updating settings:', error);
+            console.error('Error getting battery level:', error);
             throw error;  // Re-throw the error for the next catch
         });
 
     }
-
 
     function getSdCardUsage() {
 
@@ -896,17 +1250,19 @@
         .then(data => {
             if (data.success) {
                 if (data.sd_card_usage < 80) {
-                    sdCardNavBar.className = "badge bg-success me-2"
+                    sdCardNavBar.className = "btn btn-success me-2"
                 } else if (data.sd_card_usage < 90) {
-                    sdCardNavBar.className = "badge bg-warning me-2"
+                    sdCardNavBar.className = "btn btn-warning me-2"
+                    sdCardI.className = "bi bi-sd-card"
                 } else {
-                    sdCardNavBar.className = "badge bg-danger me-2"
+                    sdCardNavBar.className = "btn btn-danger me-2"
+                    sdCardI.className = "bi bi-sd-card-fill"
                 }
-                sdCardNavBar.innerText = 'SD ' + data.sd_card_usage.toFixed(0) + ' %'
+                sdCardUsageSpan.innerHTML = data.sd_card_usage.toFixed(0) + ' %'
             }
         })
         .catch(error => {
-            console.error('Error updating settings:', error);
+            console.error('Error getting SD card usage:', error);
             throw error;  // Re-throw the error for the next catch
         });
 

@@ -10,7 +10,6 @@ import pigpio
 
 from peripherals.pinout2 import IMAGES_CAPTURE_ACTIVITY_PIN, SOUNDS_CAPTURE_ACTIVITY_PIN, SHUTDOWN_PIN, STARTUP_PIN, TOGGLE_SWITCH_PIN_1, TOGGLE_SWITCH_PIN_2
 from peripherals.wittypi import WittyPi
-from peripherals.externaldisk import ExternalDisk
 from peripherals.wifi import Wifi
 from peripherals.rpi import Rpi
 from ephemeris import Ephemeris
@@ -135,14 +134,21 @@ def main():
                         startup_date = [int(x) for x in configuration.schedule['next_startup'].replace('-', ' ').replace(':', ' ').split()]
                         startup_date = datetime(startup_date[0], startup_date[1], startup_date[2], startup_date[3], startup_date[4], 0, 0)
 
-                        # next_startup = datetime(TOMORROW_NOW.year, TOMORROW_NOW.month, TOMORROW_NOW.day, ephemeris.tomorrow_setting['hour'], ephemeris.tomorrow_setting['minute'], 0, 0, tzinfo=timezone.utc)
-                        # next_startup = next_startup.astimezone()
-
-                        next_startup = startup_date + timedelta(hours=24)
+                        if configuration.schedule['periodicity'] == 'every_day':
+                            next_startup = startup_date + timedelta(days=1)
+                            logger.warning('every day periodicty used')
+                        elif configuration.schedule['periodicity'] == 'every_other_day':
+                            next_startup = startup_date + timedelta(days=2)
+                            logger.warning('every other day periodicty used')
+                        elif configuration.schedule['periodicity'] == 'every_week':
+                            next_startup = startup_date + timedelta(weeks=1)
+                            logger.warning('every week periodicty used')
+                        else:
+                            next_startup = startup_date + timedelta(days=1)
+                            logger.warning('no periodicty found: every day used')
 
                         configuration.schedule['next_startup'] = next_startup.strftime('%Y-%m-%d %H:%M')
 
-                        # configuration.schedule['next_startup'] = '-'.join([TOMORROW[:4], TOMORROW[4:6], TOMORROW[6:]]) + f' {alarm[2]:02d}:{alarm[1]:02d}'
                         configuration.save()
 
                         logger.info(f"startup alarm shifted to {configuration.schedule['next_startup']} {datetime.now().astimezone().strftime('%Z')}")
@@ -150,23 +156,6 @@ def main():
                         next_startup = next_startup - timedelta(minutes=MINUTES_OFFSET_FOR_STARTING_ON_TIME)
 
                         witty_pi.set_startup_alarm(next_startup.day, next_startup.hour, next_startup.minute)
-
-                        # alarm = witty_pi.get_startup_alarm()
-
-                        # if alarm[3] == -1 or alarm[2] == -1 and alarm[1] == -1:
-
-                            # logger.info(f'startup alarm not shifted because wrong values ({alarm[3]} {alarm[2]}:{alarm[1]})')
-
-                        # else:
-
-                            # alarm[3] = int(TOMORROW[6:])
-
-                            # witty_pi.set_startup_alarm(alarm[3], alarm[2], alarm[1])
-
-                            # configuration.schedule['next_startup'] = '-'.join([TOMORROW[:4], TOMORROW[4:6], TOMORROW[6:]]) + f' {alarm[2]:02d}:{alarm[1]:02d}'
-                            # configuration.save()
-
-                            # logger.info(f"startup alarm shifted to {configuration.schedule['next_startup']} {datetime.now().astimezone().strftime('%Z')}")
 
                 elif witty_pi.get_latest_action_reason_code() == witty_pi.BUTTON_CLICKED:
 
@@ -190,18 +179,6 @@ def main():
         wifi = Wifi(uuid=rpi.uuid)
 
         crontab_management = CrontabManagement(check_mandatory_service=True)
-
-        external_disk = ExternalDisk()
-
-        if not external_disk.available:
-            logger.warning('external disk not found')
-        else:
-            external_disk.mount()
-            if external_disk.mounted:
-                logger.info('external disk found and mounted')
-                external_disk.get_info()
-            else:
-                logger.warning('external disk found but not mounted')
 
         if configuration.images_capture['enable'] and (witty_pi.get_latest_action_reason_code() == witty_pi.ALARM_STARTUP or witty_pi.get_latest_action_reason_code() == witty_pi.ALARM1_DELAYED):
             pi.write(IMAGES_CAPTURE_ACTIVITY_PIN, 0)

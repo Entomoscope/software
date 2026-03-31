@@ -4,12 +4,16 @@ import os
 import shutil
 from datetime import datetime, timedelta, timezone
 
+from shutil import rmtree, copytree
+
 import traceback
 
 from time import time, sleep
 
-from flask import Flask, make_response, render_template, Response, jsonify, request, redirect
+from flask import Flask, make_response, render_template, Response, jsonify, request, redirect, url_for
 from werkzeug.utils import secure_filename
+
+# from flask_socketio import SocketIO
 
 import copy
 
@@ -34,7 +38,6 @@ from peripherals.rpi import Rpi
 from peripherals.storage import Storage
 from peripherals.leds import Leds
 from peripherals.camera2 import Camera2
-# from peripherals.camera3 import Camera3
 from peripherals.gnss2 import Gnss2
 from peripherals.microphone2 import Microphone2
 from peripherals.wittypi import WittyPi
@@ -66,6 +69,8 @@ h.setFormatter(f)
 app = Flask(__name__)
 # app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 # app.config['SERVER_NAME'] = 'entomoscope:7777'
+
+# socketio = SocketIO(app)
 
 app.logger.addHandler(h)
 app.logger.setLevel("DEBUG")
@@ -128,7 +133,6 @@ else:
 
 configuration = Configuration2()
 configuration.read()
-
 app.logger.info('configuration read')
 
 rpi = Rpi()
@@ -137,6 +141,9 @@ try:
 
     # IA seulement disponible sur OS 64-bit
     if rpi.arch_version == '64-bit':
+
+        from ultralytics.utils.plotting import Annotator, colors
+        from ultralytics.utils.ops import xywhn2xyxy
 
         if AI_ENABLE:
 
@@ -148,14 +155,14 @@ try:
                 ai_model_files = os.listdir(AI_MODEL_PATH)
                 if len(ai_model_files) > 0:
                     ai_model_file = os.path.join(AI_MODEL_PATH, ai_model_files[0])
-                    app.logger.warning(f'No AI model file in config file')
-                    app.logger.warning(f'Use {ai_model_files[0]} by default')
+                    app.logger.warning(f'no AI model file in config file')
+                    app.logger.warning(f'use {ai_model_files[0]} by default')
                     configuration.ai_detection['file'] = ai_model_files[0]
                     configuration.save()
                 else:
                   ai_model_file = None
                   AI_AVAILABLE = False
-                  app.logger.warning(f'No AI model file found in {AI_MODEL_PATH}')
+                  app.logger.warning(f'no AI model file found in {AI_MODEL_PATH}')
                   app.logger.warning(f'AI disabled')
 
             if ai_model_file:
@@ -170,8 +177,6 @@ try:
                 elapsed_time = datetime.now() - start_time
                 app.logger.info(f"AI model file loaded: {configuration.ai_detection['file']}")
                 app.logger.info(f"AI model file loading time: {elapsed_time.seconds}.{elapsed_time.microseconds} seconds")
-                from ultralytics.utils.plotting import Annotator, colors
-                from ultralytics.utils.ops import xywhn2xyxy
 
         else:
 
@@ -186,7 +191,7 @@ try:
 except BaseException as e:
 
     AI_AVAILABLE = False
-    app.logger.info('Unable to manage AI => AI not available')
+    app.logger.info('unable to manage AI => AI not available')
     logger.error(str(e))
 
 sd_card = Storage('sd')
@@ -211,6 +216,8 @@ else:
     app.logger.warning('Witty Pi not detected')
 
 leds_intensity = [configuration.leds['intensity_front'], configuration.leds['intensity_rear_deported_uv']]
+leds_delays = [configuration.leds['delay_on'], configuration.leds['delay_off']]
+leds_always_on = configuration.leds['always_on']
 
 capture_mode = configuration.mode['mode']
 
@@ -220,10 +227,9 @@ white_balance = {'enable': configuration.camera['auto_white_balance']['enable'],
 
 jpeg_quality = configuration.files['jpeg_quality']
 
-crop_limits = configuration.camera['sensor']['crop_limits']
+periodicity = configuration.schedule['periodicity']
 
-leds_delays = [configuration.leds['delay_on'], configuration.leds['delay_off']]
-leds_always_on = configuration.leds['always_on']
+crop_limits = configuration.camera['sensor']['crop_limits']
 
 auto_exposure_gain = {'enable': configuration.camera['auto_exposure_gain']['enable'], 'mode': configuration.camera['auto_exposure_gain']['mode'], 'exposure_time': configuration.camera['auto_exposure_gain']['exposure_time'], 'exposure_value': configuration.camera['auto_exposure_gain']['exposure_value']}
 
@@ -260,6 +266,7 @@ show_preview_file = False
 show_preview_image = False
 show_preview_sound = False
 file_data = None
+file_caption = None
 
 logs_current_directory = LOGS_DESKTOP_FOLDER
 logs_current_file = None
@@ -276,8 +283,20 @@ microphone = None
 leds_rear_deported_uv = None
 leds_front = None
 
-updates_available = updates_check()
-app.logger.info(f'updates available? {updates_available}')
+
+
+
+
+
+
+updates_available = False
+# updates_available = updates_check()
+# app.logger.info(f'updates available? {updates_available}')
+
+
+
+
+
 
 
 @app.route('/')
@@ -286,23 +305,6 @@ def index():
     global camera, leds_front, leds_rear_deported_uv, images_capture_state, sounds_capture_state, gnss, microphone, sd_card, external_disk, wifi
 
     get_captures_state()
-
-    # if pi.read(SHUTDOWN_PIN) == 1:
-
-        # images_capture_state = 'stopped'
-        # sounds_capture_state = 'stopped'
-
-    # else:
-
-        # if pi.read(IMAGES_CAPTURE_ACTIVITY_PIN) == 0:
-            # images_capture_state = 'running'
-        # else:
-            # images_capture_state = 'paused'
-
-        # if pi.read(SOUNDS_CAPTURE_ACTIVITY_PIN) == 0:
-            # sounds_capture_state = 'running'
-        # else:
-            # sounds_capture_state = 'paused'
 
     configuration.read()
     app.logger.info('configuration read')
@@ -345,33 +347,15 @@ def index():
             app.logger.info('microphone stopped')
 
     sd_card.get_data()
+    external_disk.find()
     external_disk.get_data()
-    app.logger.info('Storage updated')
 
-    rpi.wifi_ssid = rpi.get_wifi_ssid()
-    rpi.ip_address = rpi.get_ip_address()
-    rpi.cpu_temperature = rpi.get_temperature()
-
-    commit = get_last_commit()
-
-    wifi.show()
-    # wifi.list()
-    app.logger.info('Wifi updated')
-
-    dateTime.get_date_time_info()
-
-    tzone = datetime.now().astimezone().strftime('%Z')
-
-    # today = '-'.join([TODAY[:4], TODAY[4:6], TODAY[6:]])
-    dateTime.get_date()
-    dateTime.get_time()
+    app.logger.info('storage updated')
 
     if gnss:
         gnss.stop()
         gnss = None
         app.logger.info('GNSS stopped')
-
-    gnss = Gnss2()
 
     if witty_pi.available:
         witty_pi.get_input_voltage()
@@ -380,7 +364,158 @@ def index():
         battery_level = 0.0
         app.logger.warning('Witty Pi not detected')
 
-    return make_response(render_template('index.html', configuration=configuration, updates_available=updates_available, rpi=rpi, tzone=tzone, wifi=wifi, sd_card=sd_card, external_disk=external_disk, battery_level=battery_level, gnss=gnss, dateTime=dateTime, images_capture_state=images_capture_state, sounds_capture_state=sounds_capture_state, commit=commit))
+    startup_num = datetime.strptime(configuration.schedule['next_startup'], '%Y-%m-%d %H:%M')
+    shutdown_num = datetime.strptime(configuration.schedule['next_shutdown'], '%Y-%m-%d %H:%M')
+    now = datetime.now()
+
+    # print(startup_num)
+    # print(shutdown_num)
+    # print(now)
+
+    days = []
+    s_days = []
+    day_start_found = False
+    day_start_index = 0
+
+    for i in range(0, 21):
+
+        s_now = now + timedelta(days=i)
+
+        if s_now.day == startup_num.day:
+            day_start_found = True
+            day_start_index = i
+            k = 0
+        if not day_start_found:
+            s_days.append(False)
+        else:
+            if configuration.schedule['periodicity'] == 'every_day':
+                s_days.append(True)
+            elif configuration.schedule['periodicity'] == 'every_other_day':
+                if k % 2 == 0:
+                    s_days.append(True)
+                else:
+                    s_days.append(False)
+            elif configuration.schedule['periodicity'] == 'every_week':
+                if k % 7 == 0:
+                    s_days.append(True)
+                else:
+                    s_days.append(False)
+            k += 1
+
+        if i == 0:
+            days.append('Today')
+        else:
+            days.append(s_now.strftime('%a %m/%d'))
+
+    # print(days)
+    # print(s_days)
+
+    # print(day_start_index)
+
+    if configuration.schedule['enable']:
+
+        hours, minutes = [int(x) for x in configuration.schedule['next_startup'].split(' ')[1].split(':')]
+        s = 100 * (hours*60 + minutes) // 1440
+        hours, minutes = [int(x) for x in configuration.schedule['next_shutdown'].split(' ')[1].split(':')]
+        e = 100 * (hours*60 + minutes) // 1440
+        if e == 0:
+            e = 100
+
+        if e > s:
+            schedule = [s, e-s, 100 - e]
+            color = [0, 1, 0]
+        else:
+            schedule1 = [0, s, 100 - s]
+            color1 = [0, 0, 1]
+            schedule2 = [e, 100-e, 0]
+            color2 = [1, 0, 0]
+
+        if configuration.schedule['periodicity'] == 'every_day':
+            k = 1
+        elif configuration.schedule['periodicity'] == 'every_other_day':
+            k = 2
+        elif configuration.schedule['periodicity'] == 'every_week':
+            k = 7
+
+        schedules = []
+        colors = []
+
+        d = 0
+        k_set = False
+        for i in range(0, 21):
+
+            if i >= day_start_index:
+
+                if d % k == 0:
+
+                    if e > s:
+
+                        schedules.append([s, e-s, 100 - e])
+                        colors.append([0, 1, 0])
+
+                    else:
+
+                        if i == day_start_index:
+
+                            schedules.append([0, s, 100 - s])
+                            colors.append([0, 0, 1])
+
+                            k_set = True
+
+                        else:
+
+                            if k == 1:
+
+                                schedules.append([e, s-e, 100 - s])
+                                colors.append([1, 0, 1])
+
+                            else:
+
+                                schedules.append([0, s, 100 - s])
+                                colors.append([0, 0, 1])
+
+                                k_set = True
+
+                else:
+
+                    if k_set:
+                        k_set = False
+                        schedules.append([e, 100-e, 0])
+                        colors.append([1, 0, 0])
+                    else:
+                        schedules.append([0, 0, 0])
+                        colors.append([0, 0, 0])
+
+                d += 1
+
+            else:
+
+                schedules.append([0, 0, 0])
+                colors.append([0, 0, 0])
+
+        # print(schedules)
+        # print(colors)
+
+        if configuration.images_capture['enable']:
+            images_capture = {'s_days': s_days, 'schedules': schedules, 'colors': colors}
+        else:
+            images_capture = {'s_days': [False]*len(s_days), 'schedules': [False]*len(s_days), 'colors': [False]*len(s_days)}
+
+        if configuration.sounds_capture['enable']:
+            sounds_capture = {'s_days': s_days, 'schedules': schedules, 'colors': colors}
+        else:
+            sounds_capture = {'s_days': [False]*len(s_days), 'schedules': [False]*len(s_days), 'colors': [False]*len(s_days)}
+
+    else:
+
+        s_days = [False]*len(s_days)
+        schedules = [False]*len(s_days)
+        colors = [False]*len(s_days)
+
+        images_capture = []
+        sounds_capture = []
+
+    return make_response(render_template('index.html', zip=zip, configuration=configuration, updates_available=updates_available, days=days, images_capture=images_capture, sounds_capture=sounds_capture, rpi=rpi, tzone=tzone, wifi=wifi, sd_card=sd_card, external_disk=external_disk, battery_level=battery_level, gnss=gnss, dateTime=dateTime, images_capture_state=images_capture_state, sounds_capture_state=sounds_capture_state))
 
 
 def allowed_file(filename):
@@ -411,10 +546,10 @@ def upload_configuration_file():
 
                     if uploaded_file.filename == 'configuration.json':
                         uploaded_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                        app.logger.info('Configuration file sent to the entomoscope')
+                        app.logger.info('configuration file sent to the entomoscope')
                     elif uploaded_file.filename == 'ephemeris.csv':
                         uploaded_file.save(os.path.join(app.config['UPLOAD_FOLDER'], 'static', 'ephemeris', filename))
-                        app.logger.info('Ephemeris file sent to the entomoscope')
+                        app.logger.info('ephemeris file sent to the entomoscope')
                     return redirect('/')
 
                 except BaseException as e:
@@ -432,7 +567,7 @@ def upload_configuration_file():
 @app.route('/data')
 def data():
 
-    global camera, leds_front, leds_rear_deported_uv, gnss, microphone, data_current_directory, data_current_file, show_preview_file, show_preview_image, show_preview_sound, file_data
+    global camera, leds_front, leds_rear_deported_uv, gnss, microphone, data_current_directory, data_current_file, show_preview_file, show_preview_image, show_preview_sound, file_data, file_caption
 
     get_captures_state()
 
@@ -507,13 +642,88 @@ def data():
 
         app.logger.error(f'no directory {data_current_directory}')
 
-    return make_response(render_template('data.html', updates_available=updates_available, files=files, isdirs=isdirs, isconfs=isconfs, isimages=isimages, zip=zip, istopdir=istopdir, show_preview_file=show_preview_file, show_preview_image=show_preview_image, show_preview_sound=show_preview_sound, data_current_file=data_current_file, file_data=file_data, rpi=rpi, battery_level=battery_level, sd_card=sd_card))
+    return make_response(render_template('data.html', updates_available=updates_available, files=files, isdirs=isdirs, isconfs=isconfs, isimages=isimages, zip=zip, istopdir=istopdir, show_preview_file=show_preview_file, show_preview_image=show_preview_image, show_preview_sound=show_preview_sound, data_current_file=data_current_file, file_data=file_data, file_caption=file_caption, rpi=rpi, battery_level=battery_level, sd_card=sd_card))
+
+
+@app.route('/storage', methods=['GET', 'POST'])
+def storage():
+
+    global camera, leds_front, leds_rear_deported_uv, gnss, microphone, data_current_directory, data_current_file, show_preview_file, show_preview_image, show_preview_sound, file_data, file_caption
+
+    get_captures_state()
+
+    if images_capture_state == 'stopped':
+
+        if camera:
+            camera.stop()
+            camera.camera.close()
+            camera = None
+            app.logger.info('camera stopped')
+
+        if leds_front:
+            leds_front.turn_off()
+            leds_front = None
+            app.logger.info('LEDs front stopped')
+
+        if leds_rear_deported_uv:
+            leds_rear_deported_uv.turn_off()
+            leds_rear_deported_uv = None
+            app.logger.info('LEDs rear/UV/deported stopped')
+
+    elif images_capture_state == 'paused':
+
+        if leds_front:
+            leds_front.turn_off()
+            leds_front = None
+            app.logger.info('LEDs front stopped')
+
+        if leds_rear_deported_uv:
+            leds_rear_deported_uv.turn_off()
+            leds_rear_deported_uv = None
+            app.logger.info('LEDs rear/UV/deported stopped')
+
+    if gnss:
+        gnss.stop()
+        gnss = None
+        app.logger.info('GNSS stopped')
+
+    if sounds_capture_state == 'stopped':
+
+        if microphone:
+            microphone.stop()
+            microphone = None
+            app.logger.info('microphone stopped')
+
+    rpi.cpu_temperature = rpi.get_temperature()
+
+    if witty_pi.available:
+        witty_pi.get_input_voltage()
+        battery_level = witty_pi.input_voltage
+    else:
+        battery_level = 0.0
+        app.logger.warning('Witty Pi not detected')
+
+    sd_card.get_data()
+    external_disk.find()
+    external_disk.get_data()
+
+    stats = None
+
+    try:
+
+        stats = get_data_folders_stats()
+
+    except BaseException as e :
+
+        app.logger.error(str(e))
+
+    return make_response(render_template('storage.html', updates_available=updates_available, stats=stats, external_disk=external_disk, zip=zip, rpi=rpi, battery_level=battery_level, sd_card=sd_card))
 
 
 @app.route('/manage_data/<action>/<value>')
 def manage_data(action, value):
 
-    global data_current_directory, data_current_file, show_preview_file, show_preview_image, show_preview_sound, file_data
+    global data_current_directory, data_current_file, show_preview_file, show_preview_image, show_preview_sound, file_data, file_caption
 
     app.logger.info(f'manage_data() {action} {value}')
 
@@ -532,6 +742,7 @@ def manage_data(action, value):
                 show_preview_image = False
                 show_preview_sound = False
                 file_data = None
+                file_caption = None
 
             else:
 
@@ -550,8 +761,9 @@ def manage_data(action, value):
                 with open(file_path, 'r') as f:
                     file_data = f.read()
 
-                    if not file_data:
-                        file_data = 'File empty'
+                if not file_data:
+                    file_data = 'File empty'
+                    file_caption = ''
 
                 show_preview_file = True
                 show_preview_image = False
@@ -561,7 +773,7 @@ def manage_data(action, value):
 
                 json_file = file_path.replace('.jpg', '.json')
 
-                if os.path.exists(json_file):
+                if rpi.arch_version == '64-bit' and os.path.exists(json_file):
 
                     json_file = file_path.replace('.jpg', '.json')
 
@@ -582,6 +794,8 @@ def manage_data(action, value):
 
                         box_xyxyn = [0,0,0,0]
                         box_xyxy = [0,0,0,0]
+
+                        file_caption = ' ' + f"{json_data['EntomoscopeAiPredictionNumBoxes']}" + ' box' + ('es' if json_data['EntomoscopeAiPredictionNumBoxes']>0 else '') + ' in ' f"{json_data['EntomoscopeAiPredictionSpeed']}" + 'ms'
 
                         for i in range(0, json_data['EntomoscopeAiPredictionNumBoxes']):
 
@@ -653,6 +867,72 @@ def manage_data(action, value):
     return redirect('/data')
 
 
+@app.route('/manage_storage/<action>/<value>', methods=['GET', 'POST'])
+def manage_storage(action, value):
+
+    global data_current_file, show_preview_file, show_preview_image, show_preview_sound, file_data, file_caption
+
+    app.logger.info(f'manage_storage() {action} {value}')
+
+    try:
+
+        data = []
+
+        if action == 'delete':
+
+            try:
+
+                if value == 'all':
+                    rmtree(DATA_FOLDER)
+                    os.mkdir(DATA_FOLDER)
+                else:
+                    rmtree(os.path.join(DATA_FOLDER, value))
+
+            except BaseException as e:
+                app.logger.error(str(e))
+
+            sleep(1)
+
+            app.logger.info(f'manage_storage() {action} {value} done')
+
+            sd_card.get_data()
+
+            stats = get_data_folders_stats()
+
+            data = [sd_card.used, sd_card.used_num, sd_card.used_percent, sd_card.used_percent_num, stats['total']]
+
+            # socketio.send('file deleted')
+
+        elif action == 'save':
+
+            try:
+
+                external_disk_data_path = os.path.join(external_disk.path, 'data_' + rpi.uuid)
+
+                if not os.path.exists(external_disk_data_path):
+                    os.mkdir(external_disk_data_path)
+
+                copytree(os.path.join(DATA_FOLDER, value), os.path.join(external_disk_data_path, value), dirs_exist_ok=True)
+
+                external_disk.get_data()
+                data = [external_disk.used, external_disk.used_num, external_disk.used_percent, external_disk.used_percent_num]
+
+            except BaseException as e:
+                app.logger.error(str(e))
+
+            sleep(1)
+
+            app.logger.info(f'manage_storage() {action} {value} done')
+
+        return jsonify(success=True, message='Success', data=data)
+
+    except BaseException as e:
+
+        app.logger.error(str(e))
+
+        return jsonify(success=False, message='Error', data=str(e))
+
+
 @app.route('/global_settings')
 def global_settings():
 
@@ -711,11 +991,16 @@ def global_settings():
         battery_level = 0.0
         app.logger.warning('Witty Pi not detected')
 
+    rpi.wifi_ssid = rpi.get_wifi_ssid()
+    rpi.ip_address = rpi.get_ip_address()
+    rpi.cpu_temperature = rpi.get_temperature()
+
     sd_card.get_data()
 
     tzone = datetime.now().astimezone().strftime('%Z')
 
     configuration.read()
+    app.logger.info('configuration read')
 
     startup_date, startup_time = configuration.schedule['next_startup'].split()
     shutdown_date, shutdown_time = configuration.schedule['next_shutdown'].split()
@@ -726,7 +1011,11 @@ def global_settings():
     # today = '-'.join([TODAY[:4], TODAY[4:6], TODAY[6:]])
     today = dateTime.get_date()
 
-    return make_response(render_template('global_settings.html', configuration=configuration, updates_available=updates_available, today=today, tzone=tzone, startup=(startup_date, startup_time), shutdown=(shutdown_date, shutdown_time), zip=zip, rpi=rpi, battery_level=battery_level, sd_card=sd_card))
+    startup_num = datetime.strptime(configuration.schedule['next_startup'], '%Y-%m-%d %H:%M')
+    shutdown_num = datetime.strptime(configuration.schedule['next_shutdown'], '%Y-%m-%d %H:%M')
+    now = datetime.now()
+
+    return make_response(render_template('global_settings.html', configuration=configuration, updates_available=updates_available, today=today, tzone=tzone, date_num=(now,startup_num,shutdown_num), startup=(startup_date, startup_time), shutdown=(shutdown_date, shutdown_time), zip=zip, rpi=rpi, battery_level=battery_level, sd_card=sd_card))
 
 
 @app.route('/images_capture_settings')
@@ -737,6 +1026,7 @@ def images_capture_settings():
     try:
 
         configuration.read()
+        app.logger.info('configuration read')
 
         crop_limits = configuration.camera['sensor']['crop_limits']
 
@@ -837,7 +1127,7 @@ def images_capture_settings():
 @app.route('/sounds_capture_settings')
 def sounds_capture_settings():
 
-    global camera, leds_front, leds_rear_deported_uv,microphone, gnss
+    global camera, leds_front, leds_rear_deported_uv, microphone, gnss
 
     try:
 
@@ -914,7 +1204,7 @@ def sounds_capture_settings():
 
         sd_card.get_data()
 
-        return make_response(render_template('sounds_capture_settings.html', updates_available=updates_available, microphone_available=microphone_available, microphone_id=microphone_id, microphone_firmware=microphone_firmware, configuration=configuration, rpi=rpi, battery_level=battery_level, sd_card=sd_card))
+        return make_response(render_template('sounds_capture_settings.html', sounds_capture_state=sounds_capture_state, updates_available=updates_available, microphone_available=microphone_available, microphone_id=microphone_id, microphone_firmware=microphone_firmware, configuration=configuration, rpi=rpi, battery_level=battery_level, sd_card=sd_card))
 
     except BaseException as e:
 
@@ -1047,6 +1337,84 @@ def manage_logs(action, value):
         app.logger.error(str(e))
 
     return redirect('/logs')
+
+
+@app.route('/information')
+def information():
+
+    global camera, leds_front, leds_rear_deported_uv, gnss, microphone, logs_current_directory, logs_current_file, show_preview_log, log_data
+
+    get_captures_state()
+
+    if images_capture_state == 'stopped':
+
+        if camera:
+            camera.stop()
+            camera.camera.close()
+            camera = None
+            app.logger.info('camera stopped')
+
+        if leds_front:
+            leds_front.turn_off()
+            leds_front = None
+            app.logger.info('LEDs front stopped')
+
+        if leds_rear_deported_uv:
+            leds_rear_deported_uv.turn_off()
+            leds_rear_deported_uv = None
+            app.logger.info('LEDs rear/UV/deported stopped')
+
+    elif images_capture_state == 'paused':
+
+        if leds_front:
+            leds_front.turn_off()
+            leds_front = None
+            app.logger.info('LEDs front stopped')
+
+        if leds_rear_deported_uv:
+            leds_rear_deported_uv.turn_off()
+            leds_rear_deported_uv = None
+            app.logger.info('LEDs rear/UV/deported stopped')
+
+    if gnss:
+        gnss.stop()
+        gnss = None
+        app.logger.info('GNSS stopped')
+
+    gnss = Gnss2()
+
+    # wifi.show()
+    # wifi.list()
+    # app.logger.info('wifi updated')
+
+    rpi.cpu_temperature = rpi.get_temperature()
+
+    if witty_pi.available:
+        witty_pi.get_input_voltage()
+        battery_level = witty_pi.input_voltage
+    else:
+        battery_level = 0.0
+        app.logger.warning('Witty Pi not detected')
+
+    sd_card.get_data()
+
+    if sounds_capture_state == 'stopped':
+
+        if microphone:
+            microphone.stop()
+            microphone = None
+            app.logger.info('microphone stopped')
+
+    commit = get_last_commit()
+
+    dateTime.get_date_time_info()
+
+    tzone = datetime.now().astimezone().strftime('%Z')
+
+    dateTime.get_date()
+    dateTime.get_time()
+
+    return make_response(render_template('information.html', configuration=configuration, updates_available=updates_available, tzone=tzone, gnss=gnss, wifi=wifi, commit=commit, dateTime=dateTime, zip=zip, rpi=rpi, battery_level=battery_level, sd_card=sd_card))
 
 
 @app.route('/sounds_capture_test', methods=['POST'])
@@ -1579,6 +1947,7 @@ def update_settings():
             configuration.schedule['enable'] = data[1]['enable']
             configuration.schedule['on_duration'] = int(data[1]['on_duration'])
             configuration.schedule['off_duration'] = int(data[1]['off_duration'])
+            configuration.schedule['periodicity'] = periodicity
             configuration.schedule['next_startup'] = data[1]['startup_date'] + ' ' + data[1]['startup_time']
             configuration.schedule['next_shutdown'] = data[1]['shutdown_date'] + ' ' + data[1]['shutdown_time']
 
@@ -1908,7 +2277,7 @@ def set_leds_delay():
 @app.route('/set_leds_always_on', methods=['POST'])
 def set_leds_always_on():
 
-    global leds_always_on
+    global leds_always_on, leds_delays
 
     try:
 
@@ -1918,9 +2287,16 @@ def set_leds_always_on():
 
         leds_always_on = data
 
+        if leds_always_on:
+            leds_delays = [0, 0]
+        else:
+            leds_delays = [configuration.leds['delay_on'], configuration.leds['delay_off']]
+
         app.logger.info(f'LEDs always on set to {data}')
 
-        return jsonify(success=True, message='LEDs always on set successfully')
+        data = leds_delays
+
+        return jsonify(success=True, message='LEDs always on set successfully', data=data)
 
     except BaseException as e:
 
@@ -2189,6 +2565,27 @@ def set_jpeg_quality():
         return jsonify(success=False, message=str(e))
 
 
+@app.route('/set_periodicity', methods=['POST'])
+def set_periodicity():
+
+    global periodicity
+
+    try:
+
+        periodicity = request.get_json()
+
+        app.logger.info('json: %s', request.get_json())
+
+        app.logger.info(f'schedule periodicity set to {periodicity}')
+
+        return jsonify(success=True, message="Settings updated successfully")
+
+    except BaseException as e:
+
+        app.logger.error(str(e))
+
+        return jsonify(success=False, message=str(e))
+
 @app.route('/save_microphone_settings', methods=['POST'])
 def save_microphone_settings():
 
@@ -2399,9 +2796,9 @@ def add_wifi():
         success = wifi.add(data[0], data[1])
 
         if success:
-            app.logger.info(f'Wifi {data[0]} added')
+            app.logger.info(f'wifi {data[0]} added')
         else:
-            app.logger.error(f'Wifi {data[0]} not added')
+            app.logger.error(f'wifi {data[0]} not added')
 
     return redirect('/')
 
@@ -2433,16 +2830,16 @@ def remove_wifi():
     success = wifi.remove(name)
 
     if success:
-        app.logger.info(f'Wifi {name} removed')
+        app.logger.info(f'wifi {name} removed')
 
         if configuration.wifi['station_ssid'] == name:
             configuration.wifi['station_ssid'] = ''
             configuration.save()
 
-            app.logger.info(f'Wifi {name} removed from configuration file')
+            app.logger.info(f'wifi {name} removed from configuration file')
 
     else:
-        app.logger.error(f'Wifi {name} not removed')
+        app.logger.error(f'wifi {name} not removed')
 
     return redirect('/')
 
@@ -2455,7 +2852,7 @@ def set_wifi():
     configuration.wifi['station_ssid'] = name
     configuration.save()
 
-    app.logger.info(f'Wifi set to {name}')
+    app.logger.info(f'wifi set to {name}')
     app.logger.info('configuration saved')
 
     return redirect('/')
@@ -2467,7 +2864,7 @@ def refresh_wifi():
     wifi.show()
     wifi.list()
 
-    app.logger.info(f'Wifi connections refreshed')
+    app.logger.info(f'wifi connections refreshed')
 
     return redirect('/')
 
@@ -2588,7 +2985,7 @@ def reboot():
         os.system('python ' + os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'shutdown.py'))
         os.system('sudo shutdown -r now')
 
-        return jsonify(success=False, message='Success')
+        return jsonify(success=True, message='Success')
 
     except Exception as e:
 
@@ -2604,7 +3001,23 @@ def shutdown():
         os.system('python ' + os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'shutdown.py'))
         os.system('sudo shutdown now')
 
-        return jsonify(success=False, message='Success')
+        return jsonify(success=True, message='Success')
+
+    except Exception as e:
+
+        app.logger.error('' + str(e))
+
+        return jsonify(success=False, message=str(e), updates_done=False)
+
+
+@app.route('/eject_external_drive', methods=['POST'])
+def eject_external_drive():
+
+    try:
+
+        external_disk.eject()
+
+        return jsonify(success=True, message='Success')
 
     except Exception as e:
 
@@ -2627,7 +3040,7 @@ def log_request_info():
 @app.errorhandler(500)
 def server_error(error):
 
-    app.logger.error('An exception occurred during a request.')
+    app.logger.error('an exception occurred during a request.')
 
     if witty_pi.available:
         witty_pi.get_input_voltage()
@@ -2640,7 +3053,7 @@ def server_error(error):
 
     rpi.cpu_temperature = rpi.get_temperature()
 
-    return render_template('500.html', rpi=rpi, battery_level=battery_level, sd_card=sd_card)
+    return render_template('500.html', rpi=rpi, battery_level=battery_level, sd_card=sd_card), 500
 
 @app.errorhandler(404)
 def page_not_found(error):
@@ -2658,7 +3071,99 @@ def page_not_found(error):
 
     rpi.cpu_temperature = rpi.get_temperature()
 
-    return render_template('404.html', rpi=rpi, battery_level=battery_level, sd_card=sd_card)
+    return render_template('404.html', rpi=rpi, battery_level=battery_level, sd_card=sd_card), 404
+
+@app.errorhandler(400)
+def file_not_found(error):
+
+    app.logger.error(error)
+
+    if witty_pi.available:
+        witty_pi.get_input_voltage()
+        battery_level = witty_pi.input_voltage
+    else:
+        battery_level = 0.0
+        app.logger.warning('Witty Pi not detected')
+
+    sd_card.get_data()
+
+    rpi.cpu_temperature = rpi.get_temperature()
+
+    return render_template('400.html', rpi=rpi, battery_level=battery_level, sd_card=sd_card)
+
+def get_data_folders_stats():
+
+    stats = {'folders': [],
+            'stat': [],
+            'total': {'num_sounds_files': 0,
+            'size_sounds_files': 0,
+            'num_images_files': 0,
+            'size_images_files': 0,
+            'num_timelapse_files': 0,
+            'num_detection_files': 0,
+            'num_test_detection_files': 0,
+            'size_all_files': 0}}
+
+    try:
+
+        folder_content = sorted(os.listdir(DATA_FOLDER), reverse=True)
+
+        stats['folders'] = [x for x in folder_content if os.path.isdir(os.path.join(DATA_FOLDER, x))]
+
+        for folder in stats['folders']:
+
+            stat = {'num_sounds_files': 0,
+                    'size_sounds_files': 0,
+                    'num_images_files': 0,
+                    'size_images_files': 0,
+                    'num_timelapse_files': 0,
+                    'num_detection_files': 0,
+                    'num_test_detection_files': 0,
+                    'size_all_files': 0}
+
+            sounds_files = [x for x in os.listdir(os.path.join(DATA_FOLDER, folder, 'Sounds')) if x.endswith('.wav')]
+            stat['num_sounds_files'] = len(sounds_files)
+            stats['total']['num_sounds_files'] += stat['num_sounds_files']
+            size = 0
+            for sounds_file in sounds_files:
+                size += os.path.getsize(os.path.join(DATA_FOLDER, folder, 'Sounds', sounds_file))
+            stat['size_sounds_files'] = int(size / 1024 // 1024)
+            stats['total']['size_sounds_files'] += stat['size_sounds_files']
+
+            images_files = [x for x in os.listdir(os.path.join(DATA_FOLDER, folder, 'Images')) if x.endswith('.jpg')]
+            stat['num_images_files'] = len(images_files)
+            stats['total']['num_images_files'] += stat['num_images_files']
+            size = 0
+            for images_file in images_files:
+                size += os.path.getsize(os.path.join(DATA_FOLDER, folder, 'Images', images_file))
+            stat['size_images_files'] = int(size / 1024 // 1024)
+            stats['total']['size_images_files'] += stat['size_images_files']
+
+            timelapse_files = [x for x in os.listdir(os.path.join(DATA_FOLDER, folder, 'Images')) if x.endswith('_timelapse_no_ai.jpg')]
+            stat['num_timelapse_files'] = len(timelapse_files)
+            stats['total']['num_timelapse_files'] += stat['num_timelapse_files']
+
+            detection_files = [x for x in os.listdir(os.path.join(DATA_FOLDER, folder, 'Images')) if x.endswith('.jpg') and len(x) == 18]
+            stat['num_detection_files'] = len(detection_files)
+            stats['total']['num_detection_files'] += stat['num_detection_files']
+
+            test_detection_files = [x for x in os.listdir(os.path.join(DATA_FOLDER, folder, 'Images')) if x.endswith('_detection_test.jpg')]
+            stat['num_test_detection_files'] = len(test_detection_files)
+            stats['total']['num_test_detection_files'] += stat['num_test_detection_files']
+
+            stat['size_all_files'] = stat['size_sounds_files'] + stat['size_images_files']
+
+            stats['total']['size_all_files'] += stat['size_all_files']
+
+            stats['stat'].append(stat)
+
+    except BaseException as e:
+
+        app.logger.error(str(e))
+
+    # print(stats)
+
+    return stats
 
 
 def get_captures_state():
@@ -2682,6 +3187,28 @@ def get_captures_state():
         else:
             sounds_capture_state = 'paused'
 
+# @socketio.on('connect')
+# def handle_connect():
+    # """Called when a client connects"""
+    # # app.logger.info('client connected')
+    # print('client connected')
+
+
+# @socketio.on('disconnect')
+# def handle_disconnect():
+    # """Called when a client disconnects"""
+    # # app.logger.info('client disconnected')
+    # print('client disconnected')
+
+# @socketio.on_error()
+# def handle_error(e):
+    # """Global error handler for the default namespace"""
+    # app.logger.error(f"socketIO: {e}")
+    # # Optionally notify the client
+    # socketio.emit('error', {'message': 'An error occurred'})
+
 if __name__ == '__main__':
+
+    # socketio.run(app, host='0.0.0.0', debug=SERVER_DEBUG, port=SERVER_PORT)
 
     app.run(host='0.0.0.0', debug=SERVER_DEBUG, port=SERVER_PORT)

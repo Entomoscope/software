@@ -1,12 +1,13 @@
 {% macro display_configuration_global_settings(configuration, tzone) %}
     <p class="config_level_1">Site</p>
-    <p class="config_level_2" id="siteIdConfigurationText">Id: {{ configuration['site']['id'] }}</p>
+    <p class="config_level_2" id="siteIdConfigurationText">ID: {{ configuration['site']['id'] }}</p>
     <p class="config_level_1">Scheduler</p>
     <p class="config_level_2" id="scheduleEnableConfigurationText">Enable: {{ configuration['schedule']['enable'] }}</p>
     <p class="config_level_2" id="scheduleStartupConfigurationText">Next startup: {{ configuration['schedule']['next_startup'] }} {{ tzone }}</p>
     <p class="config_level_2" id="scheduleShutdownConfigurationText">Next shutdown: {{ configuration['schedule']['next_shutdown'] }} {{ tzone }}</p>
     <p class="config_level_2" id="scheduleOnDurationConfigurationText">On duration: {{ configuration['schedule']['on_duration'] }} seconds</p>
     <p class="config_level_2" id="scheduleOffDurationConfigurationText">Off duration: {{ configuration['schedule']['off_duration'] }} seconds</p>
+    <p class="config_level_2" id="schedulePeriodicityConfigurationText">Periodicity: {{ configuration['schedule']['periodicity'] | replace('_', ' ') }}</p>
     <p class="config_level_1">Mode</p>
     <p class="config_level_2" id="captureModeConfigurationText">Mode: {{ configuration['mode']['mode'] }}</p>
     <p class="config_level_1">Images capture</p>
@@ -20,12 +21,20 @@
     <p class="config_level_2" id="soundsCaptureDurationConfigurationText">Duration: {{ configuration['sounds_capture']['duration'] }} seconds</p>
     <p class="config_level_1">Cooling system</p>
     <p class="config_level_2" id="coolingSystemEnableConfigurationText">Enable: {{ configuration['cooling_system']['enable'] }}</p>
-    <p class="config_level_2" id="coolingSystemCpuTemperatureCheckIntervalConfigurationText">Cpu temperature check interval: {{ configuration['cooling_system']['cpu_temperature_check_interval'] }} minutes</p>
-    <p class="config_level_2" id="coolingSystemCpuTemperatureLevelsConfigurationText">Cpu temperature levels: {{ configuration['cooling_system']['cpu_temperature_levels'] }} &deg;C</p>
+    <p class="config_level_2" id="coolingSystemCpuTemperatureCheckIntervalConfigurationText">CPU temperature check interval: {{ configuration['cooling_system']['cpu_temperature_check_interval'] }} minutes</p>
+    <p class="config_level_2" id="coolingSystemCpuTemperatureLevelsConfigurationText">CPU temperature levels: {{ configuration['cooling_system']['cpu_temperature_levels'] }} &deg;C</p>
     <p class="config_level_2" id="coolingSystemFanSpeedLevelsConfigurationText">Fan speed levels: {{ configuration['cooling_system']['fan_speed_levels'] }} %</p>
     <p class="config_level_1">Environmental monitoring</p>
     <p class="config_level_2" id="environmentalMonitoringEnableConfigurationText">Enable: {{ configuration['environmental_monitoring']['enable'] }}</p>
     <p class="config_level_2" id="environmentalMonitoringCheckIntervalConfigurationText">Check interval: {{ configuration['environmental_monitoring']['time_step'] }} minutes</p>
+<!--
+    <p class="config_level_1">GNSS</p>
+    <p class="config_level_2" id="gnssLastUPdateConfigurationText">Last update: {{ configuration['gnss']['last_update'] }}</p>
+    <p class="config_level_2" id="gnssLatitudeConfigurationText">Latitude: {{ configuration['gnss']['latitude'] }}</p>
+    <p class="config_level_2" id="gnssLongitudeConfigurationText">Longitude: {{ configuration['gnss']['longitude'] }}</p>
+    <p class="config_level_2" id="gnssAltitudeConfigurationText">Altitude: {{ configuration['gnss']['altitude'] }} meters</p>
+    <p class="config_level_2" id="gnssSatellitesUsedConfigurationText">Satellites used: {{ configuration['gnss']['satellites_used'] }} meters</p>
+-->
 {% endmacro %}
 
 {% macro display_configuration_images_capture_settings(configuration, autofocus_available) %}
@@ -129,21 +138,22 @@
     {% endif %}
 {% endmacro %}
 
-{% macro sd_card_full_modal(sd_card) %}
-    <div class="modal fade" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" id="sdCardFullModalDialog">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Full SD card</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="text-center fw-bold">SD card is {{ sd_card.used_percent_num }} % full.<br/>Make some space...</p>
-                </div>
+{%- macro sd_card_full_modal(sd_card) -%}
+<!-- Full SD card modal dialog -->
+<div class="modal fade" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" id="sdCardFullModalDialog">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Full SD card</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-center fw-bold">SD card is {{ sd_card.used_percent_num }} % full.<br/>Make some space...</p>
             </div>
         </div>
     </div>
-{% endmacro %}
+</div>
+{%- endmacro -%}
 
 {% macro sd_card_full_modal_javascript(sd_card) %}
 
@@ -157,21 +167,22 @@
 
 {% endmacro %}
 
-{% macro battery_discharged_modal(battery_level) %}
-    <div class="modal fade" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" id="batteryDischargedModalDialog">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Battery discharged</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="text-center fw-bold">Battery is discharged.<br/>Replace it.</</p>
-                </div>
+{%- macro battery_discharged_modal(battery_level) -%}
+<!-- Battery discharged modal dialog -->
+<div class="modal fade" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" id="batteryDischargedModalDialog">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Battery discharged</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-center fw-bold">Battery is discharged.<br/>Replace it.</p>
             </div>
         </div>
     </div>
-{% endmacro %}
+</div>
+{%- endmacro -%}
 
 {% macro battery_discharged_modal_javascript(battery_level) %}
 
@@ -184,3 +195,44 @@
         {% endif %}
 
 {% endmacro %}
+
+{%- macro ask_modal() -%}
+<!-- Ask modal dialog -->
+<div class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" id="askModalDialog" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="askTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="askParagraph"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">No</button>
+                <button type="button" class="btn btn-secondary" onClick="actionOk()">Yes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{%- endmacro -%}
+
+{%- macro wait_modal() -%}
+<!-- Wait modal dialog -->
+<div class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" id="waitModalDialog">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="waitTitle"></h5>
+            </div>
+            <div class="modal-body d-flex">
+
+                <div class="spinner-border text-primary me-3" role="status">
+                  <span class="visually-hidden"></span>
+                </div>
+                <p id="waitParagraph"></p>
+            </div>
+        </div>
+    </div>
+</div>
+{%- endmacro -%}

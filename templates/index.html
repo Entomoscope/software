@@ -126,7 +126,7 @@
         {% if configuration['images_capture']['enable'] %}
         <div class="col-6 text-end"><span class="badge bg-gradient text-bg-primary">Images step: {{configuration['images_capture']['time_step']}} seconds</span></div>
         {% else %}
-        <div class="col-6 text-start"><span class="badge bg-gradient text-bg-danger">Images disabled</span></div>
+        <div class="col-6 text-end"><span class="badge bg-gradient text-bg-danger">Images disabled</span></div>
         {% endif %}
         <div class="col-6 text-start"><span class="badge bg-gradient text-bg-primary">On duration: {{configuration['schedule']['on_duration']}} seconds</span></div>
     </div>

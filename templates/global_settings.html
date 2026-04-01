@@ -811,12 +811,22 @@
 
         var imagesCaptureTimeStep = parseInt(imagesCaptureTimeStepNumber.value)
         var scheduleOnDuration = parseInt(scheduleOnDurationNumber.value)
+        const leds_delays = {{ configuration['leds']['delay_on'] }} + {{ configuration['leds']['delay_off'] }}
 
-        if (imagesCaptureTimeStep > scheduleOnDuration) {
+        if (imagesCaptureTimeStep == 0) {
             imagesCaptureTimeStepNumber.className = "form-control bg-danger"
             imagesCaptureP.className = "text-center"
-            imagesCaptureP.innerText = "Capture duration must be lower than On duration (" + scheduleOnDuration + "s)"
+            imagesCaptureP.innerText = "Time step must be greater than 0"
             updateSaveButton('images_capture', true)
+        } else if (imagesCaptureTimeStep > scheduleOnDuration) {
+            imagesCaptureTimeStepNumber.className = "form-control bg-danger"
+            imagesCaptureP.className = "text-center"
+            imagesCaptureP.innerText = "Time step must be lower than On duration (" + scheduleOnDuration + "s)"
+            updateSaveButton('images_capture', true)
+        } else if (imagesCaptureTimeStep <= leds_delays) {
+            imagesCaptureTimeStepNumber.className = "form-control bg-danger"
+            imagesCaptureP.className = "text-center"
+            imagesCaptureP.innerText = "Time step must be greater than the sum of LEDs On/Off delays (" + leds_delays + "s)"
         } else {
 
             var numCaptures = Math.floor(scheduleOnDuration/imagesCaptureTimeStep)
@@ -830,9 +840,6 @@
             }
             updateSaveButton('images_capture', false)
         }
-
-
-
     }
 
     function checkSoundsCaptureDuration() {

@@ -852,7 +852,7 @@
                                     <strong class="mb-1"><label for="brightness" class="form-label">Delay after LEDS on</label></strong>
                                 </div>
                                 <div class="input-group mb-1">
-                                    <input type="number" id="ledsDelayOnNumber" class="form-control" min="0" step="0.5" value="{{ configuration['leds']['delay_on'] }}" onchange="updateSaveButton('leds', false);setLedsDelay('on', this.value)"/>
+                                    <input type="number" id="ledsDelayOnNumber" class="form-control" min="0" step="0.5" value="{{ configuration['leds']['delay_on'] }}" onchange="setLedsDelay('on', this.value)"/>
                                     <div class="input-group-text">seconds</div>
                                 </div>
                             </div>
@@ -862,9 +862,12 @@
                                     <strong class="mb-1"><label for="brightness" class="form-label">Delay before LEDs off</label></strong>
                                 </div>
                                 <div class="input-group mb-1">
-                                    <input type="number" id="ledsDelayOffNumber" class="form-control" min="0" step="0.5" value="{{ configuration['leds']['delay_off'] }}" onchange="updateSaveButton('leds', false);setLedsDelay('off', this.value)"/>
+                                    <input type="number" id="ledsDelayOffNumber" class="form-control" min="0" step="0.5" value="{{ configuration['leds']['delay_off'] }}" onchange="setLedsDelay('off', this.value)"/>
                                     <div class="input-group-text">seconds</div>
                                 </div>
+                            </div>
+                            <div>
+                                <p class="d-none" id="ledsDelaysP"></p>
                             </div>
                         </div>
                         <hr/>
@@ -1025,6 +1028,7 @@
     const ledsRearDeportedUvLabel = document.getElementById('ledsRearDeportedUvLabel')
     const ledsFrontRange = document.getElementById('ledsFrontRange')
     const ledsRearDeportedUvRange = document.getElementById('ledsRearDeportedUvRange')
+    const ledsDelaysP = document.getElementById('ledsDelaysP')
     const ledsFrontConfigurationText = document.getElementById('ledsFrontConfigurationText');
     const ledsRearDeportedUvConfigurationText = document.getElementById('ledsRearDeportedUvConfigurationText');
 
@@ -2103,26 +2107,48 @@
 
     function setLedsDelay(mode, value) {
 
-        data = [mode, value]
+        var ledsDelayOn = parseFloat(ledsDelayOnNumber.value)
+        var ledsDelayOff = parseFloat(ledsDelayOffNumber.value)
+        const imageCaptureStep = {{ configuration['images_capture']['time_step'] }}
 
-        return fetch('/set_leds_delay', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Settings updated:', data);
-            if (data.success) {
+        if ((ledsDelayOn + ledsDelayOff) < imageCaptureStep) {
 
+            data = [mode, value]
+
+            ledsDelayOnNumber.className = "form-control"
+            ledsDelayOffNumber.className = "form-control"
+            ledsDelaysP.className = "d-none"
+
+            return fetch('/set_leds_delay', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Settings updated:', data);
+                if (data.success) {
+                    updateSaveButton('leds', false);
+                }
+            })
+            .catch(error => {
+            console.error('Error updating settings:', error);
+            throw error;  // Re-throw the error for the next catch
+            });
+
+        } else {
+            if (mode == 'on') {
+                ledsDelayOnNumber.className = "form-control bg-danger"
+            } else {
+                ledsDelayOffNumber.className = "form-control bg-danger"
             }
-        })
-        .catch(error => {
-        console.error('Error updating settings:', error);
-        throw error;  // Re-throw the error for the next catch
-        });
+
+            ledsDelaysP.innerText = "Sum of LEDs delays must be lower than images capture step (" + {{ configuration['images_capture']['time_step'] }}  + "s)"
+            ledsDelaysP.className = "text-center"
+
+        }
     }
 
     function setLedsAlwaysOn(value) {

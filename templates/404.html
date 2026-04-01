@@ -1,9 +1,12 @@
+{% from 'macros.html' import nav_item -%}
+{% from 'macros.html' import nav_pull_right -%}
 {% from 'macros.html' import sd_card_full_modal -%}
 {% from 'macros.html' import sd_card_full_modal_javascript -%}
 {% from 'macros.html' import battery_discharged_modal -%}
 {% from 'macros.html' import battery_discharged_modal_javascript -%}
 {% from 'macros.html' import ask_modal -%}
 {% from 'macros.html' import wait_modal -%}
+{% from 'macros.html' import info_modal -%}
 {% extends 'base.html' %}
 {% block head -%}
     <title>Entomoscope - 404</title>
@@ -17,77 +20,9 @@
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item">
-          <a class="nav-link" href="/">Home</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('data') }}">Data</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('storage') }}">Storage</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('global_settings') }}">Capture Settings</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('images_capture_settings') }}">Images Capture</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('sounds_capture_settings') }}">Sounds Capture</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('information') }}">Information</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('logs') }}">Logs</a>
-        </li>
-      </ul>
+{{ nav_item('404', updates_available) }}
     </div>
-    <div class="nav pull-right">
-        <!-- Update available -->
-        {% if updates_available %}
-        <button class="btn btn-success me-2" style="pointer-events: none" id="updateNavBar"><i class="bi bi-cloud-download"></i>
-            Update available
-        </button>
-        {% endif %}
-        <!-- SD card usage -->
-        {% if sd_card.used_percent_num < 80 %}
-        <button class="btn btn-success me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card" id="sdCardI"></i>
-        {% elif sd_card.used_percent_num < 90 %}
-        <button class="btn btn-warning me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card" id="sdCardI"></i>
-        {% else %}
-        <button class="btn btn-danger me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card-fill" id="sdCardI"></i>
-        {% endif %}
-             <span class="d-none d-sm-inline" id="sdCardUsageSpan">{{ '%.0f' % sd_card.used_percent_num }} %</span>
-        </button>
-        <!-- Battery level -->
-        {% if battery_level > 0 %}
-            {% if battery_level > 11.5 %}
-            <button class="btn btn-success me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-full" id="batteryLevelI"></i>
-            {% elif battery_level > 10.8 %}
-            <button class="btn btn-warning me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-half" id="batteryLevelI"></i>
-            {% else %}
-            <button class="btn btn-danger me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-low" id="batteryLevelI"></i>
-            {% endif %}
-                 <span class="d-none d-sm-inline" id="batteryLevelSpan">{{ '%.1f' % battery_level }} V</span>
-            </button>
-        {% endif %}
-        <!-- CPU Temperature -->
-        {% if rpi.cpu_temperature < 65 %}
-        <button class="btn btn-success me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
-        {% elif rpi.cpu_temperature < 75 %}
-        <button class="btn btn-warning me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
-        {% else %}
-        <button class="btn btn-danger me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
-        {% endif %}
-            <span class="d-none d-sm-inline" id="cpuTemperatureSpan">{{ '%.0f' % rpi.cpu_temperature }} &deg;C</span>
-        </button>
-        <!-- Reboot -->
-        <button class="btn btn-light me-2" id="updateNavBar" onclick="reboot()"><i class="bi bi-bootstrap-reboot"></i></button>
-        <!-- Shutdown -->
-        <button class="btn btn-danger" id="updateNavBar" onclick="shutdown()"><i class="bi bi-power"></i></button>
-    </div>
+{{ nav_pull_right(updates_available, sd_card, battery_level, rpi) }}
   </div>
 </nav>
 <!-- Page content -->
@@ -101,6 +36,7 @@
 <!-- Modals dialog -->
 {{ wait_modal() }}
 {{ ask_modal() }}
+{{ info_modal() }}
 {{ sd_card_full_modal(sd_card) }}
 {{ battery_discharged_modal(battery_level) }}
 {% endblock %}
@@ -113,11 +49,21 @@
     const batteryLevelI = document.getElementById('batteryLevelI');
     const cpuTemperatureSpan = document.getElementById('cpuTemperatureSpan');
 
-    const askModalDialog = document.getElementById('askModalDialog');
-    const askTitle = document.getElementById('askTitle');
-    const askParagraph = document.getElementById('askParagraph');
+    // Modals dialog
+    const waitModalDialog = document.getElementById('waitModalDialog');
+    var waitModal = new bootstrap.Modal(waitModalDialog)
+    const waitModalTitle = document.getElementById('waitModalTitle');
+    const waitModalParagraph = document.getElementById('waitModalParagraph');
 
+    const askModalDialog = document.getElementById('askModalDialog');
     var askModal = new bootstrap.Modal(askModalDialog)
+    const askModalTitle = document.getElementById('askModalTitle');
+    const askModalParagraph = document.getElementById('askModalParagraph');
+
+    const infoModalDialog = document.getElementById('infoModalDialog');
+    var infoModal = new bootstrap.Modal(infoModalDialog)
+    const infoModalTitle = document.getElementById('infoModalTitle');
+    const infoModalParagraph = document.getElementById('infoModalParagraph');
 
     var powerAction = null
 
@@ -132,8 +78,8 @@
 
         powerAction = 'reboot'
 
-        askTitle.innerText = 'Reboot'
-        askParagraph.innerText = 'Do you really want to reboot?'
+        askModalTitle.innerText = 'Reboot'
+        askModalParagraph.innerText = 'Do you really want to reboot?'
 
         askModal.show()
 
@@ -143,8 +89,8 @@
 
         powerAction = 'shutdown'
 
-        askTitle.innerText = 'Shutdown'
-        askParagraph.innerText = 'Do you really want to shutdown?'
+        askModalTitle.innerText = 'Shutdown'
+        askModalParagraph.innerText = 'Do you really want to shutdown?'
 
         askModal.show()
 

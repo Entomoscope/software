@@ -2939,8 +2939,8 @@ def check_updates():
 
         return jsonify(success=False, message=str(e), updates_available=updates_available)
 
-@app.route('/get_updates', methods=['POST'])
-def get_updates():
+@app.route('/download_updates', methods=['POST'])
+def download_updates():
 
     global updates_available
 

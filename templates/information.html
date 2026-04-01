@@ -1,9 +1,12 @@
+{% from 'macros.html' import nav_item -%}
+{% from 'macros.html' import nav_pull_right -%}
 {% from 'macros.html' import sd_card_full_modal -%}
 {% from 'macros.html' import sd_card_full_modal_javascript -%}
 {% from 'macros.html' import battery_discharged_modal -%}
 {% from 'macros.html' import battery_discharged_modal_javascript -%}
 {% from 'macros.html' import ask_modal -%}
 {% from 'macros.html' import wait_modal -%}
+{% from 'macros.html' import info_modal -%}
 {% extends 'base.html' %}
 {% block head -%}
     <title>Entomoscope - Information</title>
@@ -17,77 +20,9 @@
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item">
-          <a class="nav-link" href="/">Home</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('data') }}">Data</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('storage') }}">Storage</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('global_settings') }}">Capture Settings</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('images_capture_settings') }}">Images Capture</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('sounds_capture_settings') }}">Sounds Capture</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="{{ url_for('information') }}">Information</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('logs') }}">Logs</a>
-        </li>
-      </ul>
+{{ nav_item('information', updates_available) }}
     </div>
-    <div class="nav pull-right">
-        <!-- Update available -->
-        {% if updates_available %}
-        <button class="btn btn-success me-2" style="pointer-events: none" id="updateNavBar"><i class="bi bi-cloud-download"></i>
-            Update available
-        </button>
-        {% endif %}
-        <!-- SD card usage -->
-        {% if sd_card.used_percent_num < 80 %}
-        <button class="btn btn-success me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card" id="sdCardI"></i>
-        {% elif sd_card.used_percent_num < 90 %}
-        <button class="btn btn-warning me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card" id="sdCardI"></i>
-        {% else %}
-        <button class="btn btn-danger me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card-fill" id="sdCardI"></i>
-        {% endif %}
-             <span class="d-none d-sm-inline" id="sdCardUsageSpan">{{ '%.0f' % sd_card.used_percent_num }} %</span>
-        </button>
-        <!-- Battery level -->
-        {% if battery_level > 0 %}
-            {% if battery_level > 11.5 %}
-            <button class="btn btn-success me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-full" id="batteryLevelI"></i>
-            {% elif battery_level > 10.8 %}
-            <button class="btn btn-warning me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-half" id="batteryLevelI"></i>
-            {% else %}
-            <button class="btn btn-danger me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-low" id="batteryLevelI"></i>
-            {% endif %}
-                 <span class="d-none d-sm-inline" id="batteryLevelSpan">{{ '%.1f' % battery_level }} V</span>
-            </button>
-        {% endif %}
-        <!-- CPU Temperature -->
-        {% if rpi.cpu_temperature < 65 %}
-        <button class="btn btn-success me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
-        {% elif rpi.cpu_temperature < 75 %}
-        <button class="btn btn-warning me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
-        {% else %}
-        <button class="btn btn-danger me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
-        {% endif %}
-            <span class="d-none d-sm-inline" id="cpuTemperatureSpan">{{ '%.0f' % rpi.cpu_temperature }} &deg;C</span>
-        </button>
-        <!-- Reboot -->
-        <button class="btn btn-light me-2" id="updateNavBar" onclick="reboot()"><i class="bi bi-bootstrap-reboot"></i></button>
-        <!-- Shutdown -->
-        <button class="btn btn-danger" id="updateNavBar" onclick="shutdown()"><i class="bi bi-power"></i></button>
-    </div>
+{{ nav_pull_right(updates_available, sd_card, battery_level, rpi) }}
   </div>
 </nav>
 <!-- Page content -->
@@ -141,19 +76,22 @@
                         <li>{{ commit['subject'] }}</li>
                         <li>{{ commit['hash_num'] }}</li>
                     </ul>
-                    {% if updates_available %}
-                        <p id="updateText" class="card-text">Updates available</p>
-                    {% else %}
-                        <p id="updateText" class="card-text">No updates available</p>
-                    {% endif %}
                     <hr/>
+                     {% if updates_available %}
+                    <h5 class="card-title" id="updateTitle">Updates available</h5>
+                    {% else %}
+                    <h5 class="card-title" id="updateTitle">Updates</h5>
+                    {% endif %}
+                    <p class="d-none" id="updateText"></p>
                     <div class="form-button-center">
                         {% if updates_available %}
-                            <button type="submit" class="btn btn-primary" id="getUpdatesButton" onclick="getUpdates()">Update</button>
+                            <button type="submit" class="btn btn-primary" id="downloadUpdatesButton" onclick="downloadUpdates()">Download</button>
+                            <button type="submit" class="btn btn-primary d-none" id="checkUpdatesButton" onclick="checkUpdates()">Check</button>
                         {% else %}
-                            <button type="submit" class="btn btn-primary" id="getUpdatesButton" onclick="getUpdates()" disabled>Update</button>
+                            <button type="submit" class="btn btn-primary d-none" id="downloadUpdatesButton" onclick="downloadUpdates()">Download</button>
+                            <button type="submit" class="btn btn-primary" id="checkUpdatesButton" onclick="checkUpdates()">Check</button>
                         {% endif %}
-                        <button type="submit" class="btn btn-primary" id="checkUpdatesButton" onclick="checkUpdates()">Check</button>
+
                     </div>
                 </div>
             </div>
@@ -271,11 +209,11 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="askTitle"></h5>
+                    <h5 class="modal-title" id="askModalTitle"></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p id="askParagraph"></p>
+                    <p id="askModalParagraph"></p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" data-bs-dismiss="modal">No</button>
@@ -288,6 +226,7 @@
 <!-- Modals dialog -->
 {{ wait_modal() }}
 {{ ask_modal() }}
+{{ info_modal() }}
 {{ sd_card_full_modal(sd_card) }}
 {{ battery_discharged_modal(battery_level) }}
 {% endblock %}
@@ -328,14 +267,25 @@
     const gnssSavePositionButton = document.getElementById('gnssSavePositionButton')
 
     const updateText = document.getElementById('updateText')
-    const getUpdatesButton = document.getElementById('getUpdatesButton')
+    const downloadUpdatesButton = document.getElementById('downloadUpdatesButton')
+    const updateTitle = document.getElementById('updateTitle')
     const checkUpdatesButton = document.getElementById('checkUpdatesButton')
 
-    const askModalDialog = document.getElementById('askModalDialog');
-    const askTitle = document.getElementById('askTitle');
-    const askParagraph = document.getElementById('askParagraph');
+    // Modals dialog
+    const waitModalDialog = document.getElementById('waitModalDialog');
+    var waitModal = new bootstrap.Modal(waitModalDialog)
+    const waitModalTitle = document.getElementById('waitModalTitle');
+    const waitModalParagraph = document.getElementById('waitModalParagraph');
 
+    const askModalDialog = document.getElementById('askModalDialog');
     var askModal = new bootstrap.Modal(askModalDialog)
+    const askModalTitle = document.getElementById('askModalTitle');
+    const askModalParagraph = document.getElementById('askModalParagraph');
+
+    const infoModalDialog = document.getElementById('infoModalDialog');
+    var infoModal = new bootstrap.Modal(infoModalDialog)
+    const infoModalTitle = document.getElementById('infoModalTitle');
+    const infoModalParagraph = document.getElementById('infoModalParagraph');
 
     var powerAction = null
 
@@ -610,12 +560,15 @@
         .then(response => response.json())
         .then(data => {
             if (data.updates_available) {
-                getUpdatesButton.disabled = false
-                updateText.innerText = 'Updates available'
+
+                downloadUpdatesButton.className = "btn btn-primary"
+                checkUpdatesButton.className = "btn btn-primary d-none"
+                updateTitle.innerText = 'Updates available'
             }
             else {
-                getUpdatesButton.disabled = true
-                updateText.innerText = 'No updates available'
+                downloadUpdatesButton.className = "btn btn-primary d-none"
+                checkUpdatesButton.className = "btn btn-primary"
+                updateTitle.innerText = 'Updates'
             }
             checkUpdatesButton.disabled = false
         })
@@ -627,11 +580,15 @@
 
     }
 
-    function getUpdates() {
+    function downloadUpdates() {
 
-        getUpdatesButton.disabled = true
+        downloadUpdatesButton.disabled = true
 
-        return fetch('/get_updates', {
+        waitModalTitle.innerText = 'Download updates'
+        waitModalParagraph.innerText = 'Wait for downloading updates to complete'
+        waitModal.show()
+
+        return fetch('/download_updates', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -641,29 +598,34 @@
         .then(response => response.json())
         .then(data => {
             if (data.updates_done) {
-                getUpdatesButton.disabled = true
+                downloadUpdatesButton.disabled = true
                 updateText.innerText = 'Updates downloaded and installed. Restart the entomoscope.'
+                updateText.className = "text-center"
                 updateText.style = 'font-weight: bold; color: red'
             }
             else {
-                getUpdatesButton.disabled = false
-                updateText.innerText = 'No updates done'
+                downloadUpdatesButton.disabled = false
+                updateText.className = "text-center"
+                updateText.innerText = 'Something wrong open when trying to download updates.'
             }
+            waitModal.hide()
         })
         .catch(error => {
-            getUpdatesButton.disabled = false
-            console.error('Error getting updates:', error);
+            waitModal.hide()
+            downloadUpdatesButton.disabled = false
+            updateText.className = "text-center"
+            updateText.innerText = 'Update not complete.'
+            console.error('Error downloading updates:', error);
             throw error;  // Re-throw the error for the next catch
         });
-
     }
 
     function reboot() {
 
         powerAction = 'reboot'
 
-        askTitle.innerText = 'Reboot'
-        askParagraph.innerText = 'Do you really want to reboot?'
+        askModalTitle.innerText = 'Reboot'
+        askModalParagraph.innerText = 'Do you really want to reboot?'
 
         askModal.show()
 
@@ -673,8 +635,8 @@
 
         powerAction = 'shutdown'
 
-        askTitle.innerText = 'Shutdown'
-        askParagraph.innerText = 'Do you really want to shutdown?'
+        askModalTitle.innerText = 'Shutdown'
+        askModalParagraph.innerText = 'Do you really want to shutdown?'
 
         askModal.show()
 

@@ -1,3 +1,114 @@
+{%- macro nav_item(active_nav_link, updates_available) %}
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          {% if active_nav_link == 'home' %}
+          <a class="nav-link active" aria-current="page" href="/">Home</a>
+          {% else %}
+          <a class="nav-link" href="/">Home</a>
+          {% endif %}
+        </li>
+        <li class="nav-item">
+          {% if active_nav_link == 'data' %}
+          <a class="nav-link active" aria-current="page" href="{{ url_for('data') }}">Data</a>
+          {% else %}
+          <a class="nav-link" href="{{ url_for('data') }}">Data</a>
+          {% endif %}
+        </li>
+        <li class="nav-item">
+          {% if active_nav_link == 'storage' %}
+          <a class="nav-link active" aria-current="page" href="{{ url_for('storage') }}">Storage</a>
+          {% else %}
+          <a class="nav-link" href="{{ url_for('storage') }}">Storage</a>
+          {% endif %}
+        </li>
+        <li class="nav-item">
+          {% if active_nav_link == 'settings' %}
+          <a class="nav-link active" aria-current="page" href="{{ url_for('global_settings') }}">Settings</a>
+          {% else %}
+          <a class="nav-link" href="{{ url_for('global_settings') }}">Settings</a>
+          {% endif %}
+        </li>
+        <li class="nav-item">
+          {% if active_nav_link == 'images' %}
+          <a class="nav-link active" aria-current="page" href="{{ url_for('images_capture_settings') }}">Images</a>
+          {% else %}
+          <a class="nav-link" href="{{ url_for('images_capture_settings') }}">Images</a>
+          {% endif %}
+        </li>
+        <li class="nav-item">
+          {% if active_nav_link == 'sounds' %}
+          <a class="nav-link active" aria-current="page" href="{{ url_for('sounds_capture_settings') }}">Sounds</a>
+          {% else %}
+          <a class="nav-link" href="{{ url_for('sounds_capture_settings') }}">Sounds</a>
+          {% endif %}
+        </li>
+        <li class="nav-item">
+          {% if active_nav_link == 'information' %}
+          <a class="nav-link active" aria-current="page" href="{{ url_for('information') }}">Information
+          {% else %}
+          <a class="nav-link" href="{{ url_for('information') }}">Information
+          {% endif %}
+          {% if updates_available %}
+          <span class="translate-middle badge rounded-pill bg-info"><i class="bi bi-cloud-download"></i></span></a>
+          {% else %}
+          </a>
+          {% endif %}
+        </li>
+        <li class="nav-item">
+          {% if active_nav_link == 'logs' %}
+          <a class="nav-link active" aria-current="page" href="{{ url_for('logs') }}">Logs</a>
+          {% else %}
+          <a class="nav-link" href="{{ url_for('logs') }}">Logs</a>
+          {% endif %}
+        </li>
+      </ul>
+{%- endmacro -%}
+
+{%- macro nav_pull_right(updates_available, sd_card, battery_level, rpi) %}
+    <div class="nav pull-right">
+        <!-- Update available -->
+        {% if updates_available %}
+        <button class="btn btn-info me-2 d-inline d-sm-none" style="pointer-events: none" id="updateNavBar"><i class="bi bi-cloud-download"></i></button>
+        {% endif %}
+        <!-- SD card usage -->
+        {% if sd_card.used_percent_num < 80 %}
+        <button class="btn btn-success me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card" id="sdCardI"></i>
+        {% elif sd_card.used_percent_num < 90 %}
+        <button class="btn btn-warning me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card" id="sdCardI"></i>
+        {% else %}
+        <button class="btn btn-danger me-2" style="pointer-events: none" id="sdCardNavBar"><i class="bi bi-sd-card-fill" id="sdCardI"></i>
+        {% endif %}
+             <span class="d-none d-sm-inline" id="sdCardUsageSpan">{{ '%.0f' % sd_card.used_percent_num }} %</span>
+        </button>
+        <!-- Battery level -->
+        {% if battery_level > 0 %}
+            {% if battery_level > 11.5 %}
+            <button class="btn btn-success me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-full" id="batteryLevelI"></i>
+            {% elif battery_level > 10.8 %}
+            <button class="btn btn-warning me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-half" id="batteryLevelI"></i>
+            {% else %}
+            <button class="btn btn-danger me-2" style="pointer-events: none" id="batteryLevelNavBar"><i class="bi bi-battery-low" id="batteryLevelI"></i>
+            {% endif %}
+                 <span class="d-none d-sm-inline" id="batteryLevelSpan">{{ '%.1f' % battery_level }} V</span>
+            </button>
+        {% endif %}
+        <!-- CPU Temperature -->
+        {% if rpi.cpu_temperature < 65 %}
+        <button class="btn btn-success me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
+        {% elif rpi.cpu_temperature < 75 %}
+        <button class="btn btn-warning me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
+        {% else %}
+        <button class="btn btn-danger me-2" style="pointer-events: none" id="cpuTempNavBar"><i class="bi bi-cpu"></i>
+        {% endif %}
+            <span class="d-none d-sm-inline" id="cpuTemperatureSpan">{{ '%.0f' % rpi.cpu_temperature }} &deg;C</span>
+        </button>
+        <!-- Reboot -->
+        <button class="btn btn-light me-2" id="updateNavBar" onclick="reboot()"><i class="bi bi-bootstrap-reboot"></i></button>
+        <!-- Shutdown -->
+        <button class="btn btn-danger" id="updateNavBar" onclick="shutdown()"><i class="bi bi-power"></i></button>
+    </div>
+{%- endmacro -%}
+
 {% macro display_configuration_global_settings(configuration, tzone) %}
     <p class="config_level_1">Site</p>
     <p class="config_level_2" id="siteIdConfigurationText">ID: {{ configuration['site']['id'] }}</p>
@@ -202,11 +313,11 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="askTitle"></h5>
+                <h5 class="modal-title" id="askModalTitle"></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p id="askParagraph"></p>
+                <p id="askModalParagraph"></p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" data-bs-dismiss="modal">No</button>
@@ -223,14 +334,34 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="waitTitle"></h5>
+                <h5 class="modal-title" id="waitModalTitle"></h5>
             </div>
             <div class="modal-body d-flex">
 
                 <div class="spinner-border text-primary me-3" role="status">
                   <span class="visually-hidden"></span>
                 </div>
-                <p id="waitParagraph"></p>
+                <p id="waitModalParagraph"></p>
+            </div>
+        </div>
+    </div>
+</div>
+{%- endmacro -%}
+
+{%- macro info_modal() -%}
+<!-- Info modal dialog -->
+<div class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" id="infoModalDialog">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="infoModalTitle"></h5>
+            </div>
+            <div class="modal-body d-flex">
+
+                <div class="spinner-border text-primary me-3" role="status">
+                  <span class="visually-hidden"></span>
+                </div>
+                <p id="infoModalParagraph"></p>
             </div>
         </div>
     </div>

@@ -192,7 +192,7 @@ except BaseException as e:
 
     AI_AVAILABLE = False
     app.logger.info('unable to manage AI => AI not available')
-    logger.error(str(e))
+    log_error(e)
 
 sd_card = Storage('sd')
 
@@ -275,6 +275,8 @@ log_data = None
 
 wifi = Wifi(rpi.uuid)
 wifi.list()
+
+last_error = None
 
 pause_stream = False
 
@@ -542,12 +544,12 @@ def upload_configuration_file():
 
                 except BaseException as e:
 
-                    app.logger.error(str(e))
+                    log_error(e)
                     return f'Error sending file to the entomoscope: {str(e)}', 500
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return f'Error uploading configuration file: {str(e)}', 500
 
@@ -703,7 +705,7 @@ def storage():
 
     except BaseException as e :
 
-        app.logger.error(str(e))
+        log_error(e)
 
     return make_response(render_template('storage.html', updates_available=updates_available, stats=stats, external_disk=external_disk, zip=zip, rpi=rpi, battery_level=battery_level, sd_card=sd_card))
 
@@ -850,7 +852,7 @@ def manage_data(action, value):
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
     return redirect('/data')
 
@@ -877,7 +879,7 @@ def manage_storage(action, value):
                     rmtree(os.path.join(DATA_FOLDER, value))
 
             except BaseException as e:
-                app.logger.error(str(e))
+                log_error(e)
 
             sleep(1)
 
@@ -906,7 +908,7 @@ def manage_storage(action, value):
                 data = [external_disk.used, external_disk.used_num, external_disk.used_percent, external_disk.used_percent_num]
 
             except BaseException as e:
-                app.logger.error(str(e))
+                log_error(e)
 
             sleep(1)
 
@@ -916,7 +918,7 @@ def manage_storage(action, value):
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message='Error', data=str(e))
 
@@ -1088,7 +1090,7 @@ def images_capture_settings():
             camera_supported = False
             camera_resolution = None
             autofocus_available = False
-
+            
         ai_models = sorted(os.listdir(AI_MODEL_PATH))
 
         ai_models = [x for x in ai_models if not x.endswith('.onnx')]
@@ -1108,7 +1110,9 @@ def images_capture_settings():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
+        
+        print(traceback.format_exc())
 
         return redirect('/images_capture_settings')
 
@@ -1196,7 +1200,7 @@ def sounds_capture_settings():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return redirect('/sounds_capture_settings')
 
@@ -1322,7 +1326,7 @@ def manage_logs(action, value):
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
     return redirect('/logs')
 
@@ -1463,7 +1467,7 @@ def sounds_capture_test():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message='', data=str(e))
 
@@ -1510,7 +1514,7 @@ def generate_frames():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
     time_between_frame = 1 / CAMERA_PREVIEW_FPS
 
@@ -1745,13 +1749,13 @@ def generate_frames():
 
                     except RuntimeError as e:
 
-                        app.logger.error(str(e))
+                        log_error(e)
 
                         # break
 
                 except BaseException as e:
 
-                    app.logger.error(str(e))
+                    log_error(e)
 
                     print(traceback.format_exc())
 
@@ -1761,7 +1765,7 @@ def generate_frames():
 @app.route('/manage_images_capture', methods=['POST'])
 def manage_images_capture():
 
-    global images_capture_state, sounds_capture_state
+    global camera, microphone, images_capture_state, sounds_capture_state
 
     try:
 
@@ -1786,12 +1790,23 @@ def manage_images_capture():
             images_capture_state = 'stopped'
             sounds_capture_state = 'stopped'
             app.logger.info('images (and sounds) capture stopped')
-
+            
+            if camera:
+                camera.stop()
+                camera.camera.close()
+                camera = None
+                app.logger.info('camera stopped')
+   
+            if microphone:
+                microphone.stop()
+                microphone = None
+                app.logger.info('microphone stopped')
+                
         return jsonify(success=True, message='Images capture managed successfully')
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -1799,7 +1814,7 @@ def manage_images_capture():
 @app.route('/manage_sounds_capture', methods=['POST'])
 def manage_sounds_capture():
 
-    global images_capture_state, sounds_capture_state
+    global camera, microphone, images_capture_state, sounds_capture_state
 
     try:
 
@@ -1825,11 +1840,22 @@ def manage_sounds_capture():
             sounds_capture_state = 'stopped'
             app.logger.info('sounds (and images) capture stopped')
 
+            if camera:
+                camera.stop()
+                camera.camera.close()
+                camera = None
+                app.logger.info('camera stopped')
+                
+            if microphone:
+                microphone.stop()
+                microphone = None
+                app.logger.info('microphone stopped')
+            
         return jsonify(success=True, message='Sounds capture managed successfully')
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -1899,7 +1925,7 @@ def save_configuration():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -1992,7 +2018,7 @@ def update_settings():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -2012,7 +2038,7 @@ def update_camera_live_settings():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -2082,7 +2108,7 @@ def apply_camera_settings(settingId, settingValue):
             # try:
                 # camera.camera.stop_encoder(camera.encoder)
             # except BaseException as e:
-                # app.logger.error(str(e))
+                # log_error(e)
             # camera.camera.stop()
             # camera.stop()
             # camera.camera.configure(camera.camera_config)
@@ -2115,7 +2141,7 @@ def apply_camera_settings(settingId, settingValue):
             # try:
                 # camera.camera.start_encoder(camera.encoder)
             # except BaseException as e:
-                # app.logger.error(str(e))
+                # log_error(e)
 
             # camera.camera.start()
             #camera.start()
@@ -2129,7 +2155,7 @@ def apply_camera_settings(settingId, settingValue):
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         success = False
 
@@ -2165,7 +2191,7 @@ def set_camera_model():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -2186,7 +2212,7 @@ def set_focus_measure_enable():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -2209,7 +2235,7 @@ def set_focus_measure_mode():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -2230,7 +2256,7 @@ def set_capture_mode():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -2257,7 +2283,7 @@ def set_leds_delay():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -2288,7 +2314,7 @@ def set_leds_always_on():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -2317,7 +2343,7 @@ def update_leds_live_settings():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -2363,7 +2389,7 @@ def move_image():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -2390,7 +2416,7 @@ def set_server_settings():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -2426,7 +2452,7 @@ def set_detection_scale():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -2450,7 +2476,7 @@ def set_detection_enable():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -2479,7 +2505,7 @@ def set_ai_model_file():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -2503,7 +2529,7 @@ def set_detection_min_confidence():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -2521,7 +2547,7 @@ def capture_image():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -2548,7 +2574,7 @@ def set_jpeg_quality():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -2570,7 +2596,7 @@ def set_periodicity():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -2600,7 +2626,7 @@ def save_microphone_settings():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -2624,7 +2650,7 @@ def get_gnss_data():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -2665,7 +2691,7 @@ def gnss_sync_time():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -2703,7 +2729,7 @@ def save_gnss_position():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -2738,7 +2764,7 @@ def set_date():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
         return jsonify(success=False, message=str(e))
 
@@ -3147,7 +3173,7 @@ def get_data_folders_stats():
 
     except BaseException as e:
 
-        app.logger.error(str(e))
+        log_error(e)
 
     # print(stats)
 
@@ -3174,6 +3200,11 @@ def get_captures_state():
             sounds_capture_state = 'running'
         else:
             sounds_capture_state = 'paused'
+            
+def log_error(e):
+    
+    app.logger.error(traceback.format_exc())
+    
 
 # @socketio.on('connect')
 # def handle_connect():

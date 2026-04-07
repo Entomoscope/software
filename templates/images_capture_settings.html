@@ -422,7 +422,7 @@
                         </div>
                         <!-- Camera - Autofocus - Lens Position -->
                         <div class="d-flex w-100 align-items-center justify-content-between">
-                        <strong class="mb-1" id="lensPostion">Lens Position (&sime; {{ 100 / (configuration.camera['autofocus']['lens_position'] | int ) | round(4) }} cm)</strong>
+                        <strong class="mb-1" id="lensPostion">Lens Position (&sime; {{ (100 / configuration.camera['autofocus']['lens_position']) | round(1) }} cm)</strong>
                         </div>
                         <div class="form-check">
                             {% if configuration['camera']['autofocus']['mode'] == 'Manual' %}
@@ -1408,7 +1408,7 @@
                 manualFocusRangeNumber.disabled = false
                 manualFocusMinus.disabled = false
                 manualFocusPlus.disabled = false
-                lensPostion.innerText = 'Lens Position (\u2243 ' + (100 / settingValue).toFixed(2) + ' cm )'
+                lensPostion.innerText = 'Lens Position (\u2243 ' + (100 / settingValue).toFixed(1) + ' cm )'
             }
         })
         .catch(error => {

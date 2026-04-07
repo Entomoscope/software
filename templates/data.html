@@ -28,7 +28,8 @@
 <!-- Page content -->
 <div class="container-fluid">
   <div class="row align-items-start mt-3">
-    <!-- Logs -->
+    {% if files %}
+    <!-- Data -->
     <div class="col-3">
         <!-- File - List -->
         <ul>
@@ -80,6 +81,9 @@
             </audio>
         {% endif %}
     </div>
+    {% else %}
+    <p>Data folder is empty</p>
+    {% endif %}
   </div>
 </div>
 <!-- Modals dialog -->
@@ -115,10 +119,10 @@
         {{ sd_card_full_modal_javascript(sd_card) }}
         {{ battery_discharged_modal_javascript(battery_level) }}
 
-        var socket = io();
-        socket.on('connect', function() {
-            socket.send('User has connected!');
-        });
+        //var socket = io();
+        //socket.on('connect', function() {
+            //socket.send('User has connected!');
+        //});
 
     })
 

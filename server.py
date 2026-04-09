@@ -1754,6 +1754,10 @@ def generate_frames():
                             yield (b'--frame\r\n'
                                 b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
+                    except GeneratorExit as e:
+
+                        print('GeneratorExit')
+
                     except RuntimeError as e:
 
                         log_error(e)

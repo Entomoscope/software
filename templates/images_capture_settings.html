@@ -333,6 +333,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div>
+                            <p class="imagePositionP"></p>
+                        </div>
                         <hr/>
                         <!-- Camera - Image Position - Canvas -->
                         <div class="form-group">
@@ -1851,13 +1854,17 @@
             updateSaveButton('crop_limits', true)
             return
         }
-        if (x > (widthMax-width)/2 || x < 0) {
-            console.log(['X', x, (widthMax-width)/2, 0])
+        //if (x > (widthMax-width)/2 || x < 0) {
+        if ((x + width) > widthMax || x < 0) {
+            console.log(['X', x, x + width, widthMax])
+            //console.log(['X', x, (widthMax-width)/2, 0])
             updateSaveButton('crop_limits', true)
             return
         }
-        if (y > (heightMax-height)/2 || y < 0) {
-            console.log(['Y', y, (heightMax-height)/2, 0])
+        //if (y > (heightMax-height)/2 || y < 0) {
+        if ((y + height) > heightMax || y < 0) {
+            console.log(['Y', y, y + height, heightMax])
+            //console.log(['Y', y, (heightMax-height)/2, 0])
             updateSaveButton('crop_limits', true)
             return
         }

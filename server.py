@@ -413,7 +413,7 @@ def index():
         e = timebar_length * (hours*60 + minutes) // 1440
 
         # Bug affichage si e - s < 5 minutes
-        if e - s < 5:
+        if (e - s) > 0 and (e - s) < 5:
             e = s + 5
             if e > timebar_length:
                 e = e - timebar_length

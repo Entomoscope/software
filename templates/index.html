@@ -90,7 +90,12 @@
         <div class="col-6 text-start"><span class="badge bg-gradient text-bg-primary">LEDs delay off: {{configuration['leds']['delay_off']}} seconds</span></div>
         {% endif %}
     </div>
+    {% if images_capture %}
     <h2 class="text-center mt-3">Scheduler</h2>
+    {% else %}
+    <h2 class="text-center mt-3">Scheduler disabled</h2>
+    {% endif %}
+    {% if images_capture %}
     <div class="row">
         <div class="col-3 text-end d-sm-none d-inline"><span class="badge bg-gradient text-bg-info rounded-0" style="width:100%;font-size: 0.65em">Images</span></div>
         <div class="col-3 text-end d-sm-none d-inline"><span class="badge bg-gradient text-bg-success rounded-0" style="width:100%;font-size: 0.65em">Images + AI</span></div>
@@ -194,6 +199,7 @@
         <div class="col-3 text-center"><span class="badge bg-gradient text-bg-warning rounded-0" style="width:100%;font-size: 0.65em">Sounds</span></div>
         <div class="col-3 text-start"><span class="badge bg-gradient text-bg-light rounded-0" style="width:100%;font-size: 0.65em">Sleep</span></div>
     </div>
+    {% endif %}
 </div>
 <!-- Modals dialog -->
 {{ wait_modal() }}

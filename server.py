@@ -515,6 +515,8 @@ def index():
         images_capture = []
         sounds_capture = []
 
+        timebar_length = None
+
     return make_response(render_template('index.html', zip=zip, configuration=configuration, updates_available=updates_available, days=days, timebar_length=timebar_length, images_capture=images_capture, sounds_capture=sounds_capture, rpi=rpi, tzone=tzone, wifi=wifi, sd_card=sd_card, external_disk=external_disk, battery_level=battery_level, gnss=gnss, dateTime=dateTime, images_capture_state=images_capture_state, sounds_capture_state=sounds_capture_state))
 
 
@@ -624,23 +626,18 @@ def data():
 
     sd_card.get_data()
 
-    if os.path.exists(data_current_directory):
-
-        files = sorted(os.listdir(data_current_directory), reverse=True)
-        isdirs = [os.path.isdir(os.path.join(data_current_directory, x)) for x in files]
-        isconfs = [x.startswith('configuration') for x in files]
-        isimages = [x.endswith('jpg') for x in files]
-        istopdir = data_current_directory == DATA_FOLDER
-
-    else:
-
-        files = None
-        isdirs = None
-        isconfs = None
-        isimages = None
-        istopdir = None
+    if not os.path.exists(data_current_directory):
 
         app.logger.error(f'no directory {data_current_directory}')
+        app.logger.info(f'display {DATA_FOLDER} directory')
+
+        data_current_directory = DATA_FOLDER
+
+    files = sorted(os.listdir(data_current_directory), reverse=True)
+    isdirs = [os.path.isdir(os.path.join(data_current_directory, x)) for x in files]
+    isconfs = [x.startswith('configuration') for x in files]
+    isimages = [x.endswith('jpg') for x in files]
+    istopdir = data_current_directory == DATA_FOLDER
 
     return make_response(render_template('data.html', updates_available=updates_available, files=files, isdirs=isdirs, isconfs=isconfs, isimages=isimages, zip=zip, istopdir=istopdir, show_preview_file=show_preview_file, show_preview_image=show_preview_image, show_preview_sound=show_preview_sound, data_current_file=data_current_file, file_data=file_data, file_caption=file_caption, rpi=rpi, battery_level=battery_level, sd_card=sd_card))
 

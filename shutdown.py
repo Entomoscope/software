@@ -2,7 +2,7 @@ import os
 import pigpio
 from time import sleep
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from peripherals.wittypi import WittyPi
 # from peripherals.externaldisk import ExternalDisk
@@ -33,114 +33,120 @@ if __name__ == '__main__':
 
     logger.info('shutting down the entomoscope')
 
-    pi = pigpio.pi()
+    try:
 
-    pi.write(SHUTDOWN_PIN, 1)
+        pi = pigpio.pi()
 
-    logger.info(f'shutdown signal send on pin {SHUTDOWN_PIN}')
+        pi.write(SHUTDOWN_PIN, 1)
 
-    sleep(DELAY_BEFORE_SHUTDOWN-2)
+        logger.info(f'shutdown signal send on pin {SHUTDOWN_PIN}')
 
-    # external_disk = ExternalDisk()
+        sleep(DELAY_BEFORE_SHUTDOWN-2)
 
-    # if not external_disk.available:
-        # logger.info('external disk not found')
-    # else:
-        # logger.info('external disk found')
-        # external_disk.unmount()
+        # external_disk = ExternalDisk()
 
-    if os.path.exists(TMP_FOLDER):
-        os.rmdir(TMP_FOLDER)
-        logger.info('remove temporary folder ' + TMP_FOLDER)
+        # if not external_disk.available:
+            # logger.info('external disk not found')
+        # else:
+            # logger.info('external disk found')
+            # external_disk.unmount()
 
-    tmp_wav_file = os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'static', 'tmp.wav')
+        if os.path.exists(TMP_FOLDER):
+            os.rmdir(TMP_FOLDER)
+            logger.info('remove temporary folder ' + TMP_FOLDER)
 
-    if os.path.exists(tmp_wav_file):
-        os.remove(tmp_wav_file)
-        logger.info('remove temporary wav file ' + tmp_wav_file)
+        tmp_wav_file = os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'static', 'tmp.wav')
 
-    witty_pi = WittyPi()
+        if os.path.exists(tmp_wav_file):
+            os.remove(tmp_wav_file)
+            logger.info('remove temporary wav file ' + tmp_wav_file)
 
-    if witty_pi.available:
+        witty_pi = WittyPi()
 
-        if witty_pi.get_latest_action_reason_code() == witty_pi.ALARM_SHUTDOWN:
-            logger.info('shutdown due to RTC alarm')
-        elif witty_pi.get_latest_action_reason_code() == witty_pi.BUTTON_CLICKED:
-            logger.info('shutdown due to button pressed by user')
-        else:
-            logger.info(f'shutdown due to {witty_pi.get_latest_action_reason()}')
-
-        configuration = Configuration2()
-
-        logger.info('configuration read')
-
-        if configuration.schedule['enable']:
+        if witty_pi.available:
 
             if witty_pi.get_latest_action_reason_code() == witty_pi.ALARM_SHUTDOWN:
+                logger.info('shutdown due to RTC alarm')
+            elif witty_pi.get_latest_action_reason_code() == witty_pi.BUTTON_CLICKED:
+                logger.info('shutdown due to button pressed by user')
+            else:
+                logger.info(f'shutdown due to {witty_pi.get_latest_action_reason()}')
 
-                if configuration.mode['mode'].lower() != 'lepinoc':
+            configuration = Configuration2()
 
-                    shutdown_date = [int(x) for x in configuration.schedule['next_shutdown'].replace('-', ' ').replace(':', ' ').split()]
-                    shutdown_date = datetime(shutdown_date[0], shutdown_date[1], shutdown_date[2], shutdown_date[3], shutdown_date[4], 0, 0)
+            logger.info('configuration read')
 
-                    if configuration.schedule['periodicity'] == 'every_day':
-                        next_shutdown = shutdown_date + timedelta(days=1)
-                        logger.warning('every day periodicty used')
-                    elif configuration.schedule['periodicity'] == 'every_other_day':
-                        next_shutdown = shutdown_date + timedelta(days=2)
-                        logger.warning('every other day periodicty used')
-                    elif configuration.schedule['periodicity'] == 'every_week':
-                        next_shutdown = shutdown_date + timedelta(weeks=1)
-                        logger.warning('every week periodicty used')
-                    else:
-                        next_shutdown = shutdown_date + timedelta(days=1)
-                        logger.warning('no periodicty found: every day used')
+            if configuration.schedule['enable']:
 
-                    configuration.schedule['next_shutdown'] = next_shutdown.strftime('%Y-%m-%d %H:%M')
+                if witty_pi.get_latest_action_reason_code() == witty_pi.ALARM_SHUTDOWN:
 
-                    configuration.save()
+                    if configuration.mode['mode'].lower() != 'lepinoc':
 
-                    logger.info(f"shutdown alarm shifted to {configuration.schedule['next_shutdown']} {datetime.now().astimezone().strftime('%Z')}")
+                        shutdown_date = [int(x) for x in configuration.schedule['next_shutdown'].replace('-', ' ').replace(':', ' ').split()]
+                        shutdown_date = datetime(shutdown_date[0], shutdown_date[1], shutdown_date[2], shutdown_date[3], shutdown_date[4], 0, 0)
 
-                    witty_pi.set_shutdown_alarm(next_shutdown.day, next_shutdown.hour, next_shutdown.minute)
+                        if configuration.schedule['periodicity'] == 'every_day':
+                            next_shutdown = shutdown_date + timedelta(days=1)
+                            logger.info('every day periodicty used')
+                        elif configuration.schedule['periodicity'] == 'every_other_day':
+                            next_shutdown = shutdown_date + timedelta(days=2)
+                            logger.info('every other day periodicty used')
+                        elif configuration.schedule['periodicity'] == 'every_week':
+                            next_shutdown = shutdown_date + timedelta(weeks=1)
+                            logger.info('every week periodicty used')
+                        else:
+                            next_shutdown = shutdown_date + timedelta(days=1)
+                            logger.info('no periodicty found: every day used')
 
-                    # alarm = witty_pi.get_shutdown_alarm()
+                        configuration.schedule['next_shutdown'] = next_shutdown.strftime('%Y-%m-%d %H:%M')
 
-                    # if alarm[3] == -1 or alarm[2] == -1 and alarm[1] == -1:
+                        configuration.save()
 
-                        # logger.info(f'shutdown alarm not shifted because wrong values ({alarm[3]} {alarm[2]}:{alarm[1]})')
+                        logger.info(f"shutdown alarm shifted to {configuration.schedule['next_shutdown']} {datetime.now().astimezone().strftime('%Z')}")
 
-                    # else:
+                        witty_pi.set_shutdown_alarm(next_shutdown.day, next_shutdown.hour, next_shutdown.minute)
 
-                        # alarm[3] = int(TOMORROW[6:])
+                        # alarm = witty_pi.get_shutdown_alarm()
 
-                        # witty_pi.set_shutdown_alarm(alarm[3], alarm[2], alarm[1])
+                        # if alarm[3] == -1 or alarm[2] == -1 and alarm[1] == -1:
 
-                        # configuration.schedule['next_shutdown'] = '-'.join([TOMORROW[:4], TOMORROW[4:6], TOMORROW[6:]]) + f' {alarm[2]:02d}:{alarm[1]:02d}'
-                        # configuration.save()
+                            # logger.info(f'shutdown alarm not shifted because wrong values ({alarm[3]} {alarm[2]}:{alarm[1]})')
 
-                        # logger.info(f"shutdown alarm shifted to {configuration.schedule['next_shutdown']} {datetime.now().astimezone().strftime('%Z')}")
+                        # else:
+
+                            # alarm[3] = int(TOMORROW[6:])
+
+                            # witty_pi.set_shutdown_alarm(alarm[3], alarm[2], alarm[1])
+
+                            # configuration.schedule['next_shutdown'] = '-'.join([TOMORROW[:4], TOMORROW[4:6], TOMORROW[6:]]) + f' {alarm[2]:02d}:{alarm[1]:02d}'
+                            # configuration.save()
+
+                            # logger.info(f"shutdown alarm shifted to {configuration.schedule['next_shutdown']} {datetime.now().astimezone().strftime('%Z')}")
+
+                else:
+
+                    logger.info('shutdown alarm not shifted')
 
             else:
 
-                logger.info('shutdown alarm not shifted')
+                logger.info('scheduler is disabled')
 
         else:
 
-            logger.info('scheduler is disabled')
+            logger.warning('Witty Pi not detected')
+            logger.warning('Unable to manage scheduler')
 
-    else:
+        logs_files = LogsFiles()
+        logs_files.backup()
+        logger.info('logs files backuped')
 
-        logger.warning('Witty Pi not detected')
-        logger.warning('Unable to manage scheduler')
+        # logger.info('backup and clear today logs files')
+        # logs_files.clear()
 
-    logs_files = LogsFiles()
-    logs_files.backup()
-    logger.info('logs files backuped')
+        logger.info('system shutdowned')
 
-    # logger.info('backup and clear today logs files')
-    # logs_files.clear()
+        sleep(0.5)
 
-    logger.info('system shutdowned')
+    except BaseException as e:
 
-    sleep(0.5)
+        logger.error(str(e))

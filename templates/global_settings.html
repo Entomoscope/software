@@ -157,12 +157,15 @@
                             </div>
                             <div class="input-group mb-1">
                                 {% if configuration['mode']['mode'] == 'lepinoc' %}
-                                <input type="number" id="scheduleOffDurationNumber" class="form-control" min="0" value="{{ configuration['schedule']['off_duration'] }}" onchange="updateSaveButton('schedule', false)" disabled />
+                                <input type="number" id="scheduleOffDurationNumber" class="form-control" min="0" value="{{ configuration['schedule']['off_duration'] }}" onchange="checkOffDuration()" disabled />
                                 {% else %}
-                                <input type="number" id="scheduleOffDurationNumber" class="form-control" min="0" value="{{ configuration['schedule']['off_duration'] }}" onchange="updateSaveButton('schedule', false)"/>
+                                <input type="number" id="scheduleOffDurationNumber" class="form-control" min="0" value="{{ configuration['schedule']['off_duration'] }}" onchange="checkOffDuration()"/>
                                 {% endif %}
                                 <div class="input-group-text">seconds</div>
                             </div>
+                        </div>
+                        <div class="text-center">
+                            <p class="d-none" id="scheduleOffDurationP"></p>
                         </div>
                         <!-- Scheduler - Periodicity -->
                         <div class="form-group mb-1">
@@ -603,6 +606,7 @@
     const scheduleEnable = document.getElementById('scheduleEnable');
     const scheduleOnDurationNumber = document.getElementById('scheduleOnDurationNumber');
     const scheduleOffDurationNumber = document.getElementById('scheduleOffDurationNumber');
+    const scheduleOffDurationP = document.getElementById('scheduleOffDurationP');
     const scheduleStartupDateNumber = document.getElementById('scheduleStartupDateNumber');
     const scheduleStartupTimeNumber = document.getElementById('scheduleStartupTimeNumber');
     const scheduleShutdownDateNumber = document.getElementById('scheduleShutdownDateNumber');
@@ -778,6 +782,26 @@
         }
 
 
+
+    }
+
+    function checkOffDuration() {
+
+        var off_duration = scheduleOffDurationNumber.value
+
+        console.log(off_duration)
+
+        if (off_duration < {{ configuration['leds']['delay_on'] }}) {
+            scheduleOffDurationP.className = "text-center"
+            scheduleOffDurationP.innerText = "Off duration must be greater than delay after LEDs On (" + {{ configuration['leds']['delay_on'] }} + "s)"
+            scheduleOffDurationNumber.className = "form-control bg-danger"
+            updateSaveButton('schedule', true)
+        }
+        else {
+            scheduleOffDurationP.className = "d-none"
+            scheduleOffDurationNumber.className = "form-control"
+            updateSaveButton('schedule', false)
+        }
 
     }
 

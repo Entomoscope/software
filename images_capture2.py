@@ -149,7 +149,9 @@ def main():
         logger.info(f"LEDs UV intensity set to {configuration.leds['intensity_rear_deported_uv']} %")
 
     leds_delay_on = configuration.leds['delay_on']
+    leds_delay_on_delta = timedelta(seconds=leds_delay_on)
     leds_delay_off = configuration.leds['delay_off']
+    leds_delay_off_delta = timedelta(seconds=leds_delay_off)
     leds_always_on = configuration.leds['always_on']
 
     if leds_always_on:
@@ -340,6 +342,9 @@ def main():
     off = not(on)
     force_on = True
 
+    first_on = True
+    first_off = True
+
     now = datetime.now()
 
     next_on = datetime(now.year, now.month, now.day, configuration_startup_hour, configuration_startup_minute, 0)
@@ -358,7 +363,7 @@ def main():
         # Si capture On et période capture On terminée => capture Off
         if on and now > next_off:
 
-            next_on = next_off + off_duration_delta
+            next_on = next_off + off_duration_delta - leds_delay_on_delta
 
             on = False
             off = True
@@ -386,7 +391,15 @@ def main():
         # Si capture Off et période capture Off terminée, ou forçage capture On => capture On et capture d'image immédiate
         if (off and now > next_on) or force_on:
 
-            next_off = next_on + on_duration_delta
+            if first_off:
+
+                next_off = next_on + on_duration_delta
+
+                first_off = False
+
+            else:
+
+                next_off = next_on + on_duration_delta + leds_delay_on_delta
 
             on = True
             off = False
@@ -594,7 +607,7 @@ def main():
 
                             logger.info(f'max number of successive no detection reached ({no_detection_successive_counter_max})')
                             logger.info('capture every second disabled')
-                            logger.info(f'next capture {next_capture}')
+                            logger.info(f"next capture {(next_capture+leds_delay_on_delta).strftime('%H:%M:%S')}")
 
                             leds_always_on = configuration.leds['always_on']
 
@@ -634,9 +647,9 @@ def main():
                 camera.frame_to_jpeg(stream='main')
                 jpeg_file_path, json_file_path = camera.save_capture(file_path + '_timelapse_no_ai.jpg', save_metadata=True, extra_metadata=extra_metadata)
 
-                logger.info('timelaps data saved (jpeg + json)')
+                logger.info('timelapse data saved (jpeg + json)')
 
-            logger.info(f"next capture {next_capture.strftime('%H:%M:%S')}")
+            logger.info(f"next capture {(next_capture+leds_delay_on_delta).strftime('%H:%M:%S')}")
 
         # Si la broche IMAGES_CAPTURE_ACTIVITY_PIN passe à l'état haut => capture d'image en pause
         if isSignalToStandByReceived():
@@ -702,6 +715,9 @@ def main():
                         logger.info(f"LEDs UV intensity set to {configuration.leds['intensity_rear_deported_uv']} %")
 
                     leds_delay_on = configuration.leds['delay_on']
+                    leds_delay_on_delta = timedelta(seconds=leds_delay_on)
+                    leds_delay_off = configuration.leds['delay_off']
+                    leds_delay_off_delta = timedelta(seconds=leds_delay_off)
                     leds_always_on = configuration.leds['always_on']
 
                     if leds_always_on:

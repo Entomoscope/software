@@ -57,6 +57,12 @@
         <div class="col-6 text-start"><span class="badge bg-gradient text-bg-danger">AI disabled</span></div>
         {% endif %}
     </div>
+<!--
+    <div class="row">
+        <div class="col-6 text-end"><span class="badge bg-gradient text-bg-primary">Startup: {{configuration['schedule']['next_startup']}}</span></div>
+        <div class="col-6 text-start"><span class="badge bg-gradient text-bg-primary">Shutdown: {{configuration['schedule']['next_shutdown']}}</span></div>
+    </div>
+-->
     <div class="row">
         {% if configuration['images_capture']['enable'] %}
         <div class="col-6 text-end"><span class="badge bg-gradient text-bg-primary">Images step: {{configuration['images_capture']['time_step']}} seconds</span></div>
@@ -108,55 +114,55 @@
                     <div class="progress custom-progress rounded-0">
                         {% if images_color[0] != 0 or images_color[1] != 0 or images_color[2] != 0 %}
                             {% if images_color[0] == 0 %}
-                                <div class="progress-bar bg-gradient bg-light" role="progressbar" style="width: {{ images_schedule[0] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress-bar bg-gradient bg-light" role="progressbar" style="width: {{ images_schedule[0] }}%" aria-valuenow="{{ images_schedule[0] }}" aria-valuemin="0" aria-valuemax="{{ timebar_length }}"></div>
                             {% else %}
                                 {% if configuration['ai_detection']['enable'] %}
-                                <div class="progress-bar bg-gradient bg-success" role="progressbar" style="width: {{ images_schedule[0] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress-bar bg-gradient bg-success" role="progressbar" style="width: {{ images_schedule[0] }}%" aria-valuenow="{{ images_schedule[0] }}" aria-valuemin="0" aria-valuemax="{{ timebar_length }}"></div>
                                 {% else %}
-                                <div class="progress-bar bg-gradient bg-info" role="progressbar" style="width: {{ images_schedule[0] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress-bar bg-gradient bg-info" role="progressbar" style="width: {{ images_schedule[0] }}%" aria-valuenow="{{ images_schedule[0] }}" aria-valuemin="0" aria-valuemax="{{ timebar_length }}"></div>
                                 {% endif %}
                             {% endif %}
                             {% if images_color[1] == 0 %}
-                                <div class="progress-bar bg-gradient bg-light" role="progressbar" style="width: {{ images_schedule[1] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress-bar bg-gradient bg-light" role="progressbar" style="width: {{ images_schedule[1] }}%" aria-valuenow="{{ images_schedule[0] }}" aria-valuemin="0" aria-valuemax="{{ timebar_length }}"></div>
                             {% else %}
                                 {% if configuration['ai_detection']['enable'] %}
-                                    <div class="progress-bar bg-gradient bg-success" role="progressbar" style="width: {{ images_schedule[1] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                    <div class="progress-bar bg-gradient bg-success" role="progressbar" style="width: {{ images_schedule[1] }}%" aria-valuenow="{{ images_schedule[0] }}" aria-valuemin="0" aria-valuemax="{{ timebar_length }}"></div>
                                 {% else %}
-                                    <div class="progress-bar bg-gradient bg-info" role="progressbar" style="width: {{ images_schedule[1] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                    <div class="progress-bar bg-gradient bg-info" role="progressbar" style="width: {{ images_schedule[1] }}%" aria-valuenow="{{ images_schedule[0] }}" aria-valuemin="0" aria-valuemax="{{ timebar_length }}"></div>
                                 {% endif %}
                             {% endif %}
                             {% if images_color[2] == 0 %}
-                                <div class="progress-bar bg-gradient bg-light" role="progressbar" style="width: {{ images_schedule[2] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress-bar bg-gradient bg-light" role="progressbar" style="width: {{ images_schedule[2] }}%" aria-valuenow="{{ images_schedule[0] }}" aria-valuemin="0" aria-valuemax="{{ timebar_length }}"></div>
                             {% else %}
                                 {% if configuration['ai_detection']['enable'] %}
-                                    <div class="progress-bar bg-gradient bg-success" role="progressbar" style="width: {{ images_schedule[2] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                    <div class="progress-bar bg-gradient bg-success" role="progressbar" style="width: {{ images_schedule[2] }}%" aria-valuenow="{{ images_schedule[0] }}" aria-valuemin="0" aria-valuemax="{{ timebar_length }}"></div>
                                 {% else %}
-                                    <div class="progress-bar bg-gradient bg-info" role="progressbar" style="width: {{ images_schedule[2] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                    <div class="progress-bar bg-gradient bg-info" role="progressbar" style="width: {{ images_schedule[2] }}%" aria-valuenow="{{ images_schedule[0] }}" aria-valuemin="0" aria-valuemax="{{ timebar_length }}"></div>
                                 {% endif %}
                             {% endif %}
                         {% else %}
-                            <div class="progress-bar bg-gradient bg-light" role="progressbar" style="width: 100%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                            <div class="progress-bar bg-gradient bg-light" role="progressbar" style="width: 100%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="{{ timebar_length }}"></div>
                         {% endif %}
                     </div>
                     <div class="progress custom-progress rounded-0 mt-1">
                         {% if sounds_color[0] != 0 or sounds_color[1] != 0 or sounds_color[2] != 0 %}
                             {% if sounds_color[0] == 0 %}
-                                <div class="progress-bar bg-gradient bg-light " role="progressbar" style="width: {{ sounds_schedule[0] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress-bar bg-gradient bg-light " role="progressbar" style="width: {{ sounds_schedule[0] }}%" aria-valuenow="{{ sounds_schedule[0] }}" aria-valuemin="0" aria-valuemax="{{ timebar_length }}"></div>
                             {% else %}
-                                <div class="progress-bar bg-gradient bg-warning" role="progressbar" style="width: {{ sounds_schedule[0] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress-bar bg-gradient bg-warning" role="progressbar" style="width: {{ sounds_schedule[0] }}%" aria-valuenow="{{ sounds_schedule[0] }}" aria-valuemin="0" aria-valuemax="{{ timebar_length }}"></div>
                             {% endif %}
                             {% if sounds_color[1] == 0 %}
-                                <div class="progress-bar bg-gradient bg-light" role="progressbar" style="width: {{ sounds_schedule[1] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress-bar bg-gradient bg-light" role="progressbar" style="width: {{ sounds_schedule[1] }}%" aria-valuenow="{{ sounds_schedule[0] }}" aria-valuemin="0" aria-valuemax="{{ timebar_length }}"></div>
                             {% else %}
-                                <div class="progress-bar bg-gradient bg-warning" role="progressbar" style="width: {{ sounds_schedule[1] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress-bar bg-gradient bg-warning" role="progressbar" style="width: {{ sounds_schedule[1] }}%" aria-valuenow="{{ sounds_schedule[0] }}" aria-valuemin="0" aria-valuemax="{{ timebar_length }}"></div>
                             {% endif %}
                             {% if sounds_color[2] == 0 %}
-                                <div class="progress-bar bg-gradient bg-light" role="progressbar" style="width: {{ sounds_schedule[2] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress-bar bg-gradient bg-light" role="progressbar" style="width: {{ sounds_schedule[2] }}%" aria-valuenow="{{ sounds_schedule[0] }}" aria-valuemin="0" aria-valuemax="{{ timebar_length }}"></div>
                             {% else %}
-                                <div class="progress-bar bg-gradient bg-warning" role="progressbar" style="width: {{ sounds_schedule[2] }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress-bar bg-gradient bg-warning" role="progressbar" style="width: {{ sounds_schedule[2] }}%" aria-valuenow="{{ sounds_schedule[0] }}" aria-valuemin="0" aria-valuemax="{{ timebar_length }}"></div>
                             {% endif %}
                         {% else %}
-                            <div class="progress-bar bg-gradient bg-light" role="progressbar" style="width: 100%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                            <div class="progress-bar bg-gradient bg-light" role="progressbar" style="width: 100%" aria-valuenow="{{ sounds_schedule[0] }}" aria-valuemin="0" aria-valuemax="{{ timebar_length }}"></div>
                         {% endif %}
                     </div>
                     <div class="container-fluid text-center">

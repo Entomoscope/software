@@ -404,20 +404,30 @@ def index():
 
     if configuration.schedule['enable']:
 
+        # 24 h * 60 minutes = 1440 minutes
+        timebar_length = 1440
+
         hours, minutes = [int(x) for x in configuration.schedule['next_startup'].split(' ')[1].split(':')]
-        s = 100 * (hours*60 + minutes) // 1440
+        s = timebar_length * (hours*60 + minutes) // 1440
         hours, minutes = [int(x) for x in configuration.schedule['next_shutdown'].split(' ')[1].split(':')]
-        e = 100 * (hours*60 + minutes) // 1440
+        e = timebar_length * (hours*60 + minutes) // 1440
+
+        # Bug affichage si e - s < 5 minutes
+        if e - s < 5:
+            e = s + 5
+            if e > timebar_length:
+                e = e - timebar_length
+
         if e == 0:
-            e = 100
+            e = timebar_length
 
         if e > s:
-            schedule = [s, e-s, 100 - e]
+            schedule = [s, e-s, timebar_length - e]
             color = [0, 1, 0]
         else:
-            schedule1 = [0, s, 100 - s]
+            schedule1 = [0, s, timebar_length - s]
             color1 = [0, 0, 1]
-            schedule2 = [e, 100-e, 0]
+            schedule2 = [e, timebar_length-e, 0]
             color2 = [1, 0, 0]
 
         if configuration.schedule['periodicity'] == 'every_day':
@@ -440,14 +450,14 @@ def index():
 
                     if e > s:
 
-                        schedules.append([s, e-s, 100 - e])
+                        schedules.append([s, e-s, timebar_length - e])
                         colors.append([0, 1, 0])
 
                     else:
 
                         if i == day_start_index:
 
-                            schedules.append([0, s, 100 - s])
+                            schedules.append([0, s, timebar_length - s])
                             colors.append([0, 0, 1])
 
                             k_set = True
@@ -456,12 +466,12 @@ def index():
 
                             if k == 1:
 
-                                schedules.append([e, s-e, 100 - s])
+                                schedules.append([e, s-e, timebar_length - s])
                                 colors.append([1, 0, 1])
 
                             else:
 
-                                schedules.append([0, s, 100 - s])
+                                schedules.append([0, s, timebar_length - s])
                                 colors.append([0, 0, 1])
 
                                 k_set = True
@@ -470,7 +480,7 @@ def index():
 
                     if k_set:
                         k_set = False
-                        schedules.append([e, 100-e, 0])
+                        schedules.append([e, timebar_length-e, 0])
                         colors.append([1, 0, 0])
                     else:
                         schedules.append([0, 0, 0])
@@ -505,7 +515,7 @@ def index():
         images_capture = []
         sounds_capture = []
 
-    return make_response(render_template('index.html', zip=zip, configuration=configuration, updates_available=updates_available, days=days, images_capture=images_capture, sounds_capture=sounds_capture, rpi=rpi, tzone=tzone, wifi=wifi, sd_card=sd_card, external_disk=external_disk, battery_level=battery_level, gnss=gnss, dateTime=dateTime, images_capture_state=images_capture_state, sounds_capture_state=sounds_capture_state))
+    return make_response(render_template('index.html', zip=zip, configuration=configuration, updates_available=updates_available, days=days, timebar_length=timebar_length, images_capture=images_capture, sounds_capture=sounds_capture, rpi=rpi, tzone=tzone, wifi=wifi, sd_card=sd_card, external_disk=external_disk, battery_level=battery_level, gnss=gnss, dateTime=dateTime, images_capture_state=images_capture_state, sounds_capture_state=sounds_capture_state))
 
 
 def allowed_file(filename):
@@ -1090,7 +1100,7 @@ def images_capture_settings():
             camera_supported = False
             camera_resolution = None
             autofocus_available = False
-            
+
         ai_models = sorted(os.listdir(AI_MODEL_PATH))
 
         ai_models = [x for x in ai_models if not x.endswith('.onnx')]
@@ -1111,7 +1121,7 @@ def images_capture_settings():
     except BaseException as e:
 
         log_error(e)
-        
+
         print(traceback.format_exc())
 
         return redirect('/images_capture_settings')
@@ -1790,18 +1800,18 @@ def manage_images_capture():
             images_capture_state = 'stopped'
             sounds_capture_state = 'stopped'
             app.logger.info('images (and sounds) capture stopped')
-            
+
             if camera:
                 camera.stop()
                 camera.camera.close()
                 camera = None
                 app.logger.info('camera stopped')
-   
+
             if microphone:
                 microphone.stop()
                 microphone = None
                 app.logger.info('microphone stopped')
-                
+
         return jsonify(success=True, message='Images capture managed successfully')
 
     except BaseException as e:
@@ -1845,12 +1855,12 @@ def manage_sounds_capture():
                 camera.camera.close()
                 camera = None
                 app.logger.info('camera stopped')
-                
+
             if microphone:
                 microphone.stop()
                 microphone = None
                 app.logger.info('microphone stopped')
-            
+
         return jsonify(success=True, message='Sounds capture managed successfully')
 
     except BaseException as e:
@@ -3200,11 +3210,11 @@ def get_captures_state():
             sounds_capture_state = 'running'
         else:
             sounds_capture_state = 'paused'
-            
+
 def log_error(e):
-    
+
     app.logger.error(traceback.format_exc())
-    
+
 
 # @socketio.on('connect')
 # def handle_connect():

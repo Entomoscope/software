@@ -82,7 +82,12 @@
         {% endif %}
     </div>
     {% else %}
-    <p>Data folder is empty</p>
+    <div class="col-3">
+        <ul>
+            <li class="data_levelup"><a href="/manage_data/chdir/up">..</a></li>
+        </ul>
+        <p>Folder is empty</p>
+    </div>
     {% endif %}
   </div>
 </div>

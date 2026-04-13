@@ -6,6 +6,8 @@
 {% from 'macros.html' import battery_discharged_modal_javascript -%}
 {% from 'macros.html' import ask_modal -%}
 {% from 'macros.html' import wait_modal -%}
+{% from 'macros.html' import reboot_javascript -%}
+{% from 'macros.html' import shutdown_javascript -%}
 {% extends 'base.html' %}
 {% block head -%}
     <title>Entomoscope - Logs</title>
@@ -29,23 +31,39 @@
   <div class="row align-items-start mt-3">
     <!-- Logs -->
     <div class="col-3">
-        <!-- File - List -->
-        <ul>
         {% if istopdir == false %}
-            <li class="data_levelup"><a href="/manage_logs/chdir/up">..</a></li>
+        <div class="row">
+            <div class="col-2">
+                <div class="button-group">
+                    <a href="/manage_logs/export/folder"><button type="button" class="btn btn-light position-relative me-3">
+                    <i class="bi bi-upload fs-6"></i>
+                    Export</button></a>
+                </div>
+            </div>
+        </div>
+        <hr/>
         {% endif %}
-        {% for file, isdir in zip(files, isdirs) %}
-            {% if isdir %}
-                <li class="data_folder"><a href="/manage_logs/chdir/{{ file }}" class="data_folder">{{ file }}</a></li>
-            {% else %}
-                {% if file == logs_current_file %}
-                    <li class="data_file"><a href="/manage_logs/show/{{ file }}" class="data_file" style="font-weight: bold">{{ file }}</a></li>
-                {% else %}
-                    <li class="data_file"><a href="/manage_logs/show/{{ file }}" class="data_file">{{ file }}</a></li>
+        <div class="row">
+            <div class="col-2">
+                <!-- File - List -->
+                <ul>
+                {% if istopdir == false %}
+                    <li class="data_levelup"><a href="/manage_logs/chdir/up">..</a></li>
                 {% endif %}
-            {% endif %}
-        {% endfor %}
-        </ul>
+                {% for file, isdir in zip(files, isdirs) %}
+                    {% if isdir %}
+                        <li class="data_folder"><a href="/manage_logs/chdir/{{ file }}" class="data_folder">{{ file }}</a></li>
+                    {% else %}
+                        {% if file == logs_current_file %}
+                            <li class="data_file"><a href="/manage_logs/show/{{ file }}" class="data_file" style="font-weight: bold">{{ file }}</a></li>
+                        {% else %}
+                            <li class="data_file"><a href="/manage_logs/show/{{ file }}" class="data_file">{{ file }}</a></li>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+                </ul>
+            </div>
+        </div>
     </div>
     <!-- File content -->
     <div class="col-9 offset-3 mb-3" style="position: fixed;height:90%;overflow-y:auto;">
@@ -90,27 +108,9 @@
 
     })
 
-    function reboot() {
+    {{ reboot_javascript() }}
 
-        powerAction = 'reboot'
-
-        askTitle.innerText = 'Reboot'
-        askParagraph.innerText = 'Do you really want to reboot?'
-
-        askModal.show()
-
-    }
-
-    function shutdown() {
-
-        powerAction = 'shutdown'
-
-        askTitle.innerText = 'Shutdown'
-        askParagraph.innerText = 'Do you really want to shutdown?'
-
-        askModal.show()
-
-    }
+    {{ shutdown_javascript() }}
 
     function actionOk() {
 
@@ -244,17 +244,11 @@
 
     }
 
-    var intervalId = setInterval(function() {
-        getCpuTemperature()
-    }, 10000);
+    var intervalId = setInterval(getCpuTemperature, 10000)
 
-    var intervalId2 = setInterval(function() {
-        getBatteryLevel()
-    }, 60000);
+    var intervalId2 = setInterval(getBatteryLevel, 60000)
 
-    var intervalId3 = setInterval(function() {
-        getSdCardUsage()
-    }, 60000);
+    var intervalId3 = setInterval(getSdCardUsage, 60000)
 
 </script>
 

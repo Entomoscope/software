@@ -7,6 +7,8 @@
 {% from 'macros.html' import ask_modal -%}
 {% from 'macros.html' import wait_modal -%}
 {% from 'macros.html' import info_modal -%}
+{% from 'macros.html' import reboot_javascript -%}
+{% from 'macros.html' import shutdown_javascript -%}
 {% extends 'base.html' %}
 {% block head -%}
     <title>Entomoscope - 500</title>
@@ -75,27 +77,9 @@
 
     })
 
-    function reboot() {
+    {{ reboot_javascript() }}
 
-        powerAction = 'reboot'
-
-        askModalTitle.innerText = 'Reboot'
-        askModalParagraph.innerText = 'Do you really want to reboot?'
-
-        askModal.show()
-
-    }
-
-    function shutdown() {
-
-        powerAction = 'shutdown'
-
-        askModalTitle.innerText = 'Shutdown'
-        askModalParagraph.innerText = 'Do you really want to shutdown?'
-
-        askModal.show()
-
-    }
+    {{ shutdown_javascript() }}
 
     function actionOk() {
         console.log(powerAction)
@@ -230,17 +214,11 @@
 
     }
 
-    var intervalId = setInterval(function() {
-        getCpuTemperature()
-    }, 10000);
+    var intervalId = setInterval(getCpuTemperature, 10000)
 
-    var intervalId2 = setInterval(function() {
-        getBatteryLevel()
-    }, 60000);
+    var intervalId2 = setInterval(getBatteryLevel, 60000)
 
-    var intervalId3 = setInterval(function() {
-        getSdCardUsage()
-    }, 60000);
+    var intervalId3 = setInterval(getSdCardUsage, 60000)
 
 </script>
 

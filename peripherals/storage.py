@@ -36,9 +36,6 @@ class Storage():
         elif location == 'external_disk':
             self.name = 'External disk'
             self.find()
-            # external_disk = ExternalDisk()
-            # self.path = external_disk.path
-            # self.available = external_disk.available
         else:
             self.path = None
             self.available = False
@@ -89,10 +86,18 @@ class Storage():
     def find(self):
 
         p = os.listdir(MEDIA_FOLDER)
+
         if p:
-            self.path = os.path.join(MEDIA_FOLDER, p[0])
-            self.available = True
+            if len(p) > 1:
+                logger.warning(f'multiple external disks found : {p}')
+                self.path = None
+                self.available = False
+            else:
+                logger.info(f'external disk found: {p[0]}')
+                self.path = os.path.join(MEDIA_FOLDER, p[0])
+                self.available = True
         else:
+            logger.info(f'no external disk found')
             self.path = None
             self.available = False
 

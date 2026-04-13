@@ -7,6 +7,9 @@
 {% from 'macros.html' import ask_modal -%}
 {% from 'macros.html' import wait_modal -%}
 {% from 'macros.html' import info_modal -%}
+{% from 'macros.html' import progress_modal -%}
+{% from 'macros.html' import reboot_javascript -%}
+{% from 'macros.html' import shutdown_javascript -%}
 {% extends 'base.html' %}
 {% block head -%}
     <title>Entomoscope - Storage</title>
@@ -73,11 +76,11 @@
                         <div class="progress animated-progess custom-progress">
                             {% if external_disk.available %}
                                 {% if external_disk.used_percent_num > 90 %}
-                                <div class="progress-bar bg-gradient bg-danger" role="progressbar" style="width: {{ external_disk.used_percent_num }}%" id="usbDriveProgress" aria-valuenow="{{ external_disk.used_percent_num }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress-bar bg-gradient bg-danger" role="progressbar" style="width: {{ external_disk.used_percent }}" id="usbDriveProgress" aria-valuenow="{{ external_disk.used_percent_num }}" aria-valuemin="0" aria-valuemax="100"></div>
                                 {% elif external_disk.used_percent_num > 80 %}
-                                <div class="progress-bar bg-gradient bg-warning" role="progressbar" style="width: {{ external_disk.used_percent_num }}%" id="usbDriveProgress" aria-valuenow="{{ external_disk.used_percent_num }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress-bar bg-gradient bg-warning" role="progressbar" style="width: {{ external_disk.used_percent }}" id="usbDriveProgress" aria-valuenow="{{ external_disk.used_percent_num }}" aria-valuemin="0" aria-valuemax="100"></div>
                                 {% else %}
-                                <div class="progress-bar bg-gradient bg-success" role="progressbar" style="width: {{ external_disk.used_percent_num }}%" id="usbDriveProgress" aria-valuenow="{{ external_disk.used_percent_num }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress-bar bg-gradient bg-success" role="progressbar" style="width: {{ external_disk.used_percent }}" id="usbDriveProgress" aria-valuenow="{{ external_disk.used_percent_num }}" aria-valuemin="0" aria-valuemax="100"></div>
                                 {% endif %}
                             {% else %}
                                 <div class="progress-bar bg-gradient bg-secondary" role="progressbar" style="width: 0%" id="usbDriveProgress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
@@ -110,7 +113,7 @@
               {% endif %}
               <td style="border-left: solid 1px">
                 {% if stat['num_detection_files'] > 0 %}
-                <button type="button" class="btn btn-light position-relative me-3" style="pointer-events: none">
+                <button type="button" class="btn btn-light position-relative mt-2 me-3" style="pointer-events: none">
                   <i class="bi bi-bug-fill fs-6"></i>
                   <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                     {{ stat['num_detection_files'] }}
@@ -118,7 +121,7 @@
                 </button>
                 {% endif %}
                 {% if stat['num_timelapse_files'] > 0 %}
-                <button type="button" class="btn btn-light position-relative me-3" style="pointer-events: none">
+                <button type="button" class="btn btn-light position-relative mt-2 me-3" style="pointer-events: none">
                   <i class="bi bi-stopwatch-fill fs-6"></i>
                   <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                     {{ stat['num_timelapse_files'] }}
@@ -126,7 +129,7 @@
                 </button>
                 {% endif %}
                 {% if stat['num_test_detection_files'] > 0 %}
-                <button type="button" class="btn btn-light position-relative me-3" style="pointer-events: none">
+                <button type="button" class="btn btn-light position-relative mt-2 me-3" style="pointer-events: none">
                   <i class="bi bi-tools fs-6"></i>
                   <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                     {{ stat['num_test_detection_files'] }}
@@ -134,20 +137,28 @@
                 </button>
                 {% endif %}
                 {% if stat['num_sounds_files'] > 0 %}
-                <button type="button" class="btn btn-light position-relative" style="pointer-events: none">
+                <button type="button" class="btn btn-light position-relative mt-2 me-3" style="pointer-events: none">
                   <i class="bi bi-volume-up-fill fs-6"></i>
                   <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                     {{ stat['num_sounds_files'] }}
                   </span>
                 </button>
                 {% endif %}
+                {% if stat['num_env_files'] > 0 %}
+                <button type="button" class="btn btn-light position-relative mt-2 " style="pointer-events: none">
+                  <i class="bi bi-cloud-sun-fill fs-6"></i>
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                    {{ stat['num_env_files'] }}
+                  </span>
+                </button>
+                {% endif %}
               </td>
               {% if external_disk.available %}
-              <td style="border-left: solid 1px"><button type="button" class="btn btn-primary mt-2 btn-sm" onClick="askFolder('save', {{ folder }}, {{ loop.index0 }})"><i class="bi bi-usb-drive fs-4"></i></button></td>
+              <td style="border-left: solid 1px"><button type="button" class="btn btn-primary btn-sm save-folder" onClick="askFolder('save', {{ folder }}, {{ loop.index0 }})"><i class="bi bi-usb-drive fs-4"></i></button></td>
               {% else %}
-              <td style="border-left: solid 1px"><button type="button" class="btn btn-primary mt-2 disabled btn-sm" onClick="askFolder('save', {{ folder }}, {{ loop.index0 }})"><i class="bi bi-usb-drive fs-4"></i></button></td>
+              <td style="border-left: solid 1px"><button type="button" class="btn btn-primary btn-sm save-folder disabled" onClick="askFolder('save', {{ folder }}, {{ loop.index0 }})"><i class="bi bi-usb-drive fs-4"></i></button></td>
               {% endif %}
-              <td><button type="button" class="btn btn-primary mt-2 btn-sm" onClick="askFolder('delete', {{ folder }}, {{ loop.index0 }})"><i class="bi bi-trash fs-4"></i></button></td>
+              <td><button type="button" class="btn btn-primary btn-sm" onClick="askFolder('delete', {{ folder }}, {{ loop.index0 }})"><i class="bi bi-trash fs-4"></i></button></td>
             </tr>
           {% endfor %}
           </tbody>
@@ -156,73 +167,68 @@
             <tr class="text-center">
               <th scope="row">Total<br/><span class="fw-normal">{{ stats['total']['size_all_files'] }}MB</span></th>
                 <td style="border-left: solid 1px">
-                {% if stats['total']['num_detection_files'] > 0 %}
-                <button type="button" class="btn btn-light position-relative me-3" style="pointer-events: none" id="totalDetectionFilesBtn">
+                <button type="button" class="btn btn-light position-relative mt-2 me-3" style="pointer-events: none" id="totalDetectionFilesBtn">
                   <i class="bi bi-bug-fill fs-6"></i>
                   <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="totalDetectionFilesSpan">
                     {{ stats['total']['num_detection_files'] }}
                   </span>
                 </button>
-                {% endif %}
-                {% if stats['total']['num_timelapse_files'] > 0 %}
-                <button type="button" class="btn btn-light position-relative me-3" style="pointer-events: none" id="totalTimelapseFilesBtn">
+                <button type="button" class="btn btn-light position-relative mt-2 me-3" style="pointer-events: none" id="totalTimelapseFilesBtn">
                   <i class="bi bi-stopwatch-fill fs-6"></i>
                   <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="totalTimelapseFilesSpan">
                     {{ stats['total']['num_timelapse_files'] }}
                   </span>
                 </button>
-                {% endif %}
-                {% if stats['total']['num_test_detection_files'] > 0 %}
-                <button type="button" class="btn btn-light position-relative me-3" style="pointer-events: none" id="totalTestDetectionFilesBtn">
+                <button type="button" class="btn btn-light position-relative mt-2 me-3" style="pointer-events: none" id="totalTestDetectionFilesBtn">
                   <i class="bi bi-tools fs-6"></i>
                   <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="totalTestDetectionFilesSpan">
                     {{ stats['total']['num_test_detection_files'] }}
                   </span>
                 </button>
-                {% endif %}
-                {% if stats['total']['num_sounds_files'] > 0 %}
-                <button type="button" class="btn btn-light position-relative" style="pointer-events: none" id="totalSoundsFilesBtn">
+                <button type="button" class="btn btn-light position-relative mt-2 me-3" style="pointer-events: none" id="totalSoundsFilesBtn">
                   <i class="bi bi-volume-up-fill fs-6"></i>
                   <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="totalSoundsFilesSpan">
                     {{ stats['total']['num_sounds_files'] }}
                   </span>
                 </button>
-                {% endif %}
+                <button type="button" class="btn btn-light position-relative mt-2" style="pointer-events: none" id="totalEnvFilesBtn">
+                  <i class="bi bi-cloud-sun-fill fs-6"></i>
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="totalEnvFilesSpan">
+                    {{ stats['total']['num_env_files'] }}
+                  </span>
+                </button>
               </td>
               {% if external_disk.available and (stats['folders'] | length) > 0  %}
-              <td style="border-left: solid 1px"><button type="button" id="saveTotalButton" class="btn btn-primary mt-2 btn-sm" onClick="askFolder('save', 'all', {{ stats['folders'] | length }})"><i class="bi bi-usb-drive fs-4"></i></button></td>
+              <td style="border-left: solid 1px"><button type="button" id="saveTotalButton" class="btn btn-primary btn-sm" onClick="askFolder('save', 'all', {{ stats['folders'] | length }})"><i class="bi bi-usb-drive fs-4"></i></button></td>
               {% else %}
-              <td style="border-left: solid 1px"><button type="button" id="saveTotalButton" class="btn btn-primary mt-2 disabled btn-sm" onClick="askFolder('save', 'all', {{ stats['folders'] | length }})"><i class="bi bi-usb-drive fs-4"></i></button></td>
+              <td style="border-left: solid 1px"><button type="button" id="saveTotalButton" class="btn btn-primary btn-sm disabled" onClick="askFolder('save', 'all', {{ stats['folders'] | length }})"><i class="bi bi-usb-drive fs-4"></i></button></td>
               {% endif %}
               {% if (stats['folders'] | length) > 0 %}
-              <td><button type="button" class="btn btn-primary mt-2 btn-sm" id="deleteTotalButton" onClick="askFolder('delete', 'all', {{ stats['folders'] | length }})"><i class="bi bi-trash fs-4"></i></button></td>
+              <td><button type="button" class="btn btn-primary btn-sm" id="deleteTotalButton" onClick="askFolder('delete', 'all', {{ stats['folders'] | length }})"><i class="bi bi-trash fs-4"></i></button></td>
               {% else %}
-              <td><button type="button" class="btn btn-primary mt-2 disabled btn-sm" id="deleteTotalButton" onClick="askFolder('delete', 'all', {{ stats['folders'] | length }})"><i class="bi bi-trash fs-4"></i></button></td>
+              <td><button type="button" class="btn btn-primary btn-sm disabled" id="deleteTotalButton" onClick="askFolder('delete', 'all', {{ stats['folders'] | length }})"><i class="bi bi-trash fs-4"></i></button></td>
               {% endif %}
             </tr>
           </tfoot>
         </table>
     </div>
     <div class="row mb-3 text-center">
-        <div class="col-3">
+        <div class="button-group">
             <button type="button" class="btn btn-light position-relative me-3" style="pointer-events: none">
               <i class="bi bi-bug-fill fs-6"></i>
               Detections</button>
-        </div>
-        <div class="col-3">
             <button type="button" class="btn btn-light position-relative me-3" style="pointer-events: none">
               <i class="bi bi-stopwatch-fill fs-6"></i>
               Timelapses</button>
-        </div>
-        <div class="col-3">
             <button type="button" class="btn btn-light position-relative me-3" style="pointer-events: none">
               <i class="bi bi-tools fs-6"></i>
               Tests</button>
-        </div>
-        <div class="col-3">
             <button type="button" class="btn btn-light position-relative me-3" style="pointer-events: none">
               <i class="bi bi-volume-up-fill fs-6"></i>
               Sounds</button>
+            <button type="button" class="btn btn-light position-relative me-3" style="pointer-events: none">
+              <i class="bi bi-cloud-sun-fill fs-6"></i>
+              Environment</button>
         </div>
      </div>
     {% endif %}
@@ -231,6 +237,7 @@
 {{ wait_modal() }}
 {{ ask_modal() }}
 {{ info_modal() }}
+{{ progress_modal() }}
 {{ sd_card_full_modal(sd_card) }}
 {{ battery_discharged_modal(battery_level) }}
 {% endblock %}
@@ -252,11 +259,15 @@
     const totalTimelapseFilesSpan = document.getElementById('totalTimelapseFilesSpan')
     const totalTestDetectionFilesSpan = document.getElementById('totalTestDetectionFilesSpan')
     const totalSoundsFilesSpan = document.getElementById('totalSoundsFilesSpan')
+    const totalEnvFilesSpan = document.getElementById('totalEnvFilesSpan')
 
     const totalDetectionFilesBtn = document.getElementById('totalDetectionFilesBtn')
     const totalTimelapseFilesBtn = document.getElementById('totalTimelapseFilesBtn')
     const totalTestDetectionFilesBtn = document.getElementById('totalTestDetectionFilesBtn')
     const totalSoundsFilesBtn = document.getElementById('totalSoundsFilesBtn')
+    const totalEnvFilesBtn = document.getElementById('totalEnvFilesBtn')
+
+    const saveFolderButtons = document.getElementsByClassName('save-folder')
 
     const saveTotalButton = document.getElementById('saveTotalButton')
     const deleteTotalButton = document.getElementById('deleteTotalButton')
@@ -277,10 +288,18 @@
     const infoModalTitle = document.getElementById('infoModalTitle');
     const infoModalParagraph = document.getElementById('infoModalParagraph');
 
+    const progressModalDialog = document.getElementById('progressModalDialog');
+    var progressModal = new bootstrap.Modal(progressModalDialog)
+    const progressModalTitle = document.getElementById('progressModalTitle');
+    const progressModalParagraph = document.getElementById('progressModalParagraph');
+    const progressModalProgress = document.getElementById('progressModalProgress');
+
     var folderToProcess = ""
     var rowIndex = 0
 
     var actionToDo = null
+
+    var intervalId5
 
     document.addEventListener("DOMContentLoaded", function() {
 
@@ -317,27 +336,9 @@
 
     })
 
-    function reboot() {
+    {{ reboot_javascript() }}
 
-        actionToDo = 'reboot'
-
-        askModalTitle.innerText = 'Reboot'
-        askModalParagraph.innerText = 'Do you really want to reboot?'
-
-        askModal.show()
-
-    }
-
-    function shutdown() {
-
-        actionToDo = 'shutdown'
-
-        askModalTitle.innerText = 'Shutdown'
-        askModalParagraph.innerText = 'Do you really want to shutdown?'
-
-        askModal.show()
-
-    }
+    {{ shutdown_javascript() }}
 
     function showFolder(folder, data_type) {
 
@@ -352,6 +353,51 @@
         })
         .catch(error => {
             console.error('Error:', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    }
+
+    function findExternalDisk() {
+
+        return fetch('/find_external_disk', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+
+                clearInterval(intervalId4)
+
+                usbDriveTotal.innerText = data.data[0] + ' total'
+                usbDriveUsed.innerText = data.data[1] + ' used (' + data.data[2] + ')'
+
+                if (data.data[3] > 90) {
+                    usbDriveProgress.className = 'progress-bar bg-gradient bg-danger'
+                } else if (data.data[3] > 80) {
+                    usbDriveProgress.className = 'progress-bar bg-gradient bg-warning'
+                } else {
+                    usbDriveProgress.className = 'progress-bar bg-gradient bg-success'
+                }
+
+                usbDriveProgress.style = 'width: ' + data.data[2]
+
+                usbDriveEjectButton.className = 'btn btn-primary btn-sm'
+
+                for (let i = 0; i < saveFolderButtons.length; i++) {
+                    saveFolderButtons[i].className = 'btn btn-primary btn-sm save-folder'
+                }
+
+                saveTotalButton.className = 'btn btn-primary btn-sm'
+
+            }
+        })
+        .catch(error => {
+            console.error('Error getting SD card usage:', error);
             throw error;  // Re-throw the error for the next catch
         });
 
@@ -372,13 +418,18 @@
         .then(data => {
             if (data.success) {
 
-                usbDriveEjectButton.className = 'btn btn-primary disabled'
+                usbDriveEjectButton.className = 'btn btn-primary btn-sm disabled'
+
+                for (let i = 0; i < saveFolderButtons.length; i++) {
+                    saveFolderButtons[i].className = 'btn btn-primary btn-sm save-folder disabled'
+                }
+
+                saveTotalButton.className = 'btn btn-primary btn-sm disabled'
 
                 usbDriveTotal.innerText = '0 total'
                 usbDriveUsed.innerText = '0 used (0%)'
 
                 usbDriveProgress.style = 'width: 0%'
-                // usbDriveProgress.aria-valuenow = '0'
 
             }
             else {
@@ -485,32 +536,20 @@
                         sdCardProgress.className = "progress-bar bg-gradient bg-danger"
                     }
 
-                    if (data.data[4]['num_sounds_files'] > 0) {
-                        totalSoundsFilesSpan.innerHTML = data.data[4]['num_sounds_files']
-                    } else {
-                        totalSoundsFilesBtn.className = 'd-none'
-                    }
+                    totalSoundsFilesSpan.innerHTML = data.data[4]['num_sounds_files']
 
-                    if (data.data[4]['num_detection_files'] > 0) {
-                        totalDetectionFilesSpan.innerHTML = data.data[4]['num_detection_files']
-                    } else {
-                        totalDetectionFilesBtn.className = 'd-none'
-                    }
+                    totalDetectionFilesSpan.innerHTML = data.data[4]['num_detection_files']
 
-                    if (data.data[4]['num_timelapse_files'] > 0) {
-                        totalTimelapseFilesSpan.innerHTML = data.data[4]['num_timelapse_files']
-                    } else {
-                        totalTimelapseFilesBtn.className = 'd-none'
-                    }
+                    totalTimelapseFilesSpan.innerHTML = data.data[4]['num_timelapse_files']
 
-                    if (data.data[4]['num_test_detection_files'] > 0) {
-                        totalTestDetectionFilesSpan.innerHTML = data.data[4]['num_test_detection_files']
-                    } else {
-                        totalTestDetectionFilesBtn.className = 'd-none'
-                    }
+                    totalTestDetectionFilesSpan.innerHTML = data.data[4]['num_test_detection_files']
 
-                    saveTotalButton.className ="btn btn-primary mt-2 disabled btn-sm"
-                    deleteTotalButton.className ="btn btn-primary mt-2 disabled btn-sm"
+                    totalEnvFilesSpan.innerHTML = data.data[4]['num_env_files']
+
+                    if (data.data[4]['num_sounds_files']+data.data[4]['num_detection_files']+data.data[4]['num_timelapse_files']+data.data[4]['num_test_detection_files'] == 0) {
+                        saveTotalButton.className ="btn btn-primary mt-2 disabled btn-sm"
+                        deleteTotalButton.className ="btn btn-primary mt-2 disabled btn-sm"
+                    }
 
                     console.log('Done')
                     waitModal.hide()
@@ -525,9 +564,11 @@
 
         } else if (actionToDo == 'save') {
 
-            waitModalTitle.innerText = 'Saving folder'
-            waitModalParagraph.innerText = 'Wait for ' + folderToProcess + ' folder saving to complete'
-            waitModal.show()
+            progressModalTitle.innerText = 'Saving folder in progress...'
+            progressModalParagraph.innerText = 'Wait for ' + folderToProcess + ' folder saving to complete: 0%'
+            progressModal.show()
+
+            intervalId5 = setInterval(getSavePercent, 1000)
 
             console.log('saving ' + folderToProcess)
 
@@ -541,8 +582,6 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    console.log('Done')
-                    console.log(data)
 
                     usbDriveUsed.innerText = data.data[0] + ' (' + data.data[2]+ ')'
 
@@ -555,7 +594,8 @@
                     }
 
                 }
-                waitModal.hide()
+                clearInterval(intervalId5)
+                progressModal.hide()
             })
             .catch(error => {
             console.error('Error saving folder:', error);
@@ -563,6 +603,35 @@
             });
 
         }
+
+    }
+
+    function getSavePercent() {
+
+        return fetch('/get_save_percent', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: '',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+
+                //console.log(data)
+                //console.log('width: ' + data.data + '%')
+
+                progressModalParagraph.innerText = 'Wait for ' + folderToProcess + ' folder saving to complete: ' + data.data.toFixed(0) + '%'
+                progressModalProgress.style = 'width: ' + data.data.toFixed(0) + '%'
+
+                //console.log(progressModalProgress)
+            }
+        })
+        .catch(error => {
+        console.error('Error getting save percent:', error);
+        throw error;  // Re-throw the error for the next catch
+        });
 
     }
 
@@ -666,17 +735,15 @@
 
     }
 
-    var intervalId = setInterval(function() {
-        getCpuTemperature()
-    }, 10000);
+    var intervalId = setInterval(getCpuTemperature, 10000)
 
-    var intervalId2 = setInterval(function() {
-        getBatteryLevel()
-    }, 60000);
+    var intervalId2 = setInterval(getBatteryLevel, 60000)
 
-    var intervalId3 = setInterval(function() {
-        getSdCardUsage()
-    }, 60000);
+    var intervalId3 = setInterval(getSdCardUsage, 60000)
+
+    var intervalId4 = setInterval(findExternalDisk, 1000)
+
+
 
 </script>
 {% endblock %}

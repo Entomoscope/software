@@ -4,16 +4,18 @@ import os
 import shutil
 from datetime import datetime, timedelta, timezone
 
-from shutil import rmtree, copytree
+from shutil import rmtree, copytree, copy, copystat
 
 import traceback
 
 from time import time, sleep
 
-from flask import Flask, make_response, render_template, Response, jsonify, request, redirect, url_for
+from flask import Flask, make_response, render_template, Response, jsonify, request, redirect, url_for, send_from_directory
 from werkzeug.utils import secure_filename
 
 # from flask_socketio import SocketIO
+
+import zipfile
 
 import copy
 
@@ -272,6 +274,8 @@ logs_current_directory = LOGS_DESKTOP_FOLDER
 logs_current_file = None
 show_preview_log = False
 log_data = None
+
+files_copy_percent = 0
 
 wifi = Wifi(rpi.uuid)
 wifi.list()
@@ -904,20 +908,22 @@ def manage_storage(action, value):
 
             try:
 
-                external_disk_data_path = os.path.join(external_disk.path, 'data_' + rpi.uuid)
+                if value == 'all':
 
-                if not os.path.exists(external_disk_data_path):
-                    os.mkdir(external_disk_data_path)
+                    folders = os.listdir(DATA_FOLDER)
 
-                copytree(os.path.join(DATA_FOLDER, value), os.path.join(external_disk_data_path, value), dirs_exist_ok=True)
+                    save_folders(folders)
+
+                else:
+
+                    save_folders([value])
 
                 external_disk.get_data()
                 data = [external_disk.used, external_disk.used_num, external_disk.used_percent, external_disk.used_percent_num]
 
             except BaseException as e:
-                log_error(e)
 
-            sleep(1)
+                log_error(e)
 
             app.logger.info(f'manage_storage() {action} {value} done')
 
@@ -1331,6 +1337,33 @@ def manage_logs(action, value):
 
                 show_preview_log = False
 
+        elif action == 'export':
+
+            files_to_zip = os.listdir(logs_current_directory)
+
+            zip_name = logs_current_directory.split('/')[-1] + '_logs.zip'
+
+            zip_path = os.path.join('/home/entomoscope/Desktop/Logs', zip_name)
+
+            try:
+
+                if os.path.exists(zip_path):
+                    os.remove(zip_path)
+
+                with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+                    for filename in files_to_zip:
+                        try:
+                            file_path = os.path.join(logs_current_directory, filename)
+                            archive.write(file_path, os.path.basename(file_path))
+                        except FileNotFoundError:
+                            app.log.error(f'file not found: {file_path}')
+
+                return send_from_directory('/home/entomoscope/Desktop/Logs', zip_name)
+
+            except BaseException as e:
+
+                log_error(e)
+
     except BaseException as e:
 
         log_error(e)
@@ -1475,6 +1508,111 @@ def sounds_capture_test():
     except BaseException as e:
 
         log_error(e)
+
+        return jsonify(success=False, message='', data=str(e))
+
+
+def save_folders(folders):
+
+    global files_copy_percent
+
+    try :
+
+        external_disk_data_path = os.path.join(external_disk.path, 'data_' + rpi.uuid)
+
+        if not os.path.exists(external_disk_data_path):
+            os.mkdir(external_disk_data_path)
+
+        num_files_to_copy = 0
+
+        for folder in folders:
+
+            env_folder = os.path.join(DATA_FOLDER, folder, 'Environment')
+            files_env = os.listdir(env_folder)
+
+            num_files_to_copy += len(files_env)
+
+            images_folder = os.path.join(DATA_FOLDER, folder, 'Images')
+            files_images = os.listdir(images_folder)
+
+            num_files_to_copy += len(files_images)
+
+            sounds_folder = os.path.join(DATA_FOLDER, folder, 'Sounds')
+            files_sounds = os.listdir(sounds_folder)
+
+            num_files_to_copy += len(files_sounds)
+
+        files_copy_percent = 0
+        num_files_copied = 0
+
+        for folder in folders:
+
+            destination_path = os.path.join(external_disk_data_path, folder)
+            if not os.path.exists(destination_path):
+                os.mkdir(destination_path)
+
+            ext_env_folder = os.path.join(destination_path, 'Environment')
+            if not os.path.exists(ext_env_folder):
+                os.mkdir(ext_env_folder)
+
+            ext_images_folder = os.path.join(destination_path, 'Images')
+            if not os.path.exists(ext_images_folder):
+                os.mkdir(ext_images_folder)
+
+            ext_sounds_folder = os.path.join(destination_path, 'Sounds')
+            if not os.path.exists(ext_sounds_folder):
+                os.mkdir(ext_sounds_folder)
+
+            env_folder = os.path.join(DATA_FOLDER, folder, 'Environment')
+            files_env = os.listdir(env_folder)
+
+            for f in files_env:
+
+                shutil.copy(os.path.join(env_folder, f), os.path.join(ext_env_folder, f))
+                shutil.copystat(os.path.join(env_folder, f), os.path.join(ext_env_folder, f))
+
+                num_files_copied += 1
+
+                files_copy_percent = 100 * num_files_copied/num_files_to_copy
+
+            images_folder = os.path.join(DATA_FOLDER, folder, 'Images')
+            files_images = os.listdir(images_folder)
+
+            for f in files_images:
+
+                shutil.copy(os.path.join(images_folder, f), os.path.join(ext_images_folder, f))
+                shutil.copystat(os.path.join(images_folder, f), os.path.join(ext_images_folder, f))
+
+                num_files_copied += 1
+
+                files_copy_percent = 100 * num_files_copied/num_files_to_copy
+
+            sounds_folder = os.path.join(DATA_FOLDER, folder, 'Sounds')
+            files_sounds = os.listdir(sounds_folder)
+
+            for f in files_sounds:
+
+                shutil.copy(os.path.join(sounds_folder, f), os.path.join(ext_sounds_folder, f))
+                shutil.copystat(os.path.join(sounds_folder, f), os.path.join(ext_sounds_folder, f))
+
+                num_files_copied += 1
+
+                files_copy_percent = 100 * num_files_copied/num_files_to_copy
+
+    except BaseException as e:
+
+        log_error(e)
+
+@app.route('/get_save_percent', methods=['POST'])
+def get_save_percent():
+
+    global files_copy_percent
+
+    try:
+
+        return jsonify(success=True, message='', data=files_copy_percent)
+
+    except BaseException as e:
 
         return jsonify(success=False, message='', data=str(e))
 
@@ -2909,6 +3047,31 @@ def test_internet_connection():
 
         return jsonify(success=False, message=str(e))
 
+@app.route('/find_external_disk', methods=['POST'])
+def find_external_disk():
+
+    try:
+
+        external_disk.find()
+
+        if external_disk.available:
+
+            external_disk.get_data()
+
+            data = [external_disk.total, external_disk.used, external_disk.used_percent, external_disk.used_percent_num]
+
+            return jsonify(success=True, message='External disk found', data=data)
+
+        else:
+
+            return jsonify(success=False, message='No external disk found')
+
+    except Exception as e:
+
+        app.logger.error('' + str(e))
+
+        return jsonify(success=False, message=str(e))
+
 
 @app.route('/get_cpu_temperature', methods=['POST'])
 def get_cpu_temperature():
@@ -3120,7 +3283,9 @@ def get_data_folders_stats():
 
     stats = {'folders': [],
             'stat': [],
-            'total': {'num_sounds_files': 0,
+            'total': {'num_env_files': 0,
+            'size_env_files': 0,
+            'num_sounds_files': 0,
             'size_sounds_files': 0,
             'num_images_files': 0,
             'size_images_files': 0,
@@ -3137,7 +3302,9 @@ def get_data_folders_stats():
 
         for folder in stats['folders']:
 
-            stat = {'num_sounds_files': 0,
+            stat = {'num_env_files': 0,
+                    'size_env_files': 0,
+                    'num_sounds_files': 0,
                     'size_sounds_files': 0,
                     'num_images_files': 0,
                     'size_images_files': 0,
@@ -3145,6 +3312,15 @@ def get_data_folders_stats():
                     'num_detection_files': 0,
                     'num_test_detection_files': 0,
                     'size_all_files': 0}
+
+            env_files = [x for x in os.listdir(os.path.join(DATA_FOLDER, folder, 'Environment')) if x.endswith('.csv')]
+            stat['num_env_files'] = len(env_files)
+            stats['total']['num_env_files'] += stat['num_env_files']
+            size = 0
+            for env_file in env_files:
+                size += os.path.getsize(os.path.join(DATA_FOLDER, folder, 'Environment', env_file))
+            stat['size_env_files'] = int(size / 1024 // 1024)
+            stats['total']['size_env_files'] += stat['size_env_files']
 
             sounds_files = [x for x in os.listdir(os.path.join(DATA_FOLDER, folder, 'Sounds')) if x.endswith('.wav')]
             stat['num_sounds_files'] = len(sounds_files)

@@ -1,10 +1,11 @@
-# Shtartup complete pin
-#STARTUP_PIN = 10
+# Startup complete pin
 STARTUP_PIN = 13
 
 # Shutdown pin
-#SHUTDOWN_PIN = 22
 SHUTDOWN_PIN = 19
+
+# WittyPi halt pin
+WITTY_PI_HALT_PIN = 4
 
 # Images capture activity pin
 IMAGES_CAPTURE_ACTIVITY_PIN = 5

@@ -296,7 +296,7 @@
     const infoModalTitle = document.getElementById('infoModalTitle');
     const infoModalParagraph = document.getElementById('infoModalParagraph');
 
-    var powerAction = null
+    var actionToDo = null
 
     document.addEventListener("DOMContentLoaded", function() {
 
@@ -637,7 +637,7 @@
 
         askModal.hide()
 
-        if (powerAction == 'reboot') {
+        if (actionToDo  == 'reboot') {
             return fetch('/reboot', {
                 method: 'POST',
                 headers: {
@@ -650,7 +650,7 @@
                 throw error;  // Re-throw the error for the next catch
             });
         }
-        else if (powerAction == 'shutdown') {
+        else if (actionToDo  == 'shutdown') {
             return fetch('/shutdown', {
                 method: 'POST',
                 headers: {

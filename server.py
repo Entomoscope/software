@@ -35,7 +35,7 @@ from crontab_management import CrontabManagement
 
 from configuration2 import Configuration2
 
-from peripherals.pinout2 import IMAGES_CAPTURE_ACTIVITY_PIN, SOUNDS_CAPTURE_ACTIVITY_PIN, SHUTDOWN_PIN, STARTUP_PIN, LEDS_FRONT_PIN, LEDS_REAR_DEPORTED_UV_PIN
+from peripherals.pinout2 import IMAGES_CAPTURE_ACTIVITY_PIN, SOUNDS_CAPTURE_ACTIVITY_PIN, SHUTDOWN_PIN, STARTUP_PIN, LEDS_FRONT_PIN, LEDS_REAR_DEPORTED_UV_PIN, WITTY_PI_HALT_PIN
 from peripherals.rpi import Rpi
 from peripherals.storage import Storage
 from peripherals.leds import Leds
@@ -3173,8 +3173,10 @@ def shutdown():
 
     try:
 
-        os.system('python ' + os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'shutdown.py'))
-        os.system('sudo shutdown now')
+        pi.write(WITTY_PI_HALT_PIN, 0)
+
+        # os.system('python ' + os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'shutdown.py'))
+        # os.system('sudo shutdown now')
 
         return jsonify(success=True, message='Success')
 

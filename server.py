@@ -528,46 +528,33 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in SERVER_ALLOWED_EXTENSIONS
 
-
-@app.route('/', methods=['POST'])
-def upload_configuration_file():
+@app.route('/upload_file', methods=['POST'])
+def upload_file():
 
     try:
 
-        if 'file' in request.files:
+        data = request.files['file']
 
-            uploaded_file = request.files['file']
+        app.logger.info('file: %s', data)
 
-            if uploaded_file.filename == '':
-                return 'No selected file', 400
+        filename = secure_filename(data.filename)
 
-            if uploaded_file and not allowed_file(uploaded_file.filename):
-                return 'File type not allowed', 400
+        if data.filename == 'configuration.json':
+            data.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            app.logger.info('configuration file sent to the entomoscope')
+        elif data.filename == 'ephemeris.csv':
+            data.save(os.path.join(app.config['UPLOAD_FOLDER'], 'static', 'ephemeris', filename))
+            app.logger.info('ephemeris file sent to the entomoscope')
+        else:
+            app.logger.error(f'file {data.filename} not uploaded because not supported')
 
-            if uploaded_file:
-
-                filename = secure_filename(uploaded_file.filename)
-
-                try:
-
-                    if uploaded_file.filename == 'configuration.json':
-                        uploaded_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                        app.logger.info('configuration file sent to the entomoscope')
-                    elif uploaded_file.filename == 'ephemeris.csv':
-                        uploaded_file.save(os.path.join(app.config['UPLOAD_FOLDER'], 'static', 'ephemeris', filename))
-                        app.logger.info('ephemeris file sent to the entomoscope')
-                    return redirect('/')
-
-                except BaseException as e:
-
-                    log_error(e)
-                    return f'Error sending file to the entomoscope: {str(e)}', 500
+        return jsonify(success=True, message='File uploaded')
 
     except BaseException as e:
 
         log_error(e)
 
-        return f'Error uploading configuration file: {str(e)}', 500
+        return jsonify(success=False, message='File not uploaded')
 
 
 @app.route('/data')

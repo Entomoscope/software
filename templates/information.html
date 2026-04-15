@@ -102,17 +102,27 @@
         <div class="col-12 col-sm-6">
             <div class="card mt-3">
               <div class="card-body">
-                <h5 class="card-title">WiFi</h5>
+                <h5 class="card-title">WiFi Access Point</h5>
+<!--
                 <h6 class="card-title">Current</h6>
                 <ul>
                     <li>SSID: {{ rpi.wifi_ssid }}</li>
                     <li>IP address: {{ rpi.ip_address }}</li>
                 </ul>
                 <hr>
+-->
+<!--
                 <h6 class="card-title">Access Point</h6>
+-->
+                    <ul>
+                        <li>SSID: {{ rpi.wifi_ssid }}</li>
+                        <li>IP address: {{ rpi.ip_address }}</li>
+                    </ul>
+<!--
                     <div class="input-group">
                       <input type="text" class="form-control" aria-label="Text input with checkbox" id="wifiAPName" value="{{ wifi.ap_name }}" onChange="setNewNameWifiAP()" disabled=True>
                     </div>
+-->
 <!--
                 <hr>
                 {% if wifi.saved_names|length > 0 %}
@@ -159,14 +169,11 @@
                 </div>
 -->
                 <hr>
-                <h6 class="card-title">WiFi power save mode</h6>
-                <ul>
-                    {% if rpi.wifi_power_save %}
-                    <li>Yes</li>
-                    {% else %}
-                    <li>No</li>
-                    {% endif %}
-                </ul>
+                {% if rpi.wifi_power_save %}
+                <h6 class="card-title">WiFi power save mode: enabled</h6>
+                {% else %}
+                <h6 class="card-title">WiFi power save mode: disabled</h6>
+                {% endif %}
               </div>
             </div>
         </div>
@@ -196,7 +203,7 @@
                 <hr/>
 -->
                 <div class="form-button-center">
-                    <button type="submit" class="btn btn-primary" id="gnssUpdateButton" onclick="gnssUpdateData()">Update</button>
+                    <button type="submit" class="btn btn-primary" id="gnssUpdateButton" onclick="gnssUpdateData()">Search</button>
                     <button type="submit" class="btn btn-primary" id="gnssSyncTimeButton" onclick="gnssSyncTime()" disabled>Sync Time</button>
                     <button type="submit" class="btn btn-primary" id="gnssSavePositionButton" onclick="gnssSavePosition()" disabled>Save Position</button>
                 </div>

@@ -44,10 +44,11 @@
                 <div id="collapseZero" class="accordion-collapse collapse">
                   <div class="accordion-body">
                     <div class="form-group">
-                      <form action = "/" method = "post" enctype="multipart/form-data">
-                        <input type="file" name="file" id="configFileInput" accept=".json"/>
-                        <input type="submit" value="Send to Entomoscope">
-                      </form>
+                        <label for="formFile" class="form-label">Select a config file</label>
+                        <input class="form-control" name="file" type="file" id="configFileInput" accept=".json">
+                    </div>
+                    <div class="form-button-center">
+                        <button class="btn btn-primary mt-3" id="submitConfigButton" disabled>Send to the entomoscope</button>
                     </div>
                   </div>
                 </div>
@@ -279,11 +280,20 @@
                 <div id="collapseEphemeris" class="accordion-collapse collapse">
                   <div class="accordion-body">
                     <div class="form-group">
+                        <label for="formFile" class="form-label">Select an ephemeris file</label>
+                        <input class="form-control" name="file" type="file" id="ephemerisFileInput" accept=".csv">
+                    </div>
+                    <div class="form-button-center">
+                        <button class="btn btn-primary mt-3" id="submitEphemerisButton" disabled>Send to the entomoscope</button>
+                    </div>
+<!--
+                    <div class="form-group">
                     <form action = "/" method = "post" enctype="multipart/form-data">
                         <input type="file" name="file" id="ephemerisFileInput" accept=".csv"/>
                         <input type="submit" value="Send to Entomoscope">
                     </form>
                     </div>
+-->
                   </div>
                 </div>
             </div>
@@ -654,6 +664,10 @@
     const environmentalMonitoringCheckIntervalConfigurationText = document.getElementById('environmentalMonitoringCheckIntervalConfigurationText');
 
     const configFileInput = document.getElementById('configFileInput')
+    const submitConfigButton = document.getElementById('submitConfigButton')
+
+    const ephemerisFileInput = document.getElementById('ephemerisFileInput')
+    const submitEphemerisButton = document.getElementById('submitEphemerisButton')
 
     // Modals dialog
     const waitModalDialog = document.getElementById('waitModalDialog');
@@ -677,6 +691,72 @@
 
         {{ sd_card_full_modal_javascript(sd_card) }}
         {{ battery_discharged_modal_javascript(battery_level) }}
+
+    })
+
+    configFileInput.addEventListener("cancel", () => {
+
+        submitConfigButton.disabled = true
+
+    })
+
+    configFileInput.addEventListener("change", () => {
+
+        submitConfigButton.disabled = false
+
+    })
+
+    submitConfigButton.addEventListener("click", () => {
+
+        var files = configFileInput.files;
+        var formData = new FormData()
+
+        for (var i = 0; i < files.length; i++) {
+          formData.append('file', files[i]);
+          formData.append('name', files[i].name);
+        }
+
+        return fetch('/upload_file', {
+            method: 'POST',
+            body: formData,
+        })
+        .catch(error => {
+            console.error('Error shutdown: ', error);
+            throw error;  // Re-throw the error for the next catch
+        });
+
+    })
+
+    ephemerisFileInput.addEventListener("cancel", () => {
+
+        submitEphemerisButton.disabled = true
+
+    })
+
+    ephemerisFileInput.addEventListener("change", () => {
+
+        submitEphemerisButton.disabled = false
+
+    })
+
+    submitEphemerisButton.addEventListener("click", () => {
+
+        var files = ephemerisFileInput.files;
+        var formData = new FormData()
+
+        for (var i = 0; i < files.length; i++) {
+          formData.append('file', files[i]);
+          formData.append('name', files[i].name);
+        }
+
+        return fetch('/upload_file', {
+            method: 'POST',
+            body: formData,
+        })
+        .catch(error => {
+            console.error('Error shutdown: ', error);
+            throw error;  // Re-throw the error for the next catch
+        });
 
     })
 

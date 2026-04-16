@@ -3173,10 +3173,14 @@ def shutdown():
 
     try:
 
-        pi.write(WITTY_PI_HALT_PIN, 0)
+        if witty_pi.available:
 
-        # os.system('python ' + os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'shutdown.py'))
-        # os.system('sudo shutdown now')
+            pi.write(WITTY_PI_HALT_PIN, 0)
+
+        else:
+
+            os.system('python ' + os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'shutdown.py'))
+            os.system('sudo shutdown now')
 
         return jsonify(success=True, message='Success')
 

@@ -58,11 +58,19 @@
             <!-- USB drive -->
             <div class="card">
                 <div class="card-body">
-                <h5 class="card-title d-flex justify-content-between align-items-center">USB drive
-                {% if external_disk.available %}
-                    <button type="submit" class="btn btn-primary btn-sm" id="usbDriveEjectButton" onclick="ejectUsbDrive()"><i class="bi bi-eject fs-6"></i></button>
-                {% else %}
+                    <h5 class="card-title d-flex justify-content-between align-items-center" id="usbDriveHeader">No USB drive
                     <button type="submit" class="btn btn-primary btn-sm disabled" id="usbDriveEjectButton" onclick="ejectUsbDrive()"><i class="bi bi-eject fs-6"></i></button>
+
+                {% if external_disk.available %}
+<!--
+                    <h5 class="card-title d-flex justify-content-between align-items-center" id="usbDriveHeader">USB drive
+                    <button type="submit" class="btn btn-primary btn-sm" id="usbDriveEjectButton" onclick="ejectUsbDrive()"><i class="bi bi-eject fs-6"></i></button>
+-->
+                {% else %}
+<!--
+                    <h5 class="card-title d-flex justify-content-between align-items-center" id="usbDriveHeader">No USB drive
+                    <button type="submit" class="btn btn-primary btn-sm disabled" id="usbDriveEjectButton" onclick="ejectUsbDrive()"><i class="bi bi-eject fs-6"></i></button>
+-->
                 {% endif %}
                 </h5>
                     <div class="mt-3 pt-1">
@@ -256,6 +264,7 @@
     const usbDriveUsed = document.getElementById('usbDriveUsed')
     const usbDriveEjectButton = document.getElementById('usbDriveEjectButton')
     const usbDriveProgress = document.getElementById('usbDriveProgress')
+    const usbDriveHeader = document.getElementById('usbDriveHeader')
 
     const totalDetectionFilesSpan = document.getElementById('totalDetectionFilesSpan')
     const totalTimelapseFilesSpan = document.getElementById('totalTimelapseFilesSpan')
@@ -301,6 +310,7 @@
 
     var actionToDo = null
 
+    var intervalId4
     var intervalId5
 
     document.addEventListener("DOMContentLoaded", function() {
@@ -362,6 +372,8 @@
 
     function findExternalDisk() {
 
+        const usbDriveEjectButton = document.getElementById('usbDriveEjectButton')
+
         return fetch('/find_external_disk', {
             method: 'POST',
             headers: {
@@ -374,6 +386,8 @@
             if (data.success) {
 
                 clearInterval(intervalId4)
+
+                usbDriveHeader.innerHTML = usbDriveHeader.innerHTML.replace('No USB drive', data.data[4]).replace('disabled', '')
 
                 usbDriveTotal.innerText = data.data[0] + ' total'
                 usbDriveUsed.innerText = data.data[1] + ' used (' + data.data[2] + ')'
@@ -407,7 +421,7 @@
 
     function ejectUsbDrive() {
 
-        console.log('Eject')
+        const usbDriveEjectButton = document.getElementById('usbDriveEjectButton')
 
         return fetch('/eject_external_drive', {
             method: 'POST',
@@ -420,7 +434,10 @@
         .then(data => {
             if (data.success) {
 
-                usbDriveEjectButton.className = 'btn btn-primary btn-sm disabled'
+                var i = usbDriveHeader.innerHTML.indexOf('<')
+                var t = usbDriveHeader.innerHTML.slice(0, i).trim()
+
+                usbDriveHeader.innerHTML = usbDriveHeader.innerHTML.replace(t, 'No USB drive').replace('btn btn-primary btn-sm', 'btn btn-primary btn-sm disabled')
 
                 for (let i = 0; i < saveFolderButtons.length; i++) {
                     saveFolderButtons[i].className = 'btn btn-primary btn-sm save-folder disabled'
@@ -432,6 +449,8 @@
                 usbDriveUsed.innerText = '0 used (0%)'
 
                 usbDriveProgress.style = 'width: 0%'
+
+                intervalId4 = setInterval(findExternalDisk, 1000)
 
             }
             else {
@@ -743,7 +762,7 @@
 
     var intervalId3 = setInterval(getSdCardUsage, 60000)
 
-    var intervalId4 = setInterval(findExternalDisk, 1000)
+    intervalId4 = setInterval(findExternalDisk, 1000)
 
 
 

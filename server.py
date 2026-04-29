@@ -3045,7 +3045,7 @@ def find_external_disk():
 
             external_disk.get_data()
 
-            data = [external_disk.total, external_disk.used, external_disk.used_percent, external_disk.used_percent_num]
+            data = [external_disk.total, external_disk.used, external_disk.used_percent, external_disk.used_percent_num, external_disk.path.split('/')[-1]]
 
             return jsonify(success=True, message='External disk found', data=data)
 

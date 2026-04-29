@@ -106,14 +106,14 @@ class Storage():
         if self.available and self.path:
 
             try:
-                logger.info(f'unmounting disk {self.path}')
+                logger.info(f'ejecting disk {self.path}')
                 outputs = check_output(['sudo', 'eject', '--verbose', '--scsi', self.path]).decode('utf-8').split('\n')
                 for output in outputs:
                     logger.info(output)
                 self.path = None
                 self.available = False
             except CalledProcessError as e:
-                logger.error('unmounting disk failed')
+                logger.error('ejecting disk failed')
                 logger.error(str(e))
 
     def __str__(self):

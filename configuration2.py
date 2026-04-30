@@ -4,7 +4,26 @@ import os
 from shutil import copyfile
 from json import load, dump
 
+from globals_parameters import TODAY, LOGS_DESKTOP_FOLDER
+
+import logging
+from logging.handlers import RotatingFileHandler
+
 DEFAULT_CONFIGURATION_FILE = 'configuration2.json'
+
+this_script = os.path.basename(__file__)[:-3]
+
+today_log_path = os.path.join(LOGS_DESKTOP_FOLDER, TODAY)
+if not os.path.exists(today_log_path):
+    os.mkdir(today_log_path)
+
+logger = logging.getLogger('entomoscope_configuration')
+filename = os.path.join(today_log_path, TODAY + '_' + this_script + '.log')
+file_handler = RotatingFileHandler(filename, mode="a", maxBytes=10000, backupCount=100, encoding="utf-8")
+logger.addHandler(file_handler)
+formatter = logging.Formatter('%(asctime)s.%(msecs)03d;%(levelname)s;%(filename)s;%(lineno)d;"%(message)s"', datefmt='%d/%m/%Y;%H:%M:%S')
+file_handler.setFormatter(formatter)
+logger.setLevel("DEBUG")
 
 class Configuration2():
 
@@ -19,6 +38,7 @@ class Configuration2():
         self.configuration_file = os.path.join(self.configurations_path, configuration_file)
 
         if not os.path.isfile(self.configuration_file):
+            logger.warning('No configuration file found, create default one.')
             self.create_configuration_file()
 
         self.read()
@@ -32,6 +52,10 @@ class Configuration2():
 
             for attr in self._attributes:
                 setattr(self, attr, self.configuration[attr])
+
+        except FileNotFoundError as e:
+
+            logger.error('No configuration file found')
 
         except BaseException as e:
 
@@ -216,7 +240,7 @@ class Configuration2():
 
         except OSError as e:
 
-            print(str(e))
+            logger(str(e))
 
             success = False
 

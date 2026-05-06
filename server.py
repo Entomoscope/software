@@ -194,7 +194,7 @@ except BaseException as e:
 
     AI_AVAILABLE = False
     app.logger.info('unable to manage AI => AI not available')
-    log_error(e)
+    app.logger.error(traceback.format_exc())
 
 sd_card = Storage('sd')
 

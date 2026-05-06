@@ -148,10 +148,10 @@ class Configuration2():
         setattr(self, 'gnss', {
                             'altitude': 0.0,
                             'enable': True,
-                            'latitude': 0.0,
+                            'latitude': '',
                             'last_update': '',
                             'last_update_dop': 0.0,
-                            'longitude': 0.0,
+                            'longitude': '',
                             'mode': 'auto',
                             'satellites_used': 0
                         })

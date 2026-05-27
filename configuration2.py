@@ -189,8 +189,8 @@ class Configuration2():
 
         setattr(self, 'schedule', {
                             'enable': False,
-                            'next_startup': '2025-01-01 07:00',
-                            'next_shutdown': '2025-01-01 18:00',
+                            'next_startup': '2026-05-01 07:00',
+                            'next_shutdown': '2026-05-01 18:00',
                             'off_duration': 60,
                             'on_duration': 60,
                             'periodicity': 'every_day'

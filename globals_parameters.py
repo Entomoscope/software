@@ -85,25 +85,25 @@ if not os.path.exists(DATA_FOLDER):
     os.mkdir(DATA_FOLDER)
 logger.info('data folder: ' + DATA_FOLDER)
 
-SAVE_FOLDER = os.path.join(DATA_FOLDER, TODAY)
-if not os.path.exists(SAVE_FOLDER):
-    os.mkdir(SAVE_FOLDER)
-logger.info('save folder: ' + SAVE_FOLDER)
+# SAVE_FOLDER = os.path.join(DATA_FOLDER, TODAY)
+# if not os.path.exists(SAVE_FOLDER):
+    # os.mkdir(SAVE_FOLDER)
+# logger.info('save folder: ' + SAVE_FOLDER)
 
-SOUNDS_CAPTURE_FOLDER = os.path.join(SAVE_FOLDER, 'Sounds')
-if not os.path.exists(SOUNDS_CAPTURE_FOLDER):
-    os.mkdir(SOUNDS_CAPTURE_FOLDER)
-logger.info('sounds capture folder: ' + SOUNDS_CAPTURE_FOLDER)
+# SOUNDS_CAPTURE_FOLDER = os.path.join(SAVE_FOLDER, 'Sounds')
+# if not os.path.exists(SOUNDS_CAPTURE_FOLDER):
+    # os.mkdir(SOUNDS_CAPTURE_FOLDER)
+# logger.info('sounds capture folder: ' + SOUNDS_CAPTURE_FOLDER)
 
-IMAGES_CAPTURE_FOLDER = os.path.join(SAVE_FOLDER, 'Images')
-if not os.path.exists(IMAGES_CAPTURE_FOLDER):
-    os.mkdir(IMAGES_CAPTURE_FOLDER)
-logger.info('images capture folder: ' + IMAGES_CAPTURE_FOLDER)
+# IMAGES_CAPTURE_FOLDER = os.path.join(SAVE_FOLDER, 'Images')
+# if not os.path.exists(IMAGES_CAPTURE_FOLDER):
+    # os.mkdir(IMAGES_CAPTURE_FOLDER)
+# logger.info('images capture folder: ' + IMAGES_CAPTURE_FOLDER)
 
-ENVIRONMENT_MONITORING_FOLDER = os.path.join(SAVE_FOLDER, 'Environment')
-if not os.path.exists(ENVIRONMENT_MONITORING_FOLDER):
-    os.mkdir(ENVIRONMENT_MONITORING_FOLDER)
-logger.info('environment monitoring folder: ' + ENVIRONMENT_MONITORING_FOLDER)
+# ENVIRONMENT_MONITORING_FOLDER = os.path.join(SAVE_FOLDER, 'Environment')
+# if not os.path.exists(ENVIRONMENT_MONITORING_FOLDER):
+    # os.mkdir(ENVIRONMENT_MONITORING_FOLDER)
+# logger.info('environment monitoring folder: ' + ENVIRONMENT_MONITORING_FOLDER)
 
 TMP_FOLDER = os.path.join(PYTHON_SCRIPTS_BASE_FOLDER, 'tmp')
 logger.info('tmp folder: ' + TMP_FOLDER)

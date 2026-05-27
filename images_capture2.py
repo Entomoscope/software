@@ -17,7 +17,7 @@ from peripherals.laser import Laser
 from peripherals.pinout2 import IMAGES_CAPTURE_ACTIVITY_PIN, SHUTDOWN_PIN, STARTUP_PIN, LEDS_REAR_DEPORTED_UV_PIN, LEDS_FRONT_PIN
 from peripherals.rpi import Rpi
 
-from globals_parameters import IMAGES_CAPTURE_FOLDER, AI_MODEL_PATH, AI_ENABLE, LOGS_DESKTOP_FOLDER, TODAY
+from globals_parameters import DATA_FOLDER, AI_MODEL_PATH, AI_ENABLE, LOGS_DESKTOP_FOLDER, TODAY
 
 this_script = os.path.basename(__file__)[:-3]
 
@@ -95,8 +95,6 @@ def main():
         AI_AVAILABLE = False
         logger.info('Unable to manage AI => AI not available')
         logger.error(str(e))
-
-    logger.info(f'images capture folder: {IMAGES_CAPTURE_FOLDER}')
 
     if isSignalToStandByReceived():
 
@@ -333,7 +331,15 @@ def main():
     # Copie du fichier de configuration dans le dossier où les images sont enregistrées
     # Nom du fichier : configuration_YYYYMMDDHHMMSS.json
     now_str = datetime.now().strftime('%Y%m%d%H%M%S')
-    file_path = os.path.join(IMAGES_CAPTURE_FOLDER, 'configuration_' + now_str + '.json')
+
+    data_now_folder = os.path.join(DATA_FOLDER, now_str[0:8])
+    if not os.path.exists(data_now_folder):
+        os.mkdir(data_now_folder)
+    images_folder = os.path.join(data_now_folder, 'Images')
+    if not os.path.exists(images_folder):
+        os.mkdir(images_folder)
+
+    file_path = os.path.join(images_folder, 'configuration_' + now_str + '.json')
     configuration.copy_to(file_path)
     logger.info(f'configuration file saved to {file_path}')
 
@@ -502,7 +508,14 @@ def main():
                 leds_rear_deported_uv.turn_on() # UV On
 
             # Création du nom du fichier de base avec la date courante
-            file_path = os.path.join(IMAGES_CAPTURE_FOLDER, now_str)
+            data_now_folder = os.path.join(DATA_FOLDER, now_str[0:8])
+            if not os.path.exists(data_now_folder):
+                os.mkdir(data_now_folder)
+            images_folder = os.path.join(data_now_folder, 'Images')
+            if not os.path.exists(images_folder):
+                os.mkdir(images_folder)
+
+            file_path = os.path.join(images_folder, now_str)
 
             # Si IA disponible et IA activée et mode différent de Lepinoc => analyse de l'image capturée
             if AI_AVAILABLE and configuration.ai_detection['enable'] and configuration.mode['mode'] != 'lepinoc' :
@@ -685,7 +698,15 @@ def main():
                     # Copie du fichier de configuration dans le dossier où les images sont enregistrées
                     # Nom du fichier : configuration_YYYYMMDDHHMMSS.json
                     now_str = datetime.now().strftime('%Y%m%d%H%M%S')
-                    file_path = os.path.join(IMAGES_CAPTURE_FOLDER, 'configuration_' + now_str + '.json')
+
+                    data_now_folder = os.path.join(DATA_FOLDER, now_str[0:8])
+                    if not os.path.exists(data_now_folder):
+                        os.mkdir(data_now_folder)
+                    images_folder = os.path.join(data_now_folder, 'Images')
+                    if not os.path.exists(images_folder):
+                        os.mkdir(images_folder)
+
+                    file_path = os.path.join(images_folder, 'configuration_' + now_str + '.json')
                     configuration.copy_to(file_path)
                     logger.info(f'configuration file saved to {file_path}')
 

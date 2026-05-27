@@ -51,7 +51,7 @@ from ephemeris import Ephemeris
 
 from date_time import DateTime
 
-from globals_parameters import USER, SERVER_PORT, SERVER_DEBUG, SERVER_ALLOWED_EXTENSIONS, TODAY_NOW, AI_ENABLE, AI_MODEL_PATH, CAPTURE_AI_DETECTION, PYTHON_SCRIPTS_BASE_FOLDER, TMP_FOLDER, IMAGES_CAPTURE_FOLDER, SOUNDS_CAPTURE_FOLDER, TODAY, TOMORROW, LOGS_DESKTOP_FOLDER, WITTY_PI_FOLDER, DATA_FOLDER, MINUTES_OFFSET_FOR_STARTING_ON_TIME, CAMERA_PREVIEW_FPS
+from globals_parameters import USER, SERVER_PORT, SERVER_DEBUG, SERVER_ALLOWED_EXTENSIONS, TODAY_NOW, AI_ENABLE, AI_MODEL_PATH, CAPTURE_AI_DETECTION, PYTHON_SCRIPTS_BASE_FOLDER, TMP_FOLDER, DATA_FOLDER, TODAY, TOMORROW, LOGS_DESKTOP_FOLDER, WITTY_PI_FOLDER, DATA_FOLDER, MINUTES_OFFSET_FOR_STARTING_ON_TIME, CAMERA_PREVIEW_FPS
 
 from firmware import updates_check, updates_get, get_last_commit
 
@@ -1460,7 +1460,15 @@ def sounds_capture_test():
                     app.logger.info('microphone started')
 
                     now_str = datetime.now().strftime('%Y%m%d%H%M%S')
-                    file_path = os.path.join(SOUNDS_CAPTURE_FOLDER, now_str + '_test.wav')
+
+                    data_now_folder = os.path.join(DATA_FOLDER, now_str[0:8])
+                    if not os.path.exists(data_now_folder):
+                        os.mkdir(data_now_folder)
+                    sounds_folder = os.path.join(data_now_folder, 'Sounds')
+                    if not os.path.exists(sounds_folder):
+                        os.mkdir(sounds_folder)
+
+                    file_path = os.path.join(sounds_folder, now_str + '_test.wav')
 
                     total_samples = microphone.sample_rate * duration
 
@@ -1804,7 +1812,14 @@ def generate_frames():
 
                                 img_encode_3 = cv2.imencode('.jpg', frame3, [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality])[1]
 
-                                file_path = os.path.join(IMAGES_CAPTURE_FOLDER, now_str + '_detection_test.jpg')
+                                data_now_folder = os.path.join(DATA_FOLDER, now_str[0:8])
+                                if not os.path.exists(data_now_folder):
+                                    os.mkdir(data_now_folder)
+                                images_folder = os.path.join(data_now_folder, 'Images')
+                                if not os.path.exists(images_folder):
+                                    os.mkdir(images_folder)
+
+                                file_path = os.path.join(images_folder, now_str + '_detection_test.jpg')
 
                                 camera.jpeg_data = img_encode_3.tobytes()
                                 camera.save_capture(file_path, save_metadata=True, extra_metadata=extra_metadata)

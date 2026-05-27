@@ -4,7 +4,7 @@ import logging
 import csv
 from datetime import datetime
 from gpiozero import CPUTemperature
-from globals_parameters import LOGS_DESKTOP_FOLDER, ENVIRONMENT_MONITORING_FOLDER, TODAY
+from globals_parameters import LOGS_DESKTOP_FOLDER, DATA_FOLDER, TODAY
 from sensors.sht31 import SHT31
 from peripherals.wittypi import WittyPi
 
@@ -45,6 +45,8 @@ def main():
 
     try:
 
+        now_str = datetime.now().strftime('%Y%m%d%H:%M')
+
         sht31 = SHT31()
 
         sht31.get_temperature_humidity()
@@ -55,13 +57,18 @@ def main():
 
         cpu_temperature = CPUTemperature().temperature
 
-        now = datetime.now().strftime('%H:%M')
-
         header = ['Time(UTC)', 'ExternalTemperature(C)', 'ExternalHumidity(%)', 'CpuTemperature(C)', 'Vin(V)', 'Vout(V)', 'Iout(A)']
 
-        data = [now, f'{sht31.temperature:.1f}', f'{sht31.humidity:.1f}', f'{cpu_temperature:.1f}', f'{wittypi.input_voltage:.3f}', f'{wittypi.output_voltage:.3f}', f'{wittypi.output_current:.3f}']
+        data = [now_str[8:], f'{sht31.temperature:.1f}', f'{sht31.humidity:.1f}', f'{cpu_temperature:.1f}', f'{wittypi.input_voltage:.3f}', f'{wittypi.output_voltage:.3f}', f'{wittypi.output_current:.3f}']
 
-        csv_file_path = os.path.join(ENVIRONMENT_MONITORING_FOLDER, TODAY + '_environment.csv')
+        data_now_folder = os.path.join(DATA_FOLDER, now_str[0:8])
+        if not os.path.exists(data_now_folder):
+            os.mkdir(data_now_folder)
+        environment_monitoring_folder = os.path.join(data_now_folder, 'Environment')
+        if not os.path.exists(environment_monitoring_folder):
+            os.mkdir(environment_monitoring_folder)
+
+        csv_file_path = os.path.join(environment_monitoring_folder, TODAY + '_environment.csv')
 
         if not os.path.exists(csv_file_path):
 

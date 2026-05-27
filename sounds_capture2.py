@@ -14,7 +14,7 @@ from configuration2 import Configuration2
 from peripherals.microphone2 import Microphone2
 from peripherals.pinout2 import SOUNDS_CAPTURE_ACTIVITY_PIN, SHUTDOWN_PIN, STARTUP_PIN
 
-from globals_parameters import SOUNDS_CAPTURE_FOLDER, LOGS_DESKTOP_FOLDER, TODAY, MICROPHONE_DETECTION_INTERVAL, MICROPHONE_DETECTION_NUM_TRIES, MICROPHONE_STARTUP_DELAY_BEFORE_FIST_CAPTURE
+from globals_parameters import DATA_FOLDER, LOGS_DESKTOP_FOLDER, TODAY, MICROPHONE_DETECTION_INTERVAL, MICROPHONE_DETECTION_NUM_TRIES, MICROPHONE_STARTUP_DELAY_BEFORE_FIST_CAPTURE
 
 this_script = os.path.basename(__file__)[:-3]
 
@@ -60,8 +60,6 @@ def main():
         sleep(0.5)
 
     logger.info('startup script completed')
-
-    logger.info(f'sounds capture folder: {SOUNDS_CAPTURE_FOLDER}')
 
     if isSignalToStandByReceived():
 
@@ -175,7 +173,15 @@ def main():
             # Copie du fichier de configuration dans le dossier où les sons sont enregistrées
             # Nom du fichier : configuration_YYYYMMDDHHMMSS.json
             now_str = datetime.now().strftime('%Y%m%d%H%M%S')
-            file_path = os.path.join(SOUNDS_CAPTURE_FOLDER, 'configuration_' + now_str + '.json')
+
+            data_now_folder = os.path.join(DATA_FOLDER, now_str[0:8])
+            if not os.path.exists(data_now_folder):
+                os.mkdir(data_now_folder)
+            sounds_folder = os.path.join(data_now_folder, 'Sounds')
+            if not os.path.exists(sounds_folder):
+                os.mkdir(sounds_folder)
+
+            file_path = os.path.join(sounds_folder, 'configuration_' + now_str + '.json')
             configuration.copy_to(file_path)
             logger.info(f'configuration file saved to {file_path}')
 
@@ -244,7 +250,15 @@ def main():
 
                         # Nom du fichier WAV : YYYYMMDDHHMMSS.wav
                         now_str = datetime.now().strftime('%Y%m%d%H%M%S')
-                        file_path = os.path.join(SOUNDS_CAPTURE_FOLDER, now_str + '.wav')
+
+                        data_now_folder = os.path.join(DATA_FOLDER, now_str[0:8])
+                        if not os.path.exists(data_now_folder):
+                            os.mkdir(data_now_folder)
+                        sounds_folder = os.path.join(data_now_folder, 'Sounds')
+                        if not os.path.exists(sounds_folder):
+                            os.mkdir(sounds_folder)
+
+                        file_path = os.path.join(sounds_folder, now_str + '.wav')
 
                         data.clear()
 
@@ -303,7 +317,16 @@ def main():
                             # Copie du fichier de configuration dans le dossier où les images sont enregistrées
                             # Nom du fichier : configuration_YYYYMMDDHHMMSS.json
                             now_str = datetime.now().strftime('%Y%m%d%H%M%S')
-                            file_path = os.path.join(SOUNDS_CAPTURE_FOLDER, 'configuration_' + now_str + '.json')
+
+                            data_now_folder = os.path.join(DATA_FOLDER, now_str[0:8])
+                            if not os.path.exists(data_now_folder):
+                                os.mkdir(data_now_folder)
+                            sounds_folder = os.path.join(data_now_folder, 'Sounds')
+                            if not os.path.exists(sounds_folder):
+                                os.mkdir(sounds_folder)
+
+                            file_path = os.path.join(sounds_folder, 'configuration_' + now_str + '.json')
+
                             configuration.copy_to(file_path)
                             logger.info(f'configuration file saved to {file_path}')
 

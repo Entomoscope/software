@@ -1523,17 +1523,26 @@ def save_folders(folders):
         for folder in folders:
 
             env_folder = os.path.join(DATA_FOLDER, folder, 'Environment')
-            files_env = os.listdir(env_folder)
+            if os.path.exists(env_folder):
+                files_env = os.listdir(env_folder)
+            else:
+                files_env = []
 
             num_files_to_copy += len(files_env)
 
             images_folder = os.path.join(DATA_FOLDER, folder, 'Images')
-            files_images = os.listdir(images_folder)
+            if os.path.exists(images_folder):
+                files_images = os.listdir(images_folder)
+            else:
+                 files_images = []
 
             num_files_to_copy += len(files_images)
 
             sounds_folder = os.path.join(DATA_FOLDER, folder, 'Sounds')
-            files_sounds = os.listdir(sounds_folder)
+            if os.path.exists(sounds_folder):
+                files_sounds = os.listdir(sounds_folder)
+            else:
+                files_sounds = []
 
             num_files_to_copy += len(files_sounds)
 
@@ -1559,7 +1568,10 @@ def save_folders(folders):
                 os.mkdir(ext_sounds_folder)
 
             env_folder = os.path.join(DATA_FOLDER, folder, 'Environment')
-            files_env = os.listdir(env_folder)
+            if os.path.exists(env_folder):
+                files_env = os.listdir(env_folder)
+            else:
+                files_env = []
 
             for f in files_env:
 
@@ -1571,7 +1583,10 @@ def save_folders(folders):
                 files_copy_percent = 100 * num_files_copied/num_files_to_copy
 
             images_folder = os.path.join(DATA_FOLDER, folder, 'Images')
-            files_images = os.listdir(images_folder)
+            if os.path.exists(images_folder):
+                files_images = os.listdir(images_folder)
+            else:
+                 files_images = []
 
             for f in files_images:
 
@@ -1583,7 +1598,10 @@ def save_folders(folders):
                 files_copy_percent = 100 * num_files_copied/num_files_to_copy
 
             sounds_folder = os.path.join(DATA_FOLDER, folder, 'Sounds')
-            files_sounds = os.listdir(sounds_folder)
+            if os.path.exists(sounds_folder):
+                files_sounds = os.listdir(sounds_folder)
+            else:
+                files_sounds = []
 
             for f in files_sounds:
 
@@ -3321,42 +3339,60 @@ def get_data_folders_stats():
                     'num_test_detection_files': 0,
                     'size_all_files': 0}
 
-            env_files = [x for x in os.listdir(os.path.join(DATA_FOLDER, folder, 'Environment')) if x.endswith('.csv')]
+            env_path = os.path.join(DATA_FOLDER, folder, 'Environment')
+            if os.path.exists(env_path):
+                env_files = [x for x in os.listdir(env_path) if x.endswith('.csv')]
+            else:
+                env_files = []
+
             stat['num_env_files'] = len(env_files)
             stats['total']['num_env_files'] += stat['num_env_files']
             size = 0
             for env_file in env_files:
-                size += os.path.getsize(os.path.join(DATA_FOLDER, folder, 'Environment', env_file))
+                size += os.path.getsize(os.path.join(env_path, env_file))
             stat['size_env_files'] = int(size / 1024 // 1024)
             stats['total']['size_env_files'] += stat['size_env_files']
 
-            sounds_files = [x for x in os.listdir(os.path.join(DATA_FOLDER, folder, 'Sounds')) if x.endswith('.wav')]
+            sounds_path = os.path.join(DATA_FOLDER, folder, 'Sounds')
+            if os.path.exists(sounds_path):
+                sounds_files = [x for x in os.listdir(sounds_path) if x.endswith('.wav')]
+            else:
+                sounds_files = []
+
             stat['num_sounds_files'] = len(sounds_files)
             stats['total']['num_sounds_files'] += stat['num_sounds_files']
             size = 0
             for sounds_file in sounds_files:
-                size += os.path.getsize(os.path.join(DATA_FOLDER, folder, 'Sounds', sounds_file))
+                size += os.path.getsize(os.path.join(sounds_path, sounds_file))
             stat['size_sounds_files'] = int(size / 1024 // 1024)
             stats['total']['size_sounds_files'] += stat['size_sounds_files']
 
-            images_files = [x for x in os.listdir(os.path.join(DATA_FOLDER, folder, 'Images')) if x.endswith('.jpg')]
+            images_path = os.path.join(DATA_FOLDER, folder, 'Images')
+            if os.path.exists(images_path):
+                images_files = [x for x in os.listdir(images_path) if x.endswith('.jpg')]
+                timelapse_files = [x for x in os.listdir(images_path) if x.endswith('_timelapse_no_ai.jpg')]
+                detection_files = [x for x in os.listdir(images_path) if x.endswith('.jpg') and len(x) == 18]
+                test_detection_files = [x for x in os.listdir(images_path) if x.endswith('_detection_test.jpg')]
+            else:
+                images_files = []
+                timelapse_files = []
+                detection_files = []
+                test_detection_files = []
+
             stat['num_images_files'] = len(images_files)
             stats['total']['num_images_files'] += stat['num_images_files']
             size = 0
             for images_file in images_files:
-                size += os.path.getsize(os.path.join(DATA_FOLDER, folder, 'Images', images_file))
+                size += os.path.getsize(os.path.join(images_path, images_file))
             stat['size_images_files'] = int(size / 1024 // 1024)
             stats['total']['size_images_files'] += stat['size_images_files']
 
-            timelapse_files = [x for x in os.listdir(os.path.join(DATA_FOLDER, folder, 'Images')) if x.endswith('_timelapse_no_ai.jpg')]
             stat['num_timelapse_files'] = len(timelapse_files)
             stats['total']['num_timelapse_files'] += stat['num_timelapse_files']
 
-            detection_files = [x for x in os.listdir(os.path.join(DATA_FOLDER, folder, 'Images')) if x.endswith('.jpg') and len(x) == 18]
             stat['num_detection_files'] = len(detection_files)
             stats['total']['num_detection_files'] += stat['num_detection_files']
 
-            test_detection_files = [x for x in os.listdir(os.path.join(DATA_FOLDER, folder, 'Images')) if x.endswith('_detection_test.jpg')]
             stat['num_test_detection_files'] = len(test_detection_files)
             stats['total']['num_test_detection_files'] += stat['num_test_detection_files']
 
